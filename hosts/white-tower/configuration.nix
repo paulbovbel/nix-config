@@ -26,7 +26,10 @@
     options nvidia NVreg_TemporaryFilePath=/var/tmp
   '';
 
-  boot.kernelParams = [ "mem_sleep_default=deep" ];
+  boot.kernelParams = [
+    # Prefer deep suspend (S3) over s2idle when available.
+    "mem_sleep_default=deep"
+  ];
 
   systemd.tmpfiles.rules = [
     "d /var/tmp 1777 root root -"
