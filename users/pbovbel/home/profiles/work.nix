@@ -1,8 +1,14 @@
-{ ... }:
+{ lib, ... }:
 
 {
   imports = [
     ./graphical.nix
+  ];
+
+  dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [
+    "code.desktop"
+    "us.zoom.Zoom.desktop"
+    "com.slack.Slack.desktop"
   ];
 
   xdg.configFile."autostart/slack.desktop".text = ''

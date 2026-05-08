@@ -1,8 +1,13 @@
-{ config, ... }:
+{ lib, ... }:
 
 {
   imports = [
     ./graphical.nix
+  ];
+
+  dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [
+    "steam.desktop"
+    "com.discordapp.Discord.desktop"
   ];
 
   xdg.configFile."autostart/steam.desktop".text = ''

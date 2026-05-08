@@ -33,6 +33,12 @@
         "dash-to-dock@micxgx.gmail.com"
         "appindicatorsupport@rgcjonas.gmail.com"
       ];
+      favorite-apps = [
+        "org.mozilla.firefox.desktop"
+        "org.gnome.Nautilus.desktop"
+        "com.rtosta.zapzap.desktop"
+        "kitty.desktop"
+      ];
     };
     "org/gnome/shell/extensions/dash-to-dock" = {
       apply-custom-theme = true;
