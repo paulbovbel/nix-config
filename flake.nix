@@ -116,7 +116,7 @@
         };
 
         pbovbel-dell = {
-          hostModule = ./hosts/laptop/configuration.nix;
+          hostModule = ./hosts/pbovbel-dell/configuration.nix;
           users = [
             {
               name = "pbovbel";
