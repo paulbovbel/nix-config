@@ -1,36 +1,9 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   imports = [
     ../graphical
   ];
-
-  services.xserver.videoDrivers = [ "nvidia" ];
-
-  hardware.nvidia = {
-    modesetting.enable = true;
-    open = true;
-    nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
-    powerManagement.enable = true;
-    powerManagement.finegrained = false;
-  };
-
-  boot.extraModprobeConfig = ''
-    options nvidia NVreg_PreserveVideoMemoryAllocations=1
-    options nvidia NVreg_TemporaryFilePath=/var/tmp
-  '';
-
-  # If resume instability persists, uncomment to test deep sleep instead of s2idle:
-  # boot.kernelParams = [ "mem_sleep_default=deep" ];
-
-  systemd.tmpfiles.rules = [
-    "d /var/tmp 1777 root root -"
-  ];
-
-  systemd.services.nvidia-suspend.enable = true;
-  systemd.services.nvidia-resume.enable = true;
-  systemd.services.nvidia-hibernate.enable = true;
 
   hardware.graphics = {
     enable = true;
