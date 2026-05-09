@@ -10,7 +10,7 @@
   dconf.settings = {
     "org/gnome/mutter" = {
       dynamic-workspaces = false;
-      experimental-features = [ "scale-monitor-framebuffer" "x11-randr-fractional-scaling" ];
+      experimental-features = [ "scale-monitor-framebuffer" ];
     };
     "org/gnome/desktop/wm/preferences" = {
       button-layout = "appmenu:minimize,maximize,close";

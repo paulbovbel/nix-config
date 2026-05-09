@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 
 {
   imports = [
@@ -8,6 +8,10 @@
   dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [
     "steam.desktop"
     "com.discordapp.Discord.desktop"
+  ];
+
+  home.packages = [
+    pkgs.gamescope
   ];
 
   xdg.configFile."autostart/steam.desktop".text = ''
