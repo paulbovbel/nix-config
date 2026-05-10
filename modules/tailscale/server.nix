@@ -13,8 +13,8 @@
   };
 
   services.tailscale.extraUpFlags = [
-    "--advertise-tags=tag:server",
-    "--advertise-exit-node",
+    "--advertise-tags=tag:server"
+    "--advertise-exit-node"
     "--reset"
   ];
 }

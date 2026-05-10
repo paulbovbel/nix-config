@@ -20,3 +20,14 @@ Deploy config changes to a remote NixOS host:
 ```bash
 nixos-rebuild switch --flake .#nixos --target-host pbovbel@nixos --use-remote-sudo
 ```
+
+Run CI-equivalent host build checks locally before commit/PR:
+
+```bash
+export NIX_SSHOPTS="-i $HOME/.ssh/id_rsa"
+hosts=$(nix eval --json .#nixosConfigurations --apply builtins.attrNames | jq -r '.[]')
+for host in $hosts; do
+  echo "Building host: $host"
+  nix build ".#nixosConfigurations.${host}.config.system.build.toplevel"
+done
+```
