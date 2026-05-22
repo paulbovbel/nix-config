@@ -1,10 +1,22 @@
-{ pkgs, unstablePkgs, vscodeMarketplaceExtensions, ... }:
+{ config, pkgs, unstablePkgs, vscodeMarketplaceExtensions, ... }:
 
 {
   imports = [
     ../common
-    ../tailscale/laptop.nix
   ];
+
+  age.secrets.tailscale-oauth-authkey = {
+    file = ../../secrets/laptop/tailscale-oauth-authkey.age;
+    owner = "root";
+    group = "root";
+    mode = "0400";
+  };
+
+  services.tailscale = {
+    enable = true;
+    authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
+    extraUpFlags = [ "--advertise-tags=tag:laptop" ];
+  };
 
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
@@ -101,6 +113,8 @@
     scrollback_lines -1
     wheel_scroll_multiplier 5
     touch_scroll_multiplier 5
+
+    confirm_os_window_close 0
   '';
 
   environment.systemPackages = [
@@ -140,5 +154,7 @@
 
   environment.sessionVariables = {
     TERMINAL = "kitty";
+    OPENAI_BASE_URL = "http://white-tower:11434/v1";
+    OPENAI_API_KEY = "dummy";
   };
 }

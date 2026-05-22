@@ -1,0 +1,40 @@
+name: Check NixOS Host Builds
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-config:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - white-tower
+          # - pbovbel-dell
+          # - media
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: Cache Nix store
+        uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-${{ matrix.host }}
+          restore-prefixes-first-match: |
+            nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-
+            nix-${{ runner.os }}-
+
+      - name: Validate flake and host dry-run build
+        run: |
+          set -euo pipefail
+          echo "Validating flake without building derivations"
+          nix flake check --no-build
+          echo "Dry-run evaluating host: ${{ matrix.host }}"
+          nix build --dry-run ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel"
