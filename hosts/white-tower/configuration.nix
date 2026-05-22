@@ -1,5 +1,10 @@
-{ config, lib, pkgs, unstablePkgs, ... }:
+{ config, lib, pkgs, unstablePkgs, masterPkgs, ... }:
 
+let
+  inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
+  disableWakeSourcesScript = ./disable-wake-sources.sh;
+  resumeSleepInhibitScript = ./resume-sleep-inhibit.sh;
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -39,31 +44,6 @@
     "d /var/tmp 1777 root root -"
   ];
 
-  # something on this host does spuriously wake it up from suspend, so disable all wake sources except power buttons for now
-  systemd.services.disable-wake-sources = {
-    description = "Disable wake sources except power buttons";
-    wantedBy = [ "multi-user.target" "sleep.target" ];
-    before = [ "sleep.target" ];
-    serviceConfig.Type = "oneshot";
-    script = ''
-      set -eu
-      if [ -r /proc/acpi/wakeup ]; then
-        while read -r dev _ state _; do
-          if [ "''${state}" = "*enabled" ] && [ "''${dev}" != "PWRB" ] && [ "''${dev}" != "PWRF" ]; then
-            echo "''${dev}" > /proc/acpi/wakeup
-          fi
-        done < /proc/acpi/wakeup
-      fi
-      for wakeup in /sys/class/wakeup/*/device/power/wakeup; do
-        [ -e "''${wakeup}" ] || continue
-        case "''${wakeup}" in
-          */PWRB/*|*/PWRF/*) ;;
-          *) echo disabled > "''${wakeup}" ;;
-        esac
-      done
-    '';
-  };
-
   systemd.services.nvidia-suspend.enable = true;
   systemd.services.nvidia-resume.enable = true;
   systemd.services.nvidia-hibernate.enable = true;
@@ -72,4 +52,51 @@
   networking.networkmanager.enable = true;
 
   system.stateVersion = "25.05";
-}
+
+  # Sleep hacks
+
+  systemd.services.disable-wake-sources = {
+    description = "Disable wake sources except power buttons";
+    wantedBy = [ "multi-user.target" "sleep.target" ];
+    before = [ "sleep.target" ];
+    serviceConfig.Type = "oneshot";
+    script = builtins.readFile disableWakeSourcesScript;
+    path = [ pkgs.coreutils pkgs.gnugrep pkgs.iproute2 pkgs.ethtool ];
+  };
+
+  # for some reason this host goes back to sleep immediately after resume
+  services.logind.extraConfig = ''
+    # HandleSuspendKey=ignore
+    # HandleHibernateKey=ignore
+    # HandleLidSwitch=ignore
+    # HandleLidSwitchExternalPower=ignore
+    IdleAction=ignore
+  '';
+
+  # more inhibit sleep after resume hacks
+  systemd.services.resume-sleep-inhibit = {
+    description = "Block suspend briefly after resume";
+    wantedBy = [ "post-resume.target" ];
+    after = [ "post-resume.target" ];
+    path = [ pkgs.systemd pkgs.coreutils ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${resumeSleepInhibitScript}";
+    };
+  };
+
+  # inhibit sleep while SSH sessions are active to prevent accidental disconnects of remote sessions
+  systemd.services.inhibit-sleep-while-ssh = {
+    description = "Inhibit sleep while SSH sessions are active";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    path = [ pkgs.systemd pkgs.bash pkgs.procps pkgs.coreutils pkgs.gnugrep ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = 5;
+      ExecStart = "${pkgs.bash}/bin/bash ${inhibitSleepWhileSshScript}";
+    };
+  };
+
+  }
