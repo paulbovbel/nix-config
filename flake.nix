@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-master.url = "github:NixOS/nixpkgs/master";
     agenix.url = "github:ryantm/agenix";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-flatpak.url = "github:gmodena/nix-flatpak";
@@ -13,7 +14,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nix-flatpak, agenix, nix-vscode-extensions, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-master, home-manager, nix-flatpak, agenix, nix-vscode-extensions, ... }:
     let
       lib = nixpkgs.lib;
 
@@ -23,31 +24,32 @@
         work = ./modules/work;
         gaming = ./modules/gaming;
         server = ./modules/server;
+        llama-cpp = ./modules/llama-cpp;
       };
 
       userProfiles = {
         pbovbel = {
           headless = {
-            module = ./users/pbovbel/home/profiles/headless.nix;
+            module = ./users/pbovbel/headless.nix;
             systemProfile = "server";
           };
           graphical = {
-            module = ./users/pbovbel/home/profiles/graphical.nix;
+            module = ./users/pbovbel/graphical.nix;
             systemProfile = "graphical";
           };
           work = {
-            module = ./users/pbovbel/home/profiles/work.nix;
+            module = ./users/pbovbel/work.nix;
             systemProfile = "work";
           };
           gaming = {
-            module = ./users/pbovbel/home/profiles/gaming.nix;
+            module = ./users/pbovbel/gaming.nix;
             systemProfile = "gaming";
           };
         };
 
         rbovbel = {
           graphical = {
-            module = ./users/rbovbel/home/profiles/graphical.nix;
+            module = ./users/rbovbel/graphical.nix;
             systemProfile = "graphical";
           };
         };
@@ -66,16 +68,23 @@
         lib.unique (map (profileName: profiles.${profileName}.systemProfile) user.profiles);
 
       mkHost = name: cfg:
+        let
+          unstablePkgs = import nixpkgs-unstable {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+            overlays = [ nix-vscode-extensions.overlays.default ];
+          };
+          masterPkgs = import nixpkgs-master {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+            overlays = [ nix-vscode-extensions.overlays.default ];
+          };
+        in
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = let
-            unstablePkgs = import nixpkgs-unstable {
-              system = "x86_64-linux";
-              config.allowUnfree = true;
-              overlays = [ nix-vscode-extensions.overlays.default ];
-            };
-          in {
+          specialArgs = {
             inherit unstablePkgs;
+            inherit masterPkgs;
             vscodeMarketplaceExtensions = unstablePkgs.vscode-marketplace;
           };
           modules =
@@ -87,6 +96,7 @@
               {
                 home-manager.useGlobalPkgs = true;
                 home-manager.useUserPackages = true;
+                home-manager.extraSpecialArgs = { inherit unstablePkgs; };
               }
             ]
             ++ map (profile: systemProfiles.${profile}) (lib.unique ((cfg.systemProfiles or [ ]) ++ lib.flatten (map userSystemProfileNames cfg.users)))
@@ -101,6 +111,7 @@
       hosts = {
         white-tower = {
           hostModule = ./hosts/white-tower/configuration.nix;
+          systemProfiles = [ "llama-cpp" ];
           users = [
             {
               name = "pbovbel";
@@ -115,28 +126,29 @@
           ];
         };
 
-        pbovbel-dell = {
-          hostModule = ./hosts/pbovbel-dell/configuration.nix;
-          users = [
-            {
-              name = "pbovbel";
-              systemModule = ./users/pbovbel.nix;
-              profiles = [ "work" ];
-            }
-          ];
-        };
+        # pbovbel-dell = {
+        #   hostModule = ./hosts/pbovbel-dell/configuration.nix;
+        #   users = [
+        #     {
+        #       name = "pbovbel";
+        #       systemModule = ./users/pbovbel.nix;
+        #       profiles = [ "work" ];
+        #     }
+        #   ];
+        # };
 
-        media = {
-          hostModule = ./hosts/media/configuration.nix;
-          systemProfiles = [ "server" ];
-          users = [
-            {
-              name = "pbovbel";
-              systemModule = ./users/pbovbel.nix;
-              profiles = [ "headless" ];
-            }
-          ];
-        };
+        # media = {
+        #   hostModule = ./hosts/media/configuration.nix;
+        #   systemProfiles = [ "server" ];
+        #   users = [
+        #     {
+        #       name = "pbovbel";
+        #       systemModule = ./users/pbovbel.nix;
+        #       profiles = [ "headless" ];
+        #     }
+        #   ];
+        # };
+
       };
     in {
       nixosConfigurations = nixpkgs.lib.mapAttrs mkHost hosts;

@@ -2,17 +2,12 @@
 
 {
   imports = [
+    ./hardware-configuration.nix
   ];
 
-  networking.hostName = "pbovbel-dell";
+  boot.loader.grub.devices = [ "nodev" ];
 
-  age.secrets.pbovbel-ssh-private-key = {
-    file = ../../secrets/shared/pbovbel-id_rsa.age;
-    path = "/home/pbovbel/.ssh/id_rsa";
-    owner = "pbovbel";
-    group = "users";
-    mode = "0400";
-  };
+  networking.hostName = "pbovbel-dell";
 
   system.stateVersion = "25.05";
 }
