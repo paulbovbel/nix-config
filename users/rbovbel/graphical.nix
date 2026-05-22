@@ -3,8 +3,8 @@
 {
   imports = [
     ./base.nix
-    ../../../common/home/profiles/graphical.nix
-    ../../../common/home/profiles/gravatar-avatar.nix
+    ../common/graphical.nix
+    ../common/gravatar.nix
   ];
 
   bovbel.gravatarAvatar = {

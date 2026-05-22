@@ -2,7 +2,7 @@
 
 {
   imports = [
-    ../../../common/home/profiles/base.nix
+    ../common/base.nix
   ];
 
   home.username = "rbovbel";

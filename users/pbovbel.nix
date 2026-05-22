@@ -1,6 +1,14 @@
 { pkgs, ... }:
 
 {
+  age.secrets.pbovbel-ssh-private-key = {
+    file = ../secrets/laptop/pbovbel-id_rsa.age;
+    path = "/home/pbovbel/.ssh/id_rsa";
+    owner = "pbovbel";
+    group = "users";
+    mode = "0400";
+  };
+
   users.users.pbovbel = {
     isNormalUser = true;
     description = "paul@bovbel.com";
