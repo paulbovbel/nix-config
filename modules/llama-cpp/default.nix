@@ -24,9 +24,9 @@ in
     wantedBy = [ "multi-user.target" ];
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
-    path = [ pkgs.systemd pkgs.bash pkgs.coreutils pkgs.gnugrep
-             (masterPkgs.llama-cpp.override { cudaSupport = true; })
-             pkgs.python3Packages.huggingface-hub pkgs.python3Packages.hf-xet ];
+    path = [ pkgs.systemd pkgs.bash pkgs.coreutils pkgs.gnugrep pkgs.sudo pkgs.glib
+              (masterPkgs.llama-cpp.override { cudaSupport = true; })
+              pkgs.python3Packages.huggingface-hub pkgs.python3Packages.hf-xet ];
     serviceConfig = {
       Type = "simple";
       Restart = "on-failure";
@@ -34,7 +34,7 @@ in
       User = "root";
       Group = "root";
       ExecStart = ''
-        ${pkgs.python3.withPackages (ps: [ ps.aiohttp ps.huggingface-hub ps.hf-xet ])}/bin/python ${llamaProxy}
+        ${pkgs.python3.withPackages (ps: [ ps.aiohttp ps.dbus-next ps.huggingface-hub ps.hf-xet ])}/bin/python ${llamaProxy}
       '';
       Environment = [
         "HF_HOME=/var/lib/llama-cpp/hf-cache"

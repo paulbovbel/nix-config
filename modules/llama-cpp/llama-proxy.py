@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import time
 from enum import StrEnum
@@ -9,6 +10,7 @@ from aiohttp import ClientSession, web
 LLAMA_HOST = "127.0.0.1"
 LLAMA_PORT = 18080
 INACTIVITY_SECONDS = 300
+LOGOUT_WARNING_SECONDS = 60
 MODEL_REPO = "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive"
 MODEL_FILENAME = "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"
 
@@ -21,6 +23,7 @@ SYSTEMD_INHIBIT_CMD = [
     "--mode",
     "block",
 ]
+
 
 
 class LlamaFlags:
@@ -78,6 +81,22 @@ class Stage(StrEnum):
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 
+async def _run_command(*cmd: str) -> tuple[int, str, str]:
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    try:
+        stdout, stderr = await proc.communicate()
+    except (asyncio.CancelledError, KeyboardInterrupt):
+        if proc.returncode is None:
+            proc.kill()
+            await proc.wait()
+        raise
+    return proc.returncode, stdout.decode().strip(), stderr.decode().strip()
+
+
 class StageTracker:
     def __init__(self) -> None:
         self.stage: Stage = Stage.STARTING
@@ -96,9 +115,15 @@ class StageTracker:
 
 
 class LlamaProcessManager:
-    def __init__(self, session: ClientSession, stage: StageTracker) -> None:
+    def __init__(
+        self,
+        session: ClientSession,
+        stage: StageTracker,
+        logout_manager: "SessionLogoutManager",
+    ) -> None:
         self.session = session
         self.stage = stage
+        self.logout_manager = logout_manager
         self.proc = None
         self.proc_lock = asyncio.Lock()
         self.starting = False
@@ -111,6 +136,7 @@ class LlamaProcessManager:
             if self.is_running():
                 return
             self.stage.set(Stage.STARTING)
+            await self.logout_manager.logout_graphical_sessions()
             self.starting = True
             self.proc = await asyncio.create_subprocess_exec(
                 *SYSTEMD_INHIBIT_CMD, *["llama-server"], *LlamaFlags.build()
@@ -145,6 +171,103 @@ class LlamaProcessManager:
             await self.proc.wait()
 
 
+class SessionLogoutManager:
+    def __init__(self, warning_seconds: int) -> None:
+        self.warning_seconds = warning_seconds
+
+    async def _send_logout_warning(self, user_name: str, uid: int) -> bool:
+        notify_cmd = [
+            "sudo",
+            "-n",
+            "-u",
+            user_name,
+            "env",
+            f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
+            "gdbus",
+            "call",
+            "--session",
+            "--dest",
+            "org.gnome.Shell",
+            "--object-path",
+            "/org/freedesktop/Notifications",
+            "--method",
+            "org.freedesktop.Notifications.Notify",
+            "logout-warning",
+            "0",
+            "dialog-warning",
+            "Logout pending",
+            f"You will be logged out in {self.warning_seconds} seconds.",
+            "[]",
+            "{}",
+            str(self.warning_seconds * 1000),
+        ]
+        code, out, err = await _run_command(*notify_cmd)
+        if code != 0:
+            logging.warning(
+                "failed to send logout warning to %s (uid=%s): %s %s",
+                user_name,
+                uid,
+                out,
+                err,
+            )
+            return False
+        return True
+
+    async def logout_graphical_sessions(self) -> None:
+        try:
+            graphical_sessions = await self._list_graphical_sessions()
+            warned_users: set[tuple[str, int]] = set()
+            users = {(user_name, uid) for _session_id, uid, user_name in graphical_sessions}
+
+            for user_name, uid in users:
+                if await self._send_logout_warning(user_name, uid):
+                    warned_users.add((user_name, uid))
+
+            if graphical_sessions:
+                if not warned_users:
+                    logging.warning("no logout warnings were delivered before terminating sessions")
+                await asyncio.sleep(self.warning_seconds)
+
+            for session_id, _uid, _user_name in graphical_sessions:
+                logging.info("terminating session %s", session_id)
+                code, _out, err = await _run_command("loginctl", "terminate-session", session_id)
+                if code != 0:
+                    logging.warning("failed to terminate session %s: %s", session_id, err)
+        except Exception as exc:
+            logging.warning("failed to terminate graphical sessions: %s", exc)
+
+    async def _list_graphical_sessions(self) -> list[tuple[str, int, str]]:
+        code, out, err = await _run_command("loginctl", "list-sessions", "--json=short")
+        if code != 0:
+            raise RuntimeError(f"failed to list sessions: {err or out}")
+
+        sessions: list[tuple[str, int, str]] = []
+        try:
+            raw_sessions = json.loads(out)
+        except json.JSONDecodeError:
+            raise RuntimeError(f"failed to parse sessions json: {out!r}")
+
+        for entry in raw_sessions:
+            session_id = entry.get("session")
+            uid_raw = entry.get("uid")
+            user_name = entry.get("user")
+            seat = entry.get("seat")
+            session_class = entry.get("class")
+            if not session_id or uid_raw is None or not user_name:
+                continue
+            if seat in {"", "n/a", "-"}:
+                continue
+            if session_class != "user":
+                continue
+            try:
+                uid = int(uid_raw)
+            except ValueError:
+                logging.info("failed to parse uid for session %s: %r", session_id, uid_raw)
+                continue
+            sessions.append((session_id, uid, user_name))
+        return sessions
+
+
 class LlamaProxy:
     def __init__(self) -> None:
         self.last_activity = 0.0
@@ -153,28 +276,16 @@ class LlamaProxy:
         self.reaper_task: asyncio.Task[None] | None = None
         self.model_ready = asyncio.Event()
         self.stage = StageTracker()
+        self.logout_manager = SessionLogoutManager(LOGOUT_WARNING_SECONDS)
 
     def set_stage(self, stage: Stage, details: str = "") -> None:
         self.stage.set(stage, details)
 
     async def ensure_model_present(self) -> None:
         self.set_stage(Stage.DOWNLOADING, f"{MODEL_REPO}/{MODEL_FILENAME}")
-        cmd = [
-            "hf",
-            "download",
-            MODEL_REPO,
-            MODEL_FILENAME,
-        ]
-        proc = await asyncio.create_subprocess_exec(*cmd)
-        try:
-            await proc.wait()
-        except (asyncio.CancelledError, KeyboardInterrupt):
-            if proc.returncode is None:
-                proc.kill()
-            raise
-
-        if proc.returncode != 0:
-            raise RuntimeError(f"model download failed with exit code {proc.returncode}")
+        code, out, err = await _run_command("hf", "download", MODEL_REPO, MODEL_FILENAME)
+        if code != 0:
+            raise RuntimeError(f"model download failed with exit code {code}: {err or out}")
 
     async def ensure_llama_running(self) -> None:
         await self.model_ready.wait()
@@ -238,42 +349,11 @@ class LlamaProxy:
                 logging.info("stopping llama-server after inactivity")
                 await self.llama_manager.stop()
 
-    async def logout_graphical_sessions(self) -> None:
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                "loginctl", "list-sessions", "--no-legend", "--no-pager",
-                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-            )
-            stdout, _ = await proc.communicate()
-            if proc.returncode != 0:
-                return
-            for line in stdout.decode().strip().split("\n"):
-                if not line.strip():
-                    continue
-                session_id = line.split()[0]
-                try:
-                    proc2 = await asyncio.create_subprocess_exec(
-                        "loginctl", "show-session", session_id, "-p", "Seat",
-                        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-                    )
-                    stdout2, _ = await proc2.communicate()
-                    if b"seat=" in stdout2 and b"seat=none" not in stdout2:
-                        logging.info("terminating session %s (seat: %s)", session_id, stdout2.decode().strip())
-                        proc3 = await asyncio.create_subprocess_exec(
-                            "loginctl", "terminate-session", session_id
-                        )
-                        await proc3.wait()
-                except (IndexError, FileNotFoundError):
-                    pass
-        except FileNotFoundError:
-            pass
-
     async def on_startup(self, _app: web.Application) -> None:
         self.set_stage(Stage.STARTING)
         self.session = ClientSession(timeout=None)
-        self.llama_manager = LlamaProcessManager(self.session, self.stage)
+        self.llama_manager = LlamaProcessManager(self.session, self.stage, self.logout_manager)
         await self.ensure_model_present()
-        await self.logout_graphical_sessions()
         self.model_ready.set()
         self.reaper_task = asyncio.create_task(self.idle_reaper())
         self.set_stage(Stage.READY)
