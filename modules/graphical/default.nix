@@ -1,4 +1,4 @@
-{ config, pkgs, unstablePkgs, vscodeMarketplaceExtensions, ... }:
+{ config, pkgs, unstablePkgs, ... }:
 
 {
   imports = [
@@ -80,10 +80,9 @@
   };
 
   services.xserver.enable = true;
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.displayManager.gdm.wayland = false;
-  services.displayManager.defaultSession = "gnome-xorg";
-  services.xserver.desktopManager.gnome.enable = true;
+  services.displayManager.gdm.enable = true;
+  services.desktopManager.gnome.enable = true;
+  services.displayManager.defaultSession = "gnome";
   services.gnome.gnome-remote-desktop.enable = true;
 
   services.xserver.xkb = {
@@ -123,9 +122,9 @@
     pkgs.gnomeExtensions.appindicator
     pkgs.yaru-theme
     pkgs.kitty
-    (unstablePkgs.vscode-with-extensions.override {
-      vscode = unstablePkgs.vscode;
-      vscodeExtensions = with vscodeMarketplaceExtensions; [
+    (pkgs.vscode-with-extensions.override {
+      vscode = pkgs.vscode;
+      vscodeExtensions = with unstablePkgs.vscode-marketplace; [
         github.codespaces
         github.copilot-chat
         github.vscode-github-actions

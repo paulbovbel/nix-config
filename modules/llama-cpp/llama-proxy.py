@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import sys
 import time
 from enum import StrEnum
 from typing import Self
@@ -10,8 +9,8 @@ from aiohttp import ClientSession, web
 LLAMA_HOST = "127.0.0.1"
 LLAMA_PORT = 18080
 INACTIVITY_SECONDS = 300
-MODEL_REPO = "bartowski/Qwen_Qwen3.6-35B-A3B-GGUF"
-MODEL_FILENAME = "Qwen_Qwen3.6-35B-A3B-Q4_K_M.gguf"
+MODEL_REPO = "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive"
+MODEL_FILENAME = "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"
 
 SYSTEMD_INHIBIT_CMD = [
     "systemd-inhibit",
@@ -161,9 +160,7 @@ class LlamaProxy:
     async def ensure_model_present(self) -> None:
         self.set_stage(Stage.DOWNLOADING, f"{MODEL_REPO}/{MODEL_FILENAME}")
         cmd = [
-            sys.executable,
-            "-m",
-            "huggingface_hub.commands.huggingface_cli",
+            "hf",
             "download",
             MODEL_REPO,
             MODEL_FILENAME,

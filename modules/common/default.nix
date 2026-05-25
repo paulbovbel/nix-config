@@ -1,4 +1,4 @@
-{ pkgs, unstablePkgs, ... }:
+{ config, pkgs, unstablePkgs, ... }:
 
 {
   boot.kernelParams = [
@@ -22,6 +22,38 @@
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nix.settings.trusted-users = [ "root" "pbovbel" ];
+  nix.settings.substituters = [
+    "https://cache.nixos.org"
+    "https://paulbovbel.cachix.org"
+  ];
+  nix.settings.trusted-public-keys = [
+    "cache.nixos.org-1:6NCHdD59X431o0gWypbOJTs4f2vT5M9T8qN9kYChdD4="
+    "paulbovbel.cachix.org-1:9WWi/8x8my7+Hs6/ZmuYCBU3guG1zw7da/4nkZ+vViQ="
+  ];
+  nix.settings.post-build-hook = pkgs.writeShellScript "cachix-push" ''
+    ${pkgs.cachix}/bin/cachix push paulbovbel "$OUT_PATHS" || true
+  '';
+
+  age.secrets.cachix-auth-token = {
+    file = ../../secrets/common/cachix-auth-token.age;
+    owner = "root";
+    group = "root";
+    mode = "0400";
+  };
+
+  systemd.services.cachix-auth = {
+    description = "Configure Cachix auth token";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "network-online.target" ];
+    after = [ "network-online.target" "agenix.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${pkgs.cachix}/bin/cachix authtoken "$(cat ${config.age.secrets.cachix-auth-token.path})"
+    '';
+  };
 
   time.timeZone = "America/Toronto";
   i18n.defaultLocale = "en_CA.UTF-8";
@@ -39,28 +71,14 @@
     X11Forwarding = false;
   };
 
-  users.users.deploy = {
-    isNormalUser = true;
-    description = "Deployment user";
-    extraGroups = [ "wheel" ];
-    openssh.authorizedKeys.keys = [
-      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC1WGjxe/6kJ2uHiI1R85VifWC2GeaEj98sAZIMLtFqgqY8zASg7in+We4oE/H1xBPf9AXHwM03rNTNQyVQ/w+YRacPAiRI8w6/tnx+ry/atxwZjFuGgYvzJockc1ar3zGSa3TWWUqe85TfwB6YjbQtSqqvGQ+BWI44+nsbKgGtFzyVyBBhdYmuBcVkNi9rCATRtto4rmBEs9RfHvWb+dLXMdUZbo4DsYZanMiucbWkrq4soHVZKJWGMqBmVRwVsO+pm9FyE3p1EaRh5afILCKi0X3X3jdJUrWIqqn7SiqaQCrx4uotpQef0S45eJhl2AqwpB66OnngMfhB4xaO+wgBEpjOheLLcfnFCH9WXEmD6r49om91K22+8j20Y93zNeDoYC6OYxe0flAzdsTbyfyx2lo2/TdNzYc5ruqgNbnhDnbeZJ2JLx3CbpixxGZJU9BhG2Pye+dpgnLTT48jEX5L/kWQMNkD50mpIEbFK8zLASH5g1q5bvw0NuTrpN8u2FqCmPEvpybFOTw1lV13I0l2fCdHSw3RNPA3QSP/GeGbOkx7yGWH2wJxJTGr1up2FBp7S6uCqU7MlVlrRbSzyKEmH5cTTFho+CnAhr1lQtlajCRTwm5UuoQYLFYkT/J+1lcXqU40H7jKYqRdwgVZ5CL6smJ/9IuZiJY2CA3rmcrPFQ== paul@bovbel.com"
-    ];
-  };
-
-  security.sudo.extraRules = [
-    {
-      users = [ "deploy" ];
-      commands = [
-        {
-          command = "ALL";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
-
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.overlays = [
+    (_: prev: {
+      openldap = prev.openldap.overrideAttrs {
+        doCheck = !prev.stdenv.hostPlatform.isi686;
+      };
+    })
+  ];
 
   environment.systemPackages = [
     pkgs.bat

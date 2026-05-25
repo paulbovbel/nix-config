@@ -3,7 +3,10 @@ let
   whiteTower = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH0NPbKSI7gT3SfT7UqWIbdm7nlipqL40oCtHy8TYi2t root@nixos";
 in
 {
-  "secrets/laptop/pbovbel-id_rsa.age".publicKeys = [ pbovbel whiteTower ];
+  "secrets/common/pbovbel-id_rsa.age".publicKeys = [ pbovbel whiteTower ];
   "secrets/laptop/tailscale-oauth-authkey.age".publicKeys = [ pbovbel whiteTower ];
   "secrets/server/tailscale-oauth-authkey.age".publicKeys = [ pbovbel whiteTower ];
+  "secrets/common/cachix-auth-token.age".publicKeys = [ pbovbel whiteTower ];
+  "secrets/common/pbovbel-password-hash.age".publicKeys = [ pbovbel whiteTower ];
+  "secrets/common/rbovbel-password-hash.age".publicKeys = [ pbovbel whiteTower ];
 }

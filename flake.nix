@@ -2,14 +2,14 @@
   description = "pbovbel NixOS configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:NixOS/nixpkgs/master";
     agenix.url = "github:ryantm/agenix";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.05";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -85,7 +85,6 @@
           specialArgs = {
             inherit unstablePkgs;
             inherit masterPkgs;
-            vscodeMarketplaceExtensions = unstablePkgs.vscode-marketplace;
           };
           modules =
             [

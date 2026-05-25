@@ -1,4 +1,4 @@
-{ config, lib, pkgs, unstablePkgs, masterPkgs, ... }:
+{ config, pkgs, ... }:
 
 let
   inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
@@ -15,14 +15,14 @@ in
 
   services.xserver.videoDrivers = [ "nvidia" ];
 
-  # boot.kernelPackages = unstablePkgs.linuxPackages_latest;
-  boot.kernelPackages = pkgs.linuxPackages_6_12;
+  # boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   hardware.nvidia = {
     modesetting.enable = true;
     open = true;
     nvidiaSettings = true;
-    # package = unstablePkgs.linuxPackages_latest.nvidiaPackages.latest;
+    # package = config.boot.kernelPackages.nvidiaPackages.latest;
     package = config.boot.kernelPackages.nvidiaPackages.beta;
     powerManagement.enable = true;
     powerManagement.finegrained = false;
@@ -51,7 +51,7 @@ in
   networking.hostName = "white-tower";
   networking.networkmanager.enable = true;
 
-  system.stateVersion = "25.05";
+  system.stateVersion = "26.05";
 
   # Sleep hacks
 
@@ -65,13 +65,9 @@ in
   };
 
   # for some reason this host goes back to sleep immediately after resume
-  services.logind.extraConfig = ''
-    # HandleSuspendKey=ignore
-    # HandleHibernateKey=ignore
-    # HandleLidSwitch=ignore
-    # HandleLidSwitchExternalPower=ignore
-    IdleAction=ignore
-  '';
+  services.logind.settings.Login = {
+    IdleAction = "ignore";
+  };
 
   # more inhibit sleep after resume hacks
   systemd.services.resume-sleep-inhibit = {

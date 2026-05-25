@@ -15,8 +15,8 @@ in
   networking.firewall.allowedTCPPorts = [ 11434 ];
 
   systemd.tmpfiles.rules = [
-    "d /var/lib/llama-cpp 0755 deploy users -"
-    "d /var/lib/llama-cpp/hf-cache 0755 deploy users -"
+    "d /var/lib/llama-cpp 0755 root root -"
+    "d /var/lib/llama-cpp/hf-cache 0755 root root -"
   ];
 
   systemd.services.llama-cpp-proxy = {

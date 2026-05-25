@@ -1,16 +1,21 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   age.secrets.pbovbel-ssh-private-key = {
-    file = ../secrets/laptop/pbovbel-id_rsa.age;
+    file = ../secrets/common/pbovbel-id_rsa.age;
     path = "/home/pbovbel/.ssh/id_rsa";
     owner = "pbovbel";
     group = "users";
     mode = "0400";
   };
 
+  age.secrets.pbovbel-password-hash = {
+    file = ../secrets/common/pbovbel-password-hash.age;
+  };
+
   users.users.pbovbel = {
     isNormalUser = true;
+    hashedPasswordFile = config.age.secrets.pbovbel-password-hash.path;
     description = "paul@bovbel.com";
     extraGroups = [ "networkmanager" "wheel" ];
     openssh.authorizedKeys.keys = [
