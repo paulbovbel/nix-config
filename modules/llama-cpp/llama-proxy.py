@@ -255,7 +255,10 @@ class SessionLogoutManager:
             session_class = entry.get("class")
             if not session_id or uid_raw is None or not user_name:
                 continue
-            if seat in {"", "n/a", "-"}:
+            if seat is None:
+                continue
+            seat_str = str(seat).strip().lower()
+            if not seat_str.startswith("seat"):
                 continue
             if session_class != "user":
                 continue
