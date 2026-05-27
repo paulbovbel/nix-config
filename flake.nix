@@ -9,7 +9,7 @@
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -17,6 +17,13 @@
   outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-master, home-manager, nix-flatpak, agenix, nix-vscode-extensions, ... }:
     let
       lib = nixpkgs.lib;
+      system = "x86_64-linux";
+      overlays = [ nix-vscode-extensions.overlays.default ];
+
+      mkPkgs = src: import src {
+        inherit system overlays;
+        config.allowUnfree = true;
+      };
 
       systemProfiles = {
         common = ./modules/common;
@@ -69,19 +76,22 @@
 
       mkHost = name: cfg:
         let
-          unstablePkgs = import nixpkgs-unstable {
-            system = "x86_64-linux";
-            config.allowUnfree = true;
-            overlays = [ nix-vscode-extensions.overlays.default ];
+          unstablePkgs = mkPkgs nixpkgs-unstable;
+          masterPkgs = mkPkgs nixpkgs-master;
+          hmModule = {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit unstablePkgs; };
           };
-          masterPkgs = import nixpkgs-master {
-            system = "x86_64-linux";
-            config.allowUnfree = true;
-            overlays = [ nix-vscode-extensions.overlays.default ];
-          };
+          baseModules = [
+            agenix.nixosModules.default
+            nix-flatpak.nixosModules.nix-flatpak
+            home-manager.nixosModules.home-manager
+            hmModule
+          ];
         in
-        nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
+        lib.nixosSystem {
+          inherit system;
           specialArgs = {
             inherit unstablePkgs;
             inherit masterPkgs;
@@ -107,21 +117,29 @@
             }) cfg.users;
         };
 
+      mkUser = { name, systemModule, profiles }: {
+        inherit name systemModule profiles;
+      };
+
+      mkHostDef = { hostModule, systemProfiles ? [ ], users }: {
+        inherit hostModule systemProfiles users;
+      };
+
       hosts = {
-        white-tower = {
+        white-tower = mkHostDef {
           hostModule = ./hosts/white-tower/configuration.nix;
           systemProfiles = [ "llama-cpp" ];
           users = [
-            {
+            (mkUser {
               name = "pbovbel";
               systemModule = ./users/pbovbel.nix;
               profiles = [ "gaming" ];
-            }
-            {
+            })
+            (mkUser {
               name = "rbovbel";
               systemModule = ./users/rbovbel.nix;
               profiles = [ "graphical" ];
-            }
+            })
           ];
         };
 
@@ -150,6 +168,6 @@
 
       };
     in {
-      nixosConfigurations = nixpkgs.lib.mapAttrs mkHost hosts;
+      nixosConfigurations = lib.mapAttrs mkHost hosts;
     };
 }
