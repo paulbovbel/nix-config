@@ -17,6 +17,7 @@
 
   home.packages = with pkgs; [
     unstablePkgs.opencode
+    nix-tree
     (pkgs.writeShellApplication {
       name = "llama-client";
       runtimeInputs = with pkgs; [
