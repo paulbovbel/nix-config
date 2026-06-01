@@ -1,6 +1,4 @@
-{ lib, ... }:
-
-{
+{lib, ...}: {
   imports = [
     ./graphical.nix
   ];
@@ -11,30 +9,32 @@
     "com.slack.Slack.desktop"
   ];
 
-  xdg.configFile."autostart/slack.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Version=1.0
-    Name=Slack
-    Exec=flatpak run com.slack.Slack
-    X-GNOME-Autostart-enabled=true
-  '';
+  xdg.configFile = {
+    "autostart/slack.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Version=1.0
+      Name=Slack
+      Exec=flatpak run com.slack.Slack
+      X-GNOME-Autostart-enabled=true
+    '';
 
-  xdg.configFile."autostart/zoom.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Version=1.0
-    Name=Zoom
-    Exec=flatpak run us.zoom.Zoom
-    X-GNOME-Autostart-enabled=true
-  '';
+    "autostart/zoom.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Version=1.0
+      Name=Zoom
+      Exec=flatpak run us.zoom.Zoom
+      X-GNOME-Autostart-enabled=true
+    '';
 
-  xdg.configFile."autostart/whatsapp.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Version=1.0
-    Name=ZapZap
-    Exec=flatpak run com.rtosta.zapzap
-    X-GNOME-Autostart-enabled=true
-  '';
+    "autostart/whatsapp.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Version=1.0
+      Name=ZapZap
+      Exec=flatpak run com.rtosta.zapzap
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
 }

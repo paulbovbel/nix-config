@@ -1,6 +1,9 @@
-{ config, pkgs, unstablePkgs, ... }:
-
 {
+  config,
+  pkgs,
+  unstablePkgs,
+  ...
+}: {
   boot.kernelParams = [
     # Disable most CPU vulnerability mitigations globally (kernel 5.2+).
     "mitigations=off"
@@ -20,23 +23,25 @@
     "mds=off"
   ];
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  nix.settings.trusted-users = [ "root" "pbovbel" ];
-  nix.settings.substituters = [
-    "https://cache.nixos.org"
-    "https://paulbovbel.cachix.org"
-    "https://nix-community.cachix.org"
-    "https://cuda-maintainers.cachix.org"
-  ];
-  nix.settings.trusted-public-keys = [
-    "cache.nixos.org-1:6NCHdD59X431o0gWypbOJTs4f2vT5M9T8qN9kYChdD4="
-    "paulbovbel.cachix.org-1:9WWi/8x8my7+Hs6/ZmuYCBU3guG1zw7da/4nkZ+vViQ="
-    "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-    "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
-  ];
-  nix.settings.post-build-hook = pkgs.writeShellScript "cachix-push" ''
-    ${pkgs.cachix}/bin/cachix push paulbovbel "$OUT_PATHS" || true
-  '';
+  nix.settings = {
+    experimental-features = ["nix-command" "flakes"];
+    trusted-users = ["root" "pbovbel"];
+    substituters = [
+      "https://cache.nixos.org"
+      "https://paulbovbel.cachix.org"
+      "https://nix-community.cachix.org"
+      "https://cuda-maintainers.cachix.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbOJTs4f2vT5M9T8qN9kYChdD4="
+      "paulbovbel.cachix.org-1:9WWi/8x8my7+Hs6/ZmuYCBU3guG1zw7da/4nkZ+vViQ="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
+    ];
+    post-build-hook = pkgs.writeShellScript "cachix-push" ''
+      ${pkgs.cachix}/bin/cachix push paulbovbel "$OUT_PATHS" || true
+    '';
+  };
 
   age.secrets.cachix-auth-token = {
     file = ../../secrets/common/cachix-auth-token.age;
@@ -47,9 +52,9 @@
 
   systemd.services.cachix-auth = {
     description = "Configure Cachix auth token";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "network-online.target" ];
-    after = [ "network-online.target" "agenix.service" ];
+    wantedBy = ["multi-user.target"];
+    wants = ["network-online.target"];
+    after = ["network-online.target" "agenix.service"];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -74,15 +79,28 @@
     KbdInteractiveAuthentication = false;
     X11Forwarding = false;
   };
+  services.openssh.hostKeys = [
+    { path = "/persist/etc/ssh/ssh_host_rsa_key"; type = "rsa"; bits = 4096; }
+    { path = "/persist/etc/ssh/ssh_host_ed25519_key"; type = "ed25519"; }
+  ];
+
+  users.mutableUsers = false;
+
+  # users.users.rescue = {
+  #   isNormalUser = true;
+  #   description = "Temporary rescue user";
+  #   extraGroups = ["wheel" "networkmanager"];
+  #   password = "test";
+  # };
+
+  # services.openssh.extraConfig = ''
+  #   Match User rescue
+  #     PasswordAuthentication yes
+  #     KbdInteractiveAuthentication yes
+  #     PermitEmptyPasswords yes
+  # '';
 
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.overlays = [
-    (_: prev: {
-      openldap = prev.openldap.overrideAttrs {
-        doCheck = !prev.stdenv.hostPlatform.isi686;
-      };
-    })
-  ];
 
   environment.systemPackages = [
     pkgs.bat
@@ -97,6 +115,7 @@
     pkgs.iotop
     pkgs.iperf3
     pkgs.jq
+    pkgs.just
     pkgs.kitty.terminfo
     pkgs.mtr
     pkgs.nettools
@@ -108,5 +127,21 @@
     pkgs.wget
     pkgs.yq-go
     unstablePkgs.opencode
+  ];
+
+  age.identityPaths = [
+    "/persist/etc/agenix/host.agekey"
+  ];
+
+  impermanenceRoot.persistDirectories = [
+    "/var/lib/cups"
+    "/var/lib/nixos"
+    "/var/lib/systemd"
+    "/var/lib/systemd/coredump"
+    "/var/log"
+  ];
+
+  impermanenceRoot.persistFiles = [
+    "/etc/machine-id"
   ];
 }

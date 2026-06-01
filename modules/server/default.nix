@@ -1,6 +1,4 @@
-{ config, ... }:
-
-{
+{config, ...}: {
   imports = [
     ../common
   ];
@@ -20,4 +18,8 @@
       "--advertise-exit-node"
     ];
   };
+
+  # impermanenceRoot.persistDirectories = [
+  #   "/var/lib/tailscale"
+  # ];
 }

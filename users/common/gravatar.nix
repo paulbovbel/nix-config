@@ -1,9 +1,11 @@
-{ config, lib, pkgs, ... }:
-
-let
-  cfg = config.bovbel.gravatarAvatar;
-in
 {
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  cfg = config.bovbel.gravatarAvatar;
+in {
   options.bovbel.gravatarAvatar = {
     enable = lib.mkEnableOption "deploy-time gravatar profile image";
     hash = lib.mkOption {
@@ -19,7 +21,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.activation.gravatarAvatar = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.gravatarAvatar = lib.hm.dag.entryAfter ["writeBoundary"] ''
       mkdir -p "${config.home.homeDirectory}/.local/share"
       ${pkgs.curl}/bin/curl -fsSL "https://www.gravatar.com/avatar/${cfg.hash}?s=2048&d=mp" -o "${config.home.homeDirectory}/.local/share/${cfg.fileName}"
       ln -sf "${config.home.homeDirectory}/.local/share/${cfg.fileName}" "${config.home.homeDirectory}/.face"
