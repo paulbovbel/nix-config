@@ -19,6 +19,7 @@
     tailscale = {
       enable = true;
       authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
+      authKeyParameters.ephemeral = false;
       extraSetFlags = ["--operator=pbovbel"];
       extraUpFlags = [
         "--advertise-tags=tag:laptop"
@@ -182,6 +183,6 @@
     "/var/lib/flatpak"
     "/var/lib/gdm"
     "/var/lib/NetworkManager"
-    # "/var/lib/tailscale"
+    "/var/lib/tailscale"
   ];
 }

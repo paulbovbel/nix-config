@@ -13,13 +13,14 @@
   services.tailscale = {
     enable = true;
     authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
+    authKeyParameters.ephemeral = false;
     extraUpFlags = [
       "--advertise-tags=tag:server"
       "--advertise-exit-node"
     ];
   };
 
-  # impermanenceRoot.persistDirectories = [
-  #   "/var/lib/tailscale"
-  # ];
+  impermanenceRoot.persistDirectories = [
+    "/var/lib/tailscale"
+  ];
 }
