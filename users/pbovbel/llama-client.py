@@ -1,13 +1,16 @@
 import argparse
 import asyncio
-import json
 import os
 import sys
 
 from aiohttp import ClientSession
 
-PROXY_STATUS_URL = os.environ.get("LLAMA_PROXY_STATUS_URL", "http://white-tower:11434/_status")
-PROXY_HEALTH_URL = os.environ.get("LLAMA_PROXY_HEALTH_URL", "http://white-tower:11434/health")
+PROXY_STATUS_URL = os.environ.get(
+    "LLAMA_PROXY_STATUS_URL", "http://white-tower:11434/_status"
+)
+PROXY_HEALTH_URL = os.environ.get(
+    "LLAMA_PROXY_HEALTH_URL", "http://white-tower:11434/health"
+)
 WAIT_TIMEOUT_SECONDS = float(os.environ.get("LLAMA_WAIT_TIMEOUT", "300"))
 WOL_SSH_HOST = os.environ.get("LLAMA_WOL_SSH_HOST", "root@unifi")
 WOL_SCRIPT = os.environ.get("LLAMA_WOL_SCRIPT", "./wol.sh")
@@ -56,10 +59,19 @@ async def wake_white_tower(verbose: bool) -> None:
     )
     stdout, stderr = await proc.communicate()
     if proc.returncode != 0:
-        msg = stderr.decode(errors="replace").strip() or stdout.decode(errors="replace").strip()
+        msg = (
+            stderr.decode(errors="replace").strip()
+            or stdout.decode(errors="replace").strip()
+        )
         raise RuntimeError(f"WoL command failed via {WOL_SSH_HOST}: {msg}")
     if verbose:
-        log_stage({"stage": "wake_sent", "details": f"wol sent to {WOL_MAC} via {WOL_SSH_HOST}"}, verbose)
+        log_stage(
+            {
+                "stage": "wake_sent",
+                "details": f"wol sent to {WOL_MAC} via {WOL_SSH_HOST}",
+            },
+            verbose,
+        )
 
 
 async def poll_until_ready(verbose: bool) -> None:
@@ -79,7 +91,9 @@ async def poll_until_ready(verbose: bool) -> None:
             await trigger_start(session)
             await asyncio.sleep(1)
 
-    raise TimeoutError(f"timed out waiting for llama proxy readiness after {WAIT_TIMEOUT_SECONDS}s")
+    raise TimeoutError(
+        f"timed out waiting for llama proxy readiness after {WAIT_TIMEOUT_SECONDS}s"
+    )
 
 
 async def run_opencode(args: list[str]) -> int:
@@ -95,9 +109,17 @@ async def main_async(opencode_args: list[str], verbose: bool) -> None:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Wait for llama proxy and launch opencode")
-    parser.add_argument("--quiet", action="store_true", help="suppress startup stage logging")
-    parser.add_argument("opencode_args", nargs=argparse.REMAINDER, help="arguments forwarded to opencode")
+    parser = argparse.ArgumentParser(
+        description="Wait for llama proxy and launch opencode"
+    )
+    parser.add_argument(
+        "--quiet", action="store_true", help="suppress startup stage logging"
+    )
+    parser.add_argument(
+        "opencode_args",
+        nargs=argparse.REMAINDER,
+        help="arguments forwarded to opencode",
+    )
     return parser.parse_args(argv)
 
 
