@@ -1,11 +1,9 @@
-{ config, ... }:
-
-{
+{...}: {
   imports = [
     ./hardware-configuration.nix
   ];
 
-  boot.loader.grub.devices = [ "nodev" ];
+  boot.loader.grub.devices = ["nodev"];
 
   networking.hostName = "pbovbel-dell";
 
