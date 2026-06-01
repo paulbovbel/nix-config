@@ -3,16 +3,15 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 default:
   @just --list
 
-all: nix-lint python-lint shell-lint nix-dry
+all: nix-lint python-lint shell-lint nix-check
 
 nix-lint:
   nix run nixpkgs#statix -- check .
   nix run nixpkgs#deadnix -- .
   nix run nixpkgs#alejandra -- .
 
-nix-dry:
-  nix flake check
-  nixos-rebuild dry-run --flake .#white-tower
+nix-check:
+  nix flake check -L
 
 python-lint:
   nix run nixpkgs#ruff -- check .
