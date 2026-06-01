@@ -3,11 +3,7 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 default:
   @just --list
 
-all:
-  just nix-lint
-  just python-lint
-  just shell-lint
-  just nix-dry
+all: nix-lint python-lint shell-lint nix-dry
 
 nix-lint:
   nix run nixpkgs#statix -- check .

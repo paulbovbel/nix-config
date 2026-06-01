@@ -54,4 +54,32 @@
       };
     };
   };
+
+  programs.git = {
+    enable = true;
+    settings = {
+      alias = {
+        cm = "!git add -u && git commit -m";
+        cmnew = "!git add -A && git commit -m";
+        fixup = "!git add -u && git commit --amend";
+        pushb = "push -u origin";
+      };
+      core.editor = "nano";
+      credential.helper = "cache";
+      fetch.prune = true;
+      pull.rebase = true;
+      push = {
+        default = "simple";
+        followTags = true;
+      };
+      url."git@github.com:".insteadOf = [
+        "https://github.com/"
+        "git://github.com/"
+      ];
+      user = {
+        email = "paul@bovbel.com";
+        name = "Paul Bovbel";
+      };
+    };
+  };
 }
