@@ -5,19 +5,6 @@
 }: let
   cfg = config.impermanenceRoot;
 in {
-  options.impermanenceRoot = {
-    diskId = lib.mkOption {
-      type = lib.types.str;
-      description = "Disk id path for main system disk (e.g. /dev/disk/by-id/...)";
-    };
-
-    swapSize = lib.mkOption {
-      type = lib.types.str;
-      default = "32G";
-      description = "Swap partition size for disko layout.";
-    };
-  };
-
   config.disko.devices = {
     disk.main = {
       type = "disk";
