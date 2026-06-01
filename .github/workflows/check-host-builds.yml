@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: check-host-builds-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -15,6 +19,25 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: Enable upstream binary caches
+        uses: DeterminateSystems/magic-nix-cache-action@v13
+
+      - name: Use nix-community Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: nix-community
+
+      - name: Use cuda-maintainers Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: cuda-maintainers
+
+      - name: Configure project Cachix cache
+        uses: cachix/cachix-action@v15
+        with:
+          name: paulbovbel
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Cache Nix store
         uses: nix-community/cache-nix-action@v6
@@ -46,6 +69,25 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v16
 
+      - name: Enable upstream binary caches
+        uses: DeterminateSystems/magic-nix-cache-action@v13
+
+      - name: Use nix-community Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: nix-community
+
+      - name: Use cuda-maintainers Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: cuda-maintainers
+
+      - name: Configure project Cachix cache
+        uses: cachix/cachix-action@v15
+        with:
+          name: paulbovbel
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
       - name: Cache Nix store
         uses: nix-community/cache-nix-action@v6
         with:
@@ -57,4 +99,4 @@ jobs:
       - name: Build host toplevel
         run: |
           set -euo pipefail
-          nix build ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel"
+          nix build ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel" --dry-run
