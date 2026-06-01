@@ -27,6 +27,7 @@ in {
             size = cfg.swapSize;
             content = {
               type = "swap";
+              # Ephemeral swap: fresh key every boot, no swap persistence.
               randomEncryption = true;
             };
           };
@@ -68,6 +69,7 @@ in {
           type = "zfs_fs";
           mountpoint = "/";
           options."com.sun:auto-snapshot" = "false";
+          # Create blank snapshot so that impermanence can rollback root on boot
           postCreateHook = ''
             if ! zfs list -t snapshot -H -o name ${cfg.rootDataset}@${cfg.blankSnapshot} >/dev/null 2>&1; then
               zfs snapshot ${cfg.rootDataset}@${cfg.blankSnapshot}

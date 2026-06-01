@@ -4,6 +4,7 @@
   unstablePkgs,
   ...
 }: {
+  # Performance-biased defaults: trades hardening for lower overhead.
   boot.kernelParams = [
     # Disable most CPU vulnerability mitigations globally (kernel 5.2+).
     "mitigations=off"

@@ -18,6 +18,7 @@ in {
     modesetting.enable = true;
     open = true;
     nvidiaSettings = true;
+    # Beta driver often carries suspend/resume and Wayland fixes sooner.
     package = config.boot.kernelPackages.nvidiaPackages.beta;
     powerManagement.enable = true;
     powerManagement.finegrained = false;
@@ -46,6 +47,7 @@ in {
 
       disable-wake-sources = {
         description = "Disable wake sources except power buttons";
+        # Apply at boot and before sleep to avoid flaky spontaneous wakeups.
         wantedBy = ["multi-user.target" "sleep.target"];
         before = ["sleep.target"];
         serviceConfig.Type = "oneshot";

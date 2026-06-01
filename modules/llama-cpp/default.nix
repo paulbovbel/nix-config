@@ -10,6 +10,7 @@ in {
   ];
 
   environment.systemPackages = [
+    # Pin llama.cpp to nixpkgs master for newer CUDA support than stable.
     (masterPkgs.llama-cpp.override {cudaSupport = true;})
   ];
 
@@ -21,7 +22,7 @@ in {
   ];
 
   systemd.services.llama-cpp-proxy = {
-    description = "On-demand llama.cpp reverse proxy";
+    description = "Proxy server is always-on, model server is started lazily on demand.";
     wantedBy = ["multi-user.target"];
     wants = ["network-online.target"];
     after = ["network-online.target"];

@@ -9,6 +9,7 @@ in {
     fileSystems.${cfg.persistPath}.neededForBoot = true;
 
     environment.persistence.${cfg.persistPath} = {
+      # Reduces mount clutter from persistence bind mounts.
       hideMounts = true;
       directories = lib.unique cfg.persistDirectories;
       files = lib.unique cfg.persistFiles;
@@ -18,6 +19,7 @@ in {
       description = "Rollback zroot/root to @blank snapshot";
       wantedBy = ["initrd.target"];
       after = ["zfs-import-zroot.service"];
+      # Must run before / is mounted so rollback applies to the live root.
       before = ["sysroot.mount"];
       unitConfig.DefaultDependencies = false;
       serviceConfig.Type = "oneshot";

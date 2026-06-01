@@ -100,6 +100,8 @@
         modules =
           [
             ./hosts/${name}/configuration.nix
+            # Declare custom option schemas globally so hosts can set options
+            # even when the corresponding profile module is not imported.
             ./modules/impermanence-root/options.nix
             agenix.nixosModules.default
             nix-flatpak.nixosModules.nix-flatpak
@@ -114,6 +116,8 @@
               };
             }
           ]
+          # System profiles are the union of host-selected profiles and
+          # transitive profiles implied by each user's chosen HM profile.
           ++ map (profile: systemProfiles.${profile}) (lib.unique ((cfg.systemProfiles or []) ++ lib.flatten (map userSystemProfileNames cfg.users)))
           ++ map (user: user.systemModule) cfg.users
           ++ map (user: {
