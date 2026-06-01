@@ -67,22 +67,31 @@
   time.timeZone = "America/Toronto";
   i18n.defaultLocale = "en_CA.UTF-8";
 
-  services.openssh.enable = true;
-  services.openssh.settings = {
-    Port = 22;
-    PermitRootLogin = "no";
-    PasswordAuthentication = false;
-    PermitEmptyPasswords = false;
-    StrictModes = true;
-    IgnoreRhosts = true;
-    UsePAM = true;
-    KbdInteractiveAuthentication = false;
-    X11Forwarding = false;
+  services.openssh = {
+    enable = true;
+    settings = {
+      Port = 22;
+      PermitRootLogin = "no";
+      PasswordAuthentication = false;
+      PermitEmptyPasswords = false;
+      StrictModes = true;
+      IgnoreRhosts = true;
+      UsePAM = true;
+      KbdInteractiveAuthentication = false;
+      X11Forwarding = false;
+    };
+    hostKeys = [
+      {
+        path = "/persist/etc/ssh/ssh_host_rsa_key";
+        type = "rsa";
+        bits = 4096;
+      }
+      {
+        path = "/persist/etc/ssh/ssh_host_ed25519_key";
+        type = "ed25519";
+      }
+    ];
   };
-  services.openssh.hostKeys = [
-    { path = "/persist/etc/ssh/ssh_host_rsa_key"; type = "rsa"; bits = 4096; }
-    { path = "/persist/etc/ssh/ssh_host_ed25519_key"; type = "ed25519"; }
-  ];
 
   users.mutableUsers = false;
 

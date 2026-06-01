@@ -3,7 +3,6 @@
   pkgs,
   ...
 }: {
-
   disko.devices.zpool.zroot.datasets."root/home/pbovbel" = {
     type = "zfs_fs";
     mountpoint = "/home/pbovbel";
@@ -37,5 +36,4 @@
     packages = with pkgs; [
     ];
   };
-
 }

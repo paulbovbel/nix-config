@@ -1,51 +1,41 @@
-# white-tower storage notes
+Clean-install bootstrap for white-tower:
 
-## LUKS TPM2 + fallback passphrase enrollment
+```bash
+# in live-installer environment
+sudo passwd # configure a root password
 
-This host is configured for hybrid LUKS unlock:
+# from deploy machine
+tmpdir="$(mktemp -d)"
+mkdir -p "$tmpdir/persist/etc/agenix"
+age-keygen -o "$tmpdir/persist/etc/agenix/host.agekey"
+chmod 755 -R "$tmpdir/persist"
+chmod 600 "$tmpdir/persist/etc/agenix/host.agekey"
 
-- TPM2 auto-unlock via `crypttab` option `tpm2-device=auto`
-- fallback interactive passphrase prompt if TPM2 unlock fails
+# update secrets.nix:
+sed -i "s|^  whiteTower = \".*\";|  whiteTower = \"$(age-keygen -y "$tmpdir/persist/etc/agenix/host.agekey")\";|" secrets.nix
+agenix -r
 
-The Nix config declares unlock behavior, but TPM2 enrollment itself is an on-disk LUKS metadata operation and must be done once on the host.
+nix run github:numtide/nixos-anywhere -- \
+  --flake .#white-tower \
+  --extra-files "$tmpdir" \
+  root@192.168.1.16
 
-### Identify and verify the LUKS device
+rm -rf "$tmpdir"
+```
+
+Post-install TPM2 auto-unlock enrollment for `white-tower` (run on the installed host after first boot):
 
 ```bash
 lsblk -f
 cryptsetup luksDump /dev/disk/by-partlabel/disk-main-encrypted
-```
-
-### Enroll TPM2 token (keeps existing passphrase)
-
-```bash
 sudo systemd-cryptenroll --tpm2-device=auto /dev/disk/by-partlabel/disk-main-encrypted
-```
-
-### Verify TPM2 token is present
-
-```bash
 sudo systemd-cryptenroll /dev/disk/by-partlabel/disk-main-encrypted
 ```
 
-Look for a `tpm2` token/keyslot in the output.
+This adds TPM2-based LUKS auto-unlock while keeping passphrase fallback. See host-specific notes in `hosts/white-tower/README.md`.
 
-### Remove TPM2 token (rollback)
-
-First list slots/tokens:
+Deploy config changes to a remote NixOS host:
 
 ```bash
-sudo systemd-cryptenroll /dev/disk/by-partlabel/disk-main-encrypted
+nixos-rebuild switch --flake .#white-tower --target-host deploy@white-tower  --build-host deploy@white-tower --use-remote-sudo
 ```
-
-Then wipe the TPM2 slot/token (replace `<slot>` with the TPM2 slot id):
-
-```bash
-sudo systemd-cryptenroll --wipe-slot=<slot> /dev/disk/by-partlabel/disk-main-encrypted
-```
-
-### Safety guidance
-
-- Confirm passphrase unlock works before and after enrollment.
-- Keep at least one known-good passphrase slot.
-- Make sure firmware/TPM state is stable before relying on TPM-only unlock.
