@@ -57,6 +57,7 @@
 
   programs.git = {
     enable = true;
+    lfs.enable = true;
     settings = {
       alias = {
         cm = "!git add -u && git commit -m";

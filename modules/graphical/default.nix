@@ -19,7 +19,11 @@
     tailscale = {
       enable = true;
       authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
-      extraUpFlags = ["--advertise-tags=tag:laptop"];
+      extraSetFlags = ["--operator=pbovbel"];
+      extraUpFlags = [
+        "--advertise-tags=tag:laptop"
+        "--hostname=${config.networking.hostName}"
+      ];
     };
 
     pulseaudio.enable = false;
@@ -76,6 +80,11 @@
 
   security.rtkit.enable = true;
 
+  hardware.logitech.wireless = {
+    enable = true;
+    enableGraphical = true;
+  };
+
   security.pam.loginLimits = [
     {
       domain = "@users";
@@ -128,8 +137,12 @@
       pkgs.gnomeExtensions.appindicator
       pkgs.yaru-theme
       pkgs.kitty
-      (pkgs.vscode-with-extensions.override {
-        inherit (pkgs) vscode;
+      pkgs.libva-utils
+      pkgs.remmina
+      pkgs.vlc
+      pkgs.wireshark
+      (unstablePkgs.vscode-with-extensions.override {
+        inherit (unstablePkgs) vscode;
         vscodeExtensions = with unstablePkgs.vscode-marketplace; [
           github.codespaces
           github.copilot-chat
@@ -167,6 +180,7 @@
   impermanenceRoot.persistDirectories = [
     "/var/lib/bluetooth"
     "/var/lib/flatpak"
+    "/var/lib/gdm"
     "/var/lib/NetworkManager"
     # "/var/lib/tailscale"
   ];

@@ -14,6 +14,9 @@
       button-layout = "appmenu:minimize,maximize,close";
       num-workspaces = lib.hm.gvariant.mkInt32 1;
     };
+    "org/gnome/nautilus/preferences" = {
+      default-folder-viewer = "list-view";
+    };
     "org/gnome/desktop/interface" = {
       gtk-theme = "Yaru";
       icon-theme = "Yaru";
@@ -69,6 +72,24 @@
       name = "Launch Kitty";
       command = "kitty";
       binding = "<Primary><Alt>t";
+    };
+  };
+
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "application/json" = "code.desktop";
+      "application/x-shellscript" = "code.desktop";
+      "text/html" = "org.mozilla.firefox.desktop";
+      "text/markdown" = "code.desktop";
+      "text/plain" = "code.desktop";
+      "text/x-c" = "code.desktop";
+      "text/x-c++" = "code.desktop";
+      "text/x-python" = "code.desktop";
+      "x-scheme-handler/about" = "org.mozilla.firefox.desktop";
+      "x-scheme-handler/http" = "org.mozilla.firefox.desktop";
+      "x-scheme-handler/https" = "org.mozilla.firefox.desktop";
+      "x-scheme-handler/unknown" = "org.mozilla.firefox.desktop";
     };
   };
 }
