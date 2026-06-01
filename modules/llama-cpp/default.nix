@@ -1,18 +1,19 @@
-{ config, lib, pkgs, masterPkgs, ... }:
-
-let
-  llamaProxy = ./llama-proxy.py;
-in
 {
+  pkgs,
+  masterPkgs,
+  ...
+}: let
+  llamaProxy = ./llama-proxy.py;
+in {
   imports = [
     ../common
   ];
 
   environment.systemPackages = [
-    (masterPkgs.llama-cpp.override { cudaSupport = true; })
+    (masterPkgs.llama-cpp.override {cudaSupport = true;})
   ];
 
-  networking.firewall.allowedTCPPorts = [ 11434 ];
+  networking.firewall.allowedTCPPorts = [11434];
 
   systemd.tmpfiles.rules = [
     "d /var/lib/llama-cpp 0755 root root -"
@@ -21,12 +22,20 @@ in
 
   systemd.services.llama-cpp-proxy = {
     description = "On-demand llama.cpp reverse proxy";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "network-online.target" ];
-    after = [ "network-online.target" ];
-    path = [ pkgs.systemd pkgs.bash pkgs.coreutils pkgs.gnugrep pkgs.sudo pkgs.glib
-              (masterPkgs.llama-cpp.override { cudaSupport = true; })
-              pkgs.python3Packages.huggingface-hub pkgs.python3Packages.hf-xet ];
+    wantedBy = ["multi-user.target"];
+    wants = ["network-online.target"];
+    after = ["network-online.target"];
+    path = [
+      pkgs.systemd
+      pkgs.bash
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.sudo
+      pkgs.glib
+      (masterPkgs.llama-cpp.override {cudaSupport = true;})
+      pkgs.python3Packages.huggingface-hub
+      pkgs.python3Packages.hf-xet
+    ];
     serviceConfig = {
       Type = "simple";
       Restart = "on-failure";
@@ -34,7 +43,7 @@ in
       User = "root";
       Group = "root";
       ExecStart = ''
-        ${pkgs.python3.withPackages (ps: [ ps.aiohttp ps.dbus-next ps.huggingface-hub ps.hf-xet ])}/bin/python ${llamaProxy}
+        ${pkgs.python3.withPackages (ps: [ps.aiohttp ps.dbus-next ps.huggingface-hub ps.hf-xet])}/bin/python ${llamaProxy}
       '';
       Environment = [
         "HF_HOME=/var/lib/llama-cpp/hf-cache"
@@ -44,4 +53,7 @@ in
       WorkingDirectory = "/var/lib/llama-cpp";
     };
   };
+  impermanenceRoot.persistDirectories = [
+    "/var/lib/llama-cpp"
+  ];
 }

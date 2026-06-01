@@ -26,19 +26,52 @@ User profiles are selected in `flake.nix` and map to modules under each user dir
 - `users/rbovbel/graphical.nix`
 - Shared user Home Manager modules are in `users/common/{base,graphical,gravatar}.nix`
 
+Install baseline config on a remote host booted into live-installer:
+
+```bash
+nix run github:numtide/nixos-anywhere -- --debug --flake .#white-tower root@192.168.1.16 ; echo $?
+```
+
+Clean-install bootstrap for login-critical password hash files:
+
+```bash
+# in live-installer environment
+sudo passwd # configure a root password
+
+# from deploy machine
+tmpdir="$(mktemp -d)"
+mkdir -p "$tmpdir/persist/etc/agenix"
+age-keygen -o "$tmpdir/persist/etc/agenix/host.agekey"
+chmod 755 -R "$tmpdir/persist"
+chmod 600 "$tmpdir/persist/etc/agenix/host.agekey"
+
+# update secrets.nix:
+sed -i "s|^  whiteTower = \".*\";|  whiteTower = \"$(age-keygen -y "$tmpdir/persist/etc/agenix/host.agekey")\";|" secrets.nix
+agenix -r
+
+nix run github:numtide/nixos-anywhere -- \
+  --flake .#white-tower \
+  --extra-files "$tmpdir" \
+  root@192.168.1.16
+
+rm -rf "$tmpdir"
+```
+
 Deploy config changes to a remote NixOS host:
 
 ```bash
 nixos-rebuild switch --flake .#white-tower --target-host deploy@white-tower  --build-host deploy@white-tower --use-remote-sudo
 ```
 
-Run CI-equivalent host build checks locally before commit/PR:
+Run the full local check suite before commit/PR:
 
 ```bash
-export NIX_SSHOPTS="-i $HOME/.ssh/id_rsa"
-hosts=$(nix eval --json .#nixosConfigurations --apply builtins.attrNames | jq -r '.[]')
-for host in $hosts; do
-  echo "Building host: $host"
-  nix build ".#nixosConfigurations.${host}.config.system.build.toplevel"
-done
+just all
 ```
+
+`just all` runs:
+
+- `just nix-lint` (`statix check .`, `deadnix .`, `alejandra .`)
+- `just python-lint` (`ruff check` and `ruff format --check`)
+- `just shell-lint` (`shellcheck` and `shfmt -d` for `*.sh` files)
+- `just nix-dry` (`nix flake check` and `nixos-rebuild dry-run --flake .#white-tower`)

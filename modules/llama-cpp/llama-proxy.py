@@ -25,7 +25,6 @@ SYSTEMD_INHIBIT_CMD = [
 ]
 
 
-
 class LlamaFlags:
     def __init__(self) -> None:
         self._flags: list[str] = []
@@ -217,7 +216,9 @@ class SessionLogoutManager:
         try:
             graphical_sessions = await self._list_graphical_sessions()
             warned_users: set[tuple[str, int]] = set()
-            users = {(user_name, uid) for _session_id, uid, user_name in graphical_sessions}
+            users = {
+                (user_name, uid) for _session_id, uid, user_name in graphical_sessions
+            }
 
             for user_name, uid in users:
                 if await self._send_logout_warning(user_name, uid):
@@ -225,14 +226,20 @@ class SessionLogoutManager:
 
             if graphical_sessions:
                 if not warned_users:
-                    logging.warning("no logout warnings were delivered before terminating sessions")
+                    logging.warning(
+                        "no logout warnings were delivered before terminating sessions"
+                    )
                 await asyncio.sleep(self.warning_seconds)
 
             for session_id, _uid, _user_name in graphical_sessions:
                 logging.info("terminating session %s", session_id)
-                code, _out, err = await _run_command("loginctl", "terminate-session", session_id)
+                code, _out, err = await _run_command(
+                    "loginctl", "terminate-session", session_id
+                )
                 if code != 0:
-                    logging.warning("failed to terminate session %s: %s", session_id, err)
+                    logging.warning(
+                        "failed to terminate session %s: %s", session_id, err
+                    )
         except Exception as exc:
             logging.warning("failed to terminate graphical sessions: %s", exc)
 
@@ -265,7 +272,9 @@ class SessionLogoutManager:
             try:
                 uid = int(uid_raw)
             except ValueError:
-                logging.info("failed to parse uid for session %s: %r", session_id, uid_raw)
+                logging.info(
+                    "failed to parse uid for session %s: %r", session_id, uid_raw
+                )
                 continue
             sessions.append((session_id, uid, user_name))
         return sessions
@@ -286,9 +295,13 @@ class LlamaProxy:
 
     async def ensure_model_present(self) -> None:
         self.set_stage(Stage.DOWNLOADING, f"{MODEL_REPO}/{MODEL_FILENAME}")
-        code, out, err = await _run_command("hf", "download", MODEL_REPO, MODEL_FILENAME)
+        code, out, err = await _run_command(
+            "hf", "download", MODEL_REPO, MODEL_FILENAME
+        )
         if code != 0:
-            raise RuntimeError(f"model download failed with exit code {code}: {err or out}")
+            raise RuntimeError(
+                f"model download failed with exit code {code}: {err or out}"
+            )
 
     async def ensure_llama_running(self) -> None:
         await self.model_ready.wait()
@@ -315,7 +328,9 @@ class LlamaProxy:
         headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
 
         assert self.session is not None
-        async with self.session.request(request.method, upstream, headers=headers, data=body) as resp:
+        async with self.session.request(
+            request.method, upstream, headers=headers, data=body
+        ) as resp:
             response = web.StreamResponse(status=resp.status, reason=resp.reason)
             for k, v in resp.headers.items():
                 if k.lower() in {
@@ -355,7 +370,9 @@ class LlamaProxy:
     async def on_startup(self, _app: web.Application) -> None:
         self.set_stage(Stage.STARTING)
         self.session = ClientSession(timeout=None)
-        self.llama_manager = LlamaProcessManager(self.session, self.stage, self.logout_manager)
+        self.llama_manager = LlamaProcessManager(
+            self.session, self.stage, self.logout_manager
+        )
         await self.ensure_model_present()
         self.model_ready.set()
         self.reaper_task = asyncio.create_task(self.idle_reaper())

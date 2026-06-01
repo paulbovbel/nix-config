@@ -1,11 +1,17 @@
 # Agent Workflow
 
-After every configuration change, always run both commands:
+After every configuration change, always run the full check suite:
 
-1. `nix flake check`
-2. `nixos-rebuild dry-run --flake .#white-tower`
+1. `just all`
 
 Treat this as a required verification step before considering the change done.
+
+For refactor-only changes where behavior is intended to remain identical, also verify the final system derivation is unchanged by comparing:
+
+- current: `readlink -f /run/current-system`
+- next: `nix build --no-link --print-out-paths .#nixosConfigurations.white-tower.config.system.build.toplevel`
+
+If the two store paths match, the refactor is a true no-op at the toplevel derivation.
 
 ## Repo Structure
 

@@ -31,10 +31,12 @@ jobs:
             nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-
             nix-${{ runner.os }}-
 
-      - name: Validate flake and host dry-run build
+      - name: Run full check suite
         run: |
           set -euo pipefail
-          echo "Validating flake without building derivations"
-          nix flake check --no-build
-          echo "Dry-run evaluating host: ${{ matrix.host }}"
-          nix build --dry-run ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel"
+          nix run nixpkgs#just -- all
+
+      - name: Build host toplevel
+        run: |
+          set -euo pipefail
+          nix build ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel"
