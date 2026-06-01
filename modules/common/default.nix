@@ -105,20 +105,6 @@
 
   users.mutableUsers = false;
 
-  # users.users.rescue = {
-  #   isNormalUser = true;
-  #   description = "Temporary rescue user";
-  #   extraGroups = ["wheel" "networkmanager"];
-  #   password = "test";
-  # };
-
-  # services.openssh.extraConfig = ''
-  #   Match User rescue
-  #     PasswordAuthentication yes
-  #     KbdInteractiveAuthentication yes
-  #     PermitEmptyPasswords yes
-  # '';
-
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = [

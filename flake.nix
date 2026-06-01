@@ -87,7 +87,7 @@
     in
       lib.unique (map (profileName: profiles.${profileName}.systemProfile) user.profiles);
 
-    mkHost = _: cfg: let
+    mkHost = name: cfg: let
       unstablePkgs = mkPkgs nixpkgs-unstable;
       masterPkgs = mkPkgs nixpkgs-master;
     in
@@ -99,7 +99,7 @@
         };
         modules =
           [
-            cfg.hostModule
+            ./hosts/${name}/configuration.nix
             ./modules/impermanence-root/options.nix
             agenix.nixosModules.default
             nix-flatpak.nixosModules.nix-flatpak
@@ -124,64 +124,7 @@
           cfg.users;
       };
 
-    mkUser = {
-      name,
-      systemModule,
-      profiles,
-    }: {
-      inherit name systemModule profiles;
-    };
-
-    mkHostDef = {
-      hostModule,
-      systemProfiles ? [],
-      users,
-    }: {
-      inherit hostModule systemProfiles users;
-    };
-
-    hosts = {
-      white-tower = mkHostDef {
-        hostModule = ./hosts/white-tower/configuration.nix;
-        # systemProfiles = ["impermanence-root" "llama-cpp" "nvidia"];
-        systemProfiles = ["impermanence-root" "nvidia"];
-        users = [
-          (mkUser {
-            name = "pbovbel";
-            systemModule = ./users/pbovbel.nix;
-            profiles = ["gaming"];
-          })
-          (mkUser {
-            name = "rbovbel";
-            systemModule = ./users/rbovbel.nix;
-            profiles = ["graphical"];
-          })
-        ];
-      };
-
-      # pbovbel-dell = {
-      #   hostModule = ./hosts/pbovbel-dell/configuration.nix;
-      #   users = [
-      #     {
-      #       name = "pbovbel";
-      #       systemModule = ./users/pbovbel.nix;
-      #       profiles = [ "work" ];
-      #     }
-      #   ];
-      # };
-
-      # media = {
-      #   hostModule = ./hosts/media/configuration.nix;
-      #   systemProfiles = [ "server" ];
-      #   users = [
-      #     {
-      #       name = "pbovbel";
-      #       systemModule = ./users/pbovbel.nix;
-      #       profiles = [ "headless" ];
-      #     }
-      #   ];
-      # };
-    };
+    hosts = import ./hosts;
   in {
     nixosConfigurations = lib.mapAttrs mkHost hosts;
   };
