@@ -11,7 +11,8 @@
   "chat.tools.terminal.autoApprove": {
     "just": true,
     "./venv/bin/python3": true,
-    "journalctl": true
+    "journalctl": true,
+    "nmcli": true
   },
   "editor.renderWhitespace": "selection",
   "editor.rulers": [

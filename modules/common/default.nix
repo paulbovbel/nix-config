@@ -132,6 +132,10 @@ in {
 
   users.mutableUsers = false;
 
+  security.sudo.extraConfig = ''
+    Defaults lecture=never
+  '';
+
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = [

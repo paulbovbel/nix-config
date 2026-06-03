@@ -107,29 +107,31 @@
   ];
 
   environment = {
-    etc."xdg/kitty/kitty.conf".text = ''
-      map ctrl+shift+e launch --location=vsplit --cwd=current
-      map ctrl+shift+o launch --location=hsplit --cwd=current
+    etc = {
+      "xdg/kitty/kitty.conf".text = ''
+        map ctrl+shift+e launch --location=vsplit --cwd=current
+        map ctrl+shift+o launch --location=hsplit --cwd=current
 
-      map alt+left neighboring_window left
-      map alt+right neighboring_window right
-      map alt+up neighboring_window up
-      map alt+down neighboring_window down
+        map alt+left neighboring_window left
+        map alt+right neighboring_window right
+        map alt+up neighboring_window up
+        map alt+down neighboring_window down
 
-      enabled_layouts splits
+        enabled_layouts splits
 
-      map ctrl+left resize_window narrower
-      map ctrl+right resize_window wider
-      map ctrl+up resize_window taller
-      map ctrl+down resize_window shorter
-      map ctrl+home resize_window reset
+        map ctrl+left resize_window narrower
+        map ctrl+right resize_window wider
+        map ctrl+up resize_window taller
+        map ctrl+down resize_window shorter
+        map ctrl+home resize_window reset
 
-      scrollback_lines -1
-      wheel_scroll_multiplier 5
-      touch_scroll_multiplier 5
+        scrollback_lines -1
+        wheel_scroll_multiplier 5
+        touch_scroll_multiplier 5
 
-      confirm_os_window_close 0
-    '';
+        confirm_os_window_close 0
+      '';
+    };
 
     systemPackages = [
       pkgs.gnome-tweaks

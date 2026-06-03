@@ -23,9 +23,11 @@ in {
   config = lib.mkIf cfg.enable {
     home.activation.gravatarAvatar = lib.hm.dag.entryAfter ["writeBoundary"] ''
       mkdir -p "${config.home.homeDirectory}/.local/share"
-      ${pkgs.curl}/bin/curl -fsSL "https://www.gravatar.com/avatar/${cfg.hash}?s=2048&d=mp" -o "${config.home.homeDirectory}/.local/share/${cfg.fileName}"
-      ln -sf "${config.home.homeDirectory}/.local/share/${cfg.fileName}" "${config.home.homeDirectory}/.face"
-      ln -sf "${config.home.homeDirectory}/.local/share/${cfg.fileName}" "${config.home.homeDirectory}/.face.icon"
+      if ${pkgs.curl}/bin/curl -fsSL "https://www.gravatar.com/avatar/${cfg.hash}?s=2048&d=mp" -o "${config.home.homeDirectory}/.local/share/${cfg.fileName}" \
+        || [ -e "${config.home.homeDirectory}/.local/share/${cfg.fileName}" ]; then
+        ln -sf "${config.home.homeDirectory}/.local/share/${cfg.fileName}" "${config.home.homeDirectory}/.face"
+        ln -sf "${config.home.homeDirectory}/.local/share/${cfg.fileName}" "${config.home.homeDirectory}/.face.icon"
+      fi
 
       # Update AccountsService so GNOME Settings/login screen pick it up.
       uid="$(${pkgs.coreutils}/bin/id -u)"
