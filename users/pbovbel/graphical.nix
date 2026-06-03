@@ -35,7 +35,9 @@
   };
 
   home.packages = [
+    pkgs.python3
     pkgs.tail-tray
+    pkgs.uv
     (masterPkgs.vscode-with-extensions.override {
       inherit (masterPkgs) vscode;
       vscodeExtensions = with masterPkgs.vscode-marketplace; [

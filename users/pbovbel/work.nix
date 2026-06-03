@@ -13,7 +13,16 @@
   ];
 
   systemd.user.services = let
-    mkDistrobox = name: image: {
+    mkDistroboxImage = name: tag: baseImage: rec {
+      image = "localhost/distrobox-${name}:${tag}";
+      inherit baseImage;
+    };
+
+    jammyImage = mkDistroboxImage "ubuntu-jammy" "22.04" "docker.io/library/ubuntu:22.04";
+    nobleImage = mkDistroboxImage "ubuntu-noble" "24.04" "docker.io/library/ubuntu:24.04";
+    resoluteImage = mkDistroboxImage "ubuntu-resolute" "26.04" "docker.io/library/ubuntu:26.04";
+
+    mkDistrobox = name: image: baseImage: {
       Unit = {
         Description = "Create ${name} Distrobox";
         After = ["podman.socket"];
@@ -22,6 +31,9 @@
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "create-${name}" ''
           set -euo pipefail
+          ${lib.optionalString (baseImage != null) ''
+            ${pkgs.podman}/bin/podman build --build-arg baseImage=${baseImage} --tag ${image} --file ${./distrobox.Containerfile} /tmp
+          ''}
           if ! ${pkgs.distrobox}/bin/distrobox list --no-color | ${pkgs.gnugrep}/bin/grep -qE '(^|[|[:space:]])${name}([|[:space:]]|$)'; then
             ${pkgs.distrobox}/bin/distrobox create --yes --name ${name} --image ${image}
           fi
@@ -30,9 +42,9 @@
       Install.WantedBy = ["default.target"];
     };
   in {
-    distrobox-ubuntu-jammy = mkDistrobox "ubuntu-jammy" "docker.io/library/ubuntu:22.04";
-    distrobox-ubuntu-noble = mkDistrobox "ubuntu-noble" "docker.io/library/ubuntu:24.04";
-    distrobox-ubuntu-resolute = mkDistrobox "ubuntu-resolute" "docker.io/library/ubuntu:26.04";
+    distrobox-ubuntu-jammy = mkDistrobox "ubuntu-jammy" jammyImage.image jammyImage.baseImage;
+    distrobox-ubuntu-noble = mkDistrobox "ubuntu-noble" nobleImage.image nobleImage.baseImage;
+    distrobox-ubuntu-resolute = mkDistrobox "ubuntu-resolute" resoluteImage.image resoluteImage.baseImage;
   };
 
   xdg.configFile = {
