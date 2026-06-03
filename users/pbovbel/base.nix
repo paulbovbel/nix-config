@@ -9,6 +9,11 @@
     # empty because the exec predicate performs the knock as its side effect.
     Match host white-tower exec "ssh root@unifi 'BROADCAST=192.168.1.255 PORT=9 ./wol.sh 18:c0:4d:a9:3c:ae'"
 
+    Host github.com
+      HostName ssh.github.com
+      Port 443
+      User git
+
     Host *
       IdentityFile ~/.ssh/id_rsa
       IdentitiesOnly yes
