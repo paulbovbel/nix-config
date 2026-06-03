@@ -42,9 +42,6 @@ in {
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
       ];
-      post-build-hook = pkgs.writeShellScript "cachix-push" ''
-        ${pkgs.cachix}/bin/cachix push paulbovbel "$OUT_PATHS" || true
-      '';
     };
 
     gc = {
@@ -63,30 +60,44 @@ in {
     mode = "0400";
   };
 
-  systemd.services.cachix-auth = {
-    description = "Configure Cachix auth token";
-    wantedBy = ["multi-user.target"];
-    wants = ["network-online.target"];
-    after = ["network-online.target" "agenix.service"];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+  systemd.services = {
+    cachix-auth = {
+      description = "Configure Cachix auth token";
+      wantedBy = ["multi-user.target"];
+      wants = ["network-online.target"];
+      after = ["network-online.target" "agenix.service"];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = ''
+        ${pkgs.cachix}/bin/cachix authtoken "$(cat ${config.age.secrets.cachix-auth-token.path})"
+      '';
     };
-    script = ''
-      ${pkgs.cachix}/bin/cachix authtoken "$(cat ${config.age.secrets.cachix-auth-token.path})"
-    '';
-  };
 
-  systemd.services.inhibit-sleep-while-ssh = {
-    description = "Inhibit sleep while SSH sessions are active";
-    wantedBy = ["multi-user.target"];
-    after = ["network.target"];
-    path = [pkgs.systemd pkgs.bash pkgs.procps pkgs.coreutils pkgs.gnugrep];
-    serviceConfig = {
-      Type = "simple";
-      Restart = "always";
-      RestartSec = 5;
-      ExecStart = "${pkgs.bash}/bin/bash ${inhibitSleepWhileSshScript}";
+    cachix-watch-store = {
+      description = "Watch Nix store and push paths to Cachix";
+      wantedBy = ["multi-user.target"];
+      wants = ["network-online.target"];
+      after = ["network-online.target" "cachix-auth.service"];
+      serviceConfig = {
+        ExecStart = "${pkgs.cachix}/bin/cachix watch-store paulbovbel";
+        Restart = "always";
+        RestartSec = 30;
+      };
+    };
+
+    inhibit-sleep-while-ssh = {
+      description = "Inhibit sleep while SSH sessions are active";
+      wantedBy = ["multi-user.target"];
+      after = ["network.target"];
+      path = [pkgs.systemd pkgs.bash pkgs.procps pkgs.coreutils pkgs.gnugrep];
+      serviceConfig = {
+        Type = "simple";
+        Restart = "always";
+        RestartSec = 5;
+        ExecStart = "${pkgs.bash}/bin/bash ${inhibitSleepWhileSshScript}";
+      };
     };
   };
 
