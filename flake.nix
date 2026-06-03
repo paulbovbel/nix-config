@@ -58,38 +58,12 @@
       work = ./modules/work;
       gaming = ./modules/gaming;
       nvidia = ./modules/nvidia;
-      server = ./modules/server;
+      headless = ./modules/headless;
       llama-cpp = ./modules/llama-cpp;
       impermanence-root = ./modules/impermanence-root;
     };
 
-    userProfiles = {
-      pbovbel = {
-        headless = {
-          module = ./users/pbovbel/headless.nix;
-          systemProfile = "server";
-        };
-        graphical = {
-          module = ./users/pbovbel/graphical.nix;
-          systemProfile = "graphical";
-        };
-        work = {
-          module = ./users/pbovbel/work.nix;
-          systemProfile = "work";
-        };
-        gaming = {
-          module = ./users/pbovbel/gaming.nix;
-          systemProfile = "gaming";
-        };
-      };
-
-      rbovbel = {
-        graphical = {
-          module = ./users/rbovbel/graphical.nix;
-          systemProfile = "graphical";
-        };
-      };
-    };
+    userProfiles = import ./users;
 
     userHomeModules = user: let
       profiles = userProfiles.${user.name};

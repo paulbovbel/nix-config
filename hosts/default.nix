@@ -27,7 +27,7 @@
   };
 
   # media = {
-  #   systemProfiles = ["server"];
+  #   systemProfiles = ["headless"];
   #   users = [
   #     {
   #       name = "pbovbel";

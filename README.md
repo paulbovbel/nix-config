@@ -37,7 +37,7 @@ just all
 - `graphical` includes `common`, for workstations
 - `work` includes `graphical`
 - `gaming` includes `graphical`
-- `server` includes `common`, for headless setups
+- `headless` includes `common`, for headless setups
 - `llama-cpp` includes `common`, runs an LLM server proxy
 
 ## Initial install
