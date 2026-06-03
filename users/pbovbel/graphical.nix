@@ -39,8 +39,26 @@ in {
     ../common/gravatar.nix
   ];
 
-  home.file.".local/share/backgrounds/pbovbel-tropicanair.jpg".source =
-    ../../assets/wallpapers/pbovbel-tropicanair.jpg;
+  # TODO(pbovbel) why not xdg.desktopEntries.code?
+  home.file = {
+    ".local/share/applications/code.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Visual Studio Code
+      GenericName=Text Editor
+      Comment=Code Editing. Redefined.
+      Exec=${vscodePackage}/bin/code --reuse-window %F
+      Icon=com.visualstudio.code
+      Terminal=false
+      StartupNotify=true
+      StartupWMClass=Code
+      Categories=Development;IDE;TextEditor;
+      MimeType=application/json;application/x-shellscript;text/markdown;text/plain;text/x-c;text/x-c++;text/x-python;
+    '';
+
+    ".local/share/backgrounds/pbovbel-tropicanair.jpg".source =
+      ../../assets/wallpapers/pbovbel-tropicanair.jpg;
+  };
   dconf.settings = {
     "org/gnome/desktop/background" = {
       picture-uri = "file://${config.home.homeDirectory}/.local/share/backgrounds/pbovbel-tropicanair.jpg";
@@ -63,6 +81,7 @@ in {
   };
 
   home.packages = [
+    pkgs.libsecret
     pkgs.nixfmt
     pkgs.python3
     pkgs.tail-tray
@@ -70,45 +89,14 @@ in {
     vscodePackage
   ];
 
-  xdg.desktopEntries.code = {
-    name = "Visual Studio Code";
-    genericName = "Text Editor";
-    exec = "${vscodePackage}/bin/code --reuse-window %F";
-    icon = "com.visualstudio.code";
-    categories = [
-      "Utility"
-      "TextEditor"
-      "Development"
-      "IDE"
-    ];
-    mimeType = [
-      "application/json"
-      "application/x-shellscript"
-      "text/markdown"
-      "text/plain"
-      "text/x-c"
-      "text/x-c++"
-      "text/x-python"
-    ];
-  };
-
   xdg.configFile = {
     "Code/User/settings.json".source = lib.mkForce (
       config.lib.file.mkOutOfStoreSymlink "/home/pbovbel/nix-config/users/pbovbel/vscode-settings.json"
     );
 
-    "Code/User/keybindings.json".text = builtins.toJSON [
-      {
-        key = "ctrl+alt+shift+up";
-        command = "editor.action.copyLinesUpAction";
-        when = "editorTextFocus && !editorReadonly";
-      }
-      {
-        key = "ctrl+alt+shift+down";
-        command = "editor.action.copyLinesDownAction";
-        when = "editorTextFocus && !editorReadonly";
-      }
-    ];
+    "Code/User/keybindings.json".source = lib.mkForce (
+      config.lib.file.mkOutOfStoreSymlink "/home/pbovbel/nix-config/users/pbovbel/vscode-keybindings.json"
+    );
 
     "autostart/solaar.desktop".text = ''
       [Desktop Entry]

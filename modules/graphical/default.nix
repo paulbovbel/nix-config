@@ -151,6 +151,7 @@
   };
 
   impermanenceRoot.persistDirectories = [
+    "/etc/NetworkManager/system-connections"
     "/var/lib/bluetooth"
     "/var/lib/flatpak"
     "/var/lib/gdm"

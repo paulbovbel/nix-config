@@ -3,21 +3,32 @@
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
   "files.eol": "\n",
-  "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit"
   },
   "diffEditor.ignoreTrimWhitespace": false,
   "git.autofetch": true,
   "chat.tools.terminal.autoApprove": {
-    "just": true
+    "just": true,
+    "./venv/bin/python3": true,
+    "journalctl": true
   },
   "editor.renderWhitespace": "selection",
   "editor.rulers": [
-    100
+    120
   ],
   "editor.tabSize": 2,
   "editor.detectIndentation": true,
   "workbench.startupEditor": "none",
-  "telemetry.telemetryLevel": "off"
+  "telemetry.telemetryLevel": "off",
+  "explorer.confirmDelete": false,
+  "yaml.disableSchemaDetection": [
+    "**/.github/workflows/*.yml",
+    "**/.github/workflows/*.yaml",
+    "**/.gitea/workflows/*.yml",
+    "**/.gitea/workflows/*.yaml",
+    "**/.forgejo/workflows/*.yml",
+    "**/.forgejo/workflows/*.yaml"
+  ],
+  "chat.viewSessions.orientation": "stacked"
 }
