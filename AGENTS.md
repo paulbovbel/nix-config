@@ -2,7 +2,7 @@
 
 After every configuration change, always run the full check suite:
 
-1. `just all`
+1. `just check`
 
 Treat this as a required verification step before considering the change done.
 

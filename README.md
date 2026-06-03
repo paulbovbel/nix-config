@@ -19,7 +19,7 @@ User profiles map to modules under each user directory:
 Run the full local check suite before commit/PR:
 
 ```bash
-just all
+just check
 ```
 
 ### Repository layout

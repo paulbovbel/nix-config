@@ -79,6 +79,9 @@
 
       "diffEditor.ignoreTrimWhitespace" = false;
       "git.autofetch" = true;
+      "chat.tools.terminal.autoApprove" = {
+        just = true;
+      };
 
       "editor.renderWhitespace" = "selection";
       "editor.rulers" = [100];

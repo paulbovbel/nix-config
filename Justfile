@@ -3,7 +3,20 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 default:
   @just --list
 
-all: nix-lint python-lint shell-lint nix-check
+check: nix-lint python-lint shell-lint nix-check
+
+dry-run host=`hostname`:
+  nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel" --dry-run
+
+switch host=`hostname`:
+  flake_path='{{ justfile_directory() }}'
+  configured_host="$$(nix eval --raw "$${flake_path}#nixosConfigurations.{{ host }}.config.networking.hostName")"
+  test "$${configured_host}" = '{{ host }}'
+  if [ '{{ host }}' = "$$(hostname)" ]; then
+  sudo nixos-rebuild switch --flake "$${flake_path}#{{ host }}" -L
+  else
+  nixos-rebuild switch --flake "$${flake_path}#{{ host }}" --target-host '{{ host }}' --build-host '{{ host }}' --sudo --ask-sudo-password -L
+  fi
 
 nix-lint:
   nix run nixpkgs#statix -- check .

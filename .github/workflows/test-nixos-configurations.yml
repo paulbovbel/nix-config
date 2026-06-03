@@ -1,4 +1,4 @@
-name: Check NixOS Host Builds
+name: Test NixOs Configurations
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - main
 
 concurrency:
-  group: check-host-builds-${{ github.workflow }}-${{ github.ref }}
+  group: test-nixos-configurations-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -47,10 +47,10 @@ jobs:
             nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-
             nix-${{ runner.os }}-
 
-      - name: Run full check suite
+      - name: Run check suite
         run: |
           set -euo pipefail
-          nix run nixpkgs#just -- all
+          nix run nixpkgs#just -- check
 
   build-hosts:
     runs-on: ubuntu-latest
@@ -60,7 +60,7 @@ jobs:
       matrix:
         host:
           - white-tower
-          # - pbovbel-dell
+          - pbovbel-dell
           # - media
     steps:
       - name: Checkout repository
@@ -96,7 +96,7 @@ jobs:
             nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-
             nix-${{ runner.os }}-
 
-      - name: Build host toplevel
+      - name: Dry-run host toplevel build
         run: |
           set -euo pipefail
-          nix build ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel" --dry-run
+          nix run nixpkgs#just -- dry-run "${{ matrix.host }}"
