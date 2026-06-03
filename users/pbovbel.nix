@@ -18,7 +18,6 @@
 
   systemd.tmpfiles.rules = [
     "d /home/pbovbel/.ssh 0700 pbovbel users - -"
-    "f /home/pbovbel/.ssh/id_rsa 0400 pbovbel users - -"
   ];
 
   age.secrets.pbovbel-password-hash = {
