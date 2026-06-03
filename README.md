@@ -50,8 +50,9 @@ sudo passwd # configure a root password
 
 # from deploy machine
 host_name="<host>"
-host_key_name="<host_key_attr>"
 target_host="root@<host-ip-or-dns>"
+
+host_key_name="${host_name//-/_}"
 tmpdir="$(mktemp -d)"
 mkdir -p "$tmpdir/persist/etc/agenix"
 age-keygen -o "$tmpdir/persist/etc/agenix/host.agekey"
@@ -85,5 +86,5 @@ Deploy config changes to a remote host:
 
 ```bash
 host_name="<host>"
-nixos-rebuild switch --flake .#"$host_name" --target-host deploy@"$host_name" --build-host deploy@"$host_name" --use-remote-sudo
+nixos-rebuild switch --flake .#"$host_name" --target-host "$host_name" --build-host "$host_name" --sudo --use-remote-sudo
 ```

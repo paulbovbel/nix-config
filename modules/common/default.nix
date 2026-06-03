@@ -1,9 +1,12 @@
 {
+  agenix,
   config,
   pkgs,
   unstablePkgs,
   ...
-}: {
+}: let
+  inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
+in {
   # Performance-biased defaults: trades hardening for lower overhead.
   boot.kernelParams = [
     # Disable most CPU vulnerability mitigations globally (kernel 5.2+).
@@ -75,6 +78,19 @@
     '';
   };
 
+  systemd.services.inhibit-sleep-while-ssh = {
+    description = "Inhibit sleep while SSH sessions are active";
+    wantedBy = ["multi-user.target"];
+    after = ["network.target"];
+    path = [pkgs.systemd pkgs.bash pkgs.procps pkgs.coreutils pkgs.gnugrep];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = 5;
+      ExecStart = "${pkgs.bash}/bin/bash ${inhibitSleepWhileSshScript}";
+    };
+  };
+
   time.timeZone = "America/Toronto";
   i18n.defaultLocale = "en_CA.UTF-8";
 
@@ -109,6 +125,8 @@
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = [
+    pkgs.age
+    agenix.packages.${pkgs.system}.default
     pkgs.bat
     pkgs.bind
     pkgs.curl

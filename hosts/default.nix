@@ -15,15 +15,16 @@
     ];
   };
 
-  # pbovbel-dell = {
-  #   users = [
-  #     {
-  #       name = "pbovbel";
-  #       systemModule = ../users/pbovbel.nix;
-  #       profiles = ["work"];
-  #     }
-  #   ];
-  # };
+  pbovbel-dell = {
+    systemProfiles = ["impermanence-root" "nvidia"];
+    users = [
+      {
+        name = "pbovbel";
+        systemModule = ../users/pbovbel.nix;
+        profiles = ["work"];
+      }
+    ];
+  };
 
   # media = {
   #   systemProfiles = ["server"];

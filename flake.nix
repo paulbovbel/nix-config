@@ -94,6 +94,7 @@
       lib.nixosSystem {
         inherit system;
         specialArgs = {
+          inherit agenix;
           inherit unstablePkgs;
           inherit masterPkgs;
         };
@@ -103,6 +104,7 @@
             # Declare custom option schemas globally so hosts can set options
             # even when the corresponding profile module is not imported.
             ./modules/impermanence-root/options.nix
+            ./modules/nvidia/options.nix
             agenix.nixosModules.default
             nix-flatpak.nixosModules.nix-flatpak
             disko.nixosModules.disko

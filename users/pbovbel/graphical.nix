@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }: {
@@ -21,6 +22,9 @@
       sleep-inactive-ac-timeout = 900;
       sleep-inactive-battery-timeout = 900;
     };
+    "org/gnome/shell".favorite-apps = lib.mkAfter [
+      "code.desktop"
+    ];
   };
 
   bovbel.gravatarAvatar = {
