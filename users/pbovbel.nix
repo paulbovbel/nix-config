@@ -14,6 +14,7 @@
     owner = "pbovbel";
     group = "users";
     mode = "0400";
+    symlink = false;
   };
 
   systemd.tmpfiles.rules = [

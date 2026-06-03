@@ -4,7 +4,35 @@
   pkgs,
   masterPkgs,
   ...
-}: {
+}: let
+  vscodePackage = masterPkgs.vscode-with-extensions.override {
+    inherit (masterPkgs) vscode;
+    vscodeExtensions = with masterPkgs.vscode-marketplace; [
+      github.codespaces
+      github.copilot-chat
+      github.vscode-github-actions
+      github.vscode-pull-request-github
+      jnoortheen.nix-ide
+      kevinrose.vsc-python-indent
+      ms-azuretools.vscode-containers
+      ms-python.black-formatter
+      ms-python.debugpy
+      ms-python.python
+      ms-python.vscode-pylance
+      ms-python.vscode-python-envs
+      ms-vscode-remote.remote-containers
+      ms-vscode.cmake-tools
+      ms-vscode.cpp-devtools
+      ms-vscode.cpptools
+      ms-vscode.cpptools-extension-pack
+      ms-vscode.cpptools-themes
+      redhat.vscode-yaml
+      samuelcolvin.jinjahtml
+      tomoki1207.pdf
+      twxs.cmake
+    ];
+  };
+in {
   imports = [
     ./base.nix
     ../common/graphical.nix
@@ -35,64 +63,39 @@
   };
 
   home.packages = [
+    pkgs.nixfmt
     pkgs.python3
     pkgs.tail-tray
     pkgs.uv
-    (masterPkgs.vscode-with-extensions.override {
-      inherit (masterPkgs) vscode;
-      vscodeExtensions = with masterPkgs.vscode-marketplace; [
-        github.codespaces
-        github.copilot-chat
-        github.vscode-github-actions
-        github.vscode-pull-request-github
-        jnoortheen.nix-ide
-        kevinrose.vsc-python-indent
-        ms-azuretools.vscode-containers
-        ms-python.black-formatter
-        ms-python.debugpy
-        ms-python.python
-        ms-python.vscode-pylance
-        ms-python.vscode-python-envs
-        ms-vscode-remote.remote-containers
-        ms-vscode.cmake-tools
-        ms-vscode.cpp-devtools
-        ms-vscode.cpptools
-        ms-vscode.cpptools-extension-pack
-        ms-vscode.cpptools-themes
-        redhat.vscode-yaml
-        samuelcolvin.jinjahtml
-        tomoki1207.pdf
-        twxs.cmake
-      ];
-    })
+    vscodePackage
   ];
 
+  xdg.desktopEntries.code = {
+    name = "Visual Studio Code";
+    genericName = "Text Editor";
+    exec = "${vscodePackage}/bin/code --reuse-window %F";
+    icon = "com.visualstudio.code";
+    categories = [
+      "Utility"
+      "TextEditor"
+      "Development"
+      "IDE"
+    ];
+    mimeType = [
+      "application/json"
+      "application/x-shellscript"
+      "text/markdown"
+      "text/plain"
+      "text/x-c"
+      "text/x-c++"
+      "text/x-python"
+    ];
+  };
+
   xdg.configFile = {
-    "Code/User/settings.json".text = builtins.toJSON {
-      "files.trimTrailingWhitespace" = true;
-      "files.insertFinalNewline" = true;
-      "files.trimFinalNewlines" = true;
-      "files.eol" = "\n";
-
-      "editor.formatOnSave" = true;
-      "editor.codeActionsOnSave" = {
-        "source.fixAll" = "explicit";
-      };
-
-      "diffEditor.ignoreTrimWhitespace" = false;
-      "git.autofetch" = true;
-      "chat.tools.terminal.autoApprove" = {
-        just = true;
-      };
-
-      "editor.renderWhitespace" = "selection";
-      "editor.rulers" = [100];
-      "editor.tabSize" = 2;
-      "editor.detectIndentation" = true;
-
-      "workbench.startupEditor" = "none";
-      "telemetry.telemetryLevel" = "off";
-    };
+    "Code/User/settings.json".source = lib.mkForce (
+      config.lib.file.mkOutOfStoreSymlink "/home/pbovbel/nix-config/users/pbovbel/vscode-settings.json"
+    );
 
     "Code/User/keybindings.json".text = builtins.toJSON [
       {

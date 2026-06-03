@@ -1,0 +1,23 @@
+{
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.eol": "\n",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "diffEditor.ignoreTrimWhitespace": false,
+  "git.autofetch": true,
+  "chat.tools.terminal.autoApprove": {
+    "just": true
+  },
+  "editor.renderWhitespace": "selection",
+  "editor.rulers": [
+    100
+  ],
+  "editor.tabSize": 2,
+  "editor.detectIndentation": true,
+  "workbench.startupEditor": "none",
+  "telemetry.telemetryLevel": "off"
+}
