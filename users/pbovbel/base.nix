@@ -1,6 +1,6 @@
 {
   pkgs,
-  unstablePkgs,
+  masterPkgs,
   ...
 }: {
   imports = [
@@ -20,7 +20,7 @@
   };
 
   home.packages = with pkgs; [
-    unstablePkgs.opencode
+    masterPkgs.opencode
     nix-tree
     (pkgs.writeShellApplication {
       name = "llama-client";
@@ -33,7 +33,7 @@
     })
   ];
 
-  home.file.".config/opencode/opencode.json".source = (pkgs.formats.json {}).generate "opencode-config" {
+  xdg.configFile."opencode/opencode.json".source = (pkgs.formats.json {}).generate "opencode-config" {
     "$schema" = "https://opencode.ai/config.json";
     model = "llama.cpp/qwen3.6";
     provider = {

@@ -1,7 +1,6 @@
 {
   config,
   pkgs,
-  unstablePkgs,
   ...
 }: {
   imports = [
@@ -142,33 +141,6 @@
       pkgs.remmina
       pkgs.vlc
       pkgs.wireshark
-      (unstablePkgs.vscode-with-extensions.override {
-        inherit (unstablePkgs) vscode;
-        vscodeExtensions = with unstablePkgs.vscode-marketplace; [
-          github.codespaces
-          github.copilot-chat
-          github.vscode-github-actions
-          github.vscode-pull-request-github
-          jnoortheen.nix-ide
-          kevinrose.vsc-python-indent
-          ms-azuretools.vscode-containers
-          ms-python.black-formatter
-          ms-python.debugpy
-          ms-python.python
-          ms-python.vscode-pylance
-          ms-python.vscode-python-envs
-          ms-vscode-remote.remote-containers
-          ms-vscode.cmake-tools
-          ms-vscode.cpp-devtools
-          ms-vscode.cpptools
-          ms-vscode.cpptools-extension-pack
-          ms-vscode.cpptools-themes
-          redhat.vscode-yaml
-          samuelcolvin.jinjahtml
-          tomoki1207.pdf
-          twxs.cmake
-        ];
-      })
     ];
 
     sessionVariables = {

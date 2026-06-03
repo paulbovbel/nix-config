@@ -86,5 +86,5 @@ Deploy config changes to a remote host:
 
 ```bash
 host_name="<host>"
-nixos-rebuild switch --flake .#"$host_name" --target-host "$host_name" --build-host "$host_name" --sudo --use-remote-sudo
+nixos-rebuild switch --flake .#"$host_name" --target-host "$host_name" --build-host "$host_name" --sudo --ask-sudo-password
 ```

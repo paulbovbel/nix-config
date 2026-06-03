@@ -2,7 +2,6 @@
   agenix,
   config,
   pkgs,
-  unstablePkgs,
   ...
 }: let
   inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
@@ -150,7 +149,6 @@ in {
     pkgs.tmux
     pkgs.wget
     pkgs.yq-go
-    unstablePkgs.opencode
   ];
 
   age.identityPaths = [

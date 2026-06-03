@@ -5,11 +5,25 @@
     nixpkgs.url = "github:NixOS/nixpkgs/release-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:NixOS/nixpkgs/master";
-    agenix.url = "github:ryantm/agenix";
-    nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
+    nix-vscode-extensions = {
+      url = "github:nix-community/nix-vscode-extensions";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     nix-flatpak.url = "github:gmodena/nix-flatpak";
-    disko.url = "github:nix-community/disko";
-    impermanence.url = "github:nix-community/impermanence";
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    impermanence = {
+      url = "github:nix-community/impermanence";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -94,9 +108,7 @@
       lib.nixosSystem {
         inherit system;
         specialArgs = {
-          inherit agenix;
-          inherit unstablePkgs;
-          inherit masterPkgs;
+          inherit agenix unstablePkgs masterPkgs;
         };
         modules =
           [
@@ -114,7 +126,10 @@
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
-                extraSpecialArgs = {inherit unstablePkgs;};
+                extraSpecialArgs = {
+                  inherit unstablePkgs;
+                  inherit masterPkgs;
+                };
               };
             }
           ]

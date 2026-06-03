@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  masterPkgs,
   ...
 }: {
   imports = [
@@ -35,9 +36,72 @@
 
   home.packages = [
     pkgs.tail-tray
+    (masterPkgs.vscode-with-extensions.override {
+      inherit (masterPkgs) vscode;
+      vscodeExtensions = with masterPkgs.vscode-marketplace; [
+        github.codespaces
+        github.copilot-chat
+        github.vscode-github-actions
+        github.vscode-pull-request-github
+        jnoortheen.nix-ide
+        kevinrose.vsc-python-indent
+        ms-azuretools.vscode-containers
+        ms-python.black-formatter
+        ms-python.debugpy
+        ms-python.python
+        ms-python.vscode-pylance
+        ms-python.vscode-python-envs
+        ms-vscode-remote.remote-containers
+        ms-vscode.cmake-tools
+        ms-vscode.cpp-devtools
+        ms-vscode.cpptools
+        ms-vscode.cpptools-extension-pack
+        ms-vscode.cpptools-themes
+        redhat.vscode-yaml
+        samuelcolvin.jinjahtml
+        tomoki1207.pdf
+        twxs.cmake
+      ];
+    })
   ];
 
   xdg.configFile = {
+    "Code/User/settings.json".text = builtins.toJSON {
+      "files.trimTrailingWhitespace" = true;
+      "files.insertFinalNewline" = true;
+      "files.trimFinalNewlines" = true;
+      "files.eol" = "\n";
+
+      "editor.formatOnSave" = true;
+      "editor.codeActionsOnSave" = {
+        "source.fixAll" = "explicit";
+      };
+
+      "diffEditor.ignoreTrimWhitespace" = false;
+      "git.autofetch" = true;
+
+      "editor.renderWhitespace" = "selection";
+      "editor.rulers" = [100];
+      "editor.tabSize" = 2;
+      "editor.detectIndentation" = true;
+
+      "workbench.startupEditor" = "none";
+      "telemetry.telemetryLevel" = "off";
+    };
+
+    "Code/User/keybindings.json".text = builtins.toJSON [
+      {
+        key = "ctrl+alt+shift+up";
+        command = "editor.action.copyLinesUpAction";
+        when = "editorTextFocus && !editorReadonly";
+      }
+      {
+        key = "ctrl+alt+shift+down";
+        command = "editor.action.copyLinesDownAction";
+        when = "editorTextFocus && !editorReadonly";
+      }
+    ];
+
     "autostart/solaar.desktop".text = ''
       [Desktop Entry]
       Type=Application
