@@ -125,30 +125,49 @@ in {
 
   environment.systemPackages = [
     pkgs.age
-    agenix.packages.${pkgs.system}.default
+    agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs.bat
     pkgs.bind
     pkgs.curl
+    pkgs.dnsutils
+    pkgs.duf
+    pkgs.dust
     pkgs.ethtool
     pkgs.eza
     pkgs.fd
+    pkgs.file
     pkgs.git
     pkgs.git-lfs
     pkgs.htop
     pkgs.iotop
     pkgs.iperf3
+    pkgs.jc
+    pkgs.jless
     pkgs.jq
     pkgs.just
     pkgs.kitty.terminfo
+    pkgs.lsof
     pkgs.mtr
     pkgs.nettools
     pkgs.ncdu
     pkgs.nethogs
+    pkgs.nmap
+    pkgs.pciutils
+    pkgs.procs
+    pkgs.psmisc
+    pkgs.pv
     pkgs.ripgrep
+    pkgs.socat
+    pkgs.strace
     pkgs.tcpdump
     pkgs.tmux
+    pkgs.tree
+    pkgs.unzip
+    pkgs.usbutils
     pkgs.wget
+    pkgs.whois
     pkgs.yq-go
+    pkgs.zip
   ];
 
   age.identityPaths = [
