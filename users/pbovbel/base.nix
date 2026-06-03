@@ -59,6 +59,15 @@
     };
   };
 
+  programs.bash = {
+    enable = true;
+    initExtra = ''
+      if [ -n "''${CONTAINER_ID:-}" ]; then
+        PS1='\[\e[34m\][\u@'$CONTAINER_ID':\w]\$ \[\e[0m\]'
+      fi
+    '';
+  };
+
   programs.git = {
     enable = true;
     lfs.enable = true;
