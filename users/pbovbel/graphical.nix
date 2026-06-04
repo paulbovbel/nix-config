@@ -36,7 +36,7 @@ in {
   imports = [
     ./base.nix
     ../common/graphical.nix
-    ../common/gravatar.nix
+    ../common/avatar.nix
   ];
 
   # TODO(pbovbel) why not xdg.desktopEntries.code?
@@ -74,10 +74,10 @@ in {
     ];
   };
 
-  bovbel.gravatarAvatar = {
+  bovbel.avatar = {
     enable = true;
-    hash = "c436d411a0ecc119476d704396a47d3e";
-    fileName = "pbovbel-gravatar.jpg";
+    source = ../../assets/avatars/pbovbel.png;
+    fileName = "pbovbel-avatar.png";
   };
 
   home.packages = [
