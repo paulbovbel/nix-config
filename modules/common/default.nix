@@ -53,11 +53,26 @@ in {
     optimise.automatic = true;
   };
 
-  age.secrets.cachix-auth-token = {
-    file = ../../secrets/common/cachix-auth-token.age;
-    owner = "root";
-    group = "root";
-    mode = "0400";
+  age = {
+    secrets = {
+      cachix-auth-token = {
+        file = ../../secrets/common/cachix-auth-token.age;
+        owner = "root";
+        group = "root";
+        mode = "0400";
+      };
+
+      gmail-password = {
+        file = ../../secrets/common/gmail-password.age;
+        owner = "root";
+        group = "root";
+        mode = "0400";
+      };
+    };
+
+    identityPaths = [
+      "/persist/etc/agenix/host.agekey"
+    ];
   };
 
   systemd.services = {
@@ -104,30 +119,60 @@ in {
   time.timeZone = "America/Toronto";
   i18n.defaultLocale = "en_CA.UTF-8";
 
-  services.openssh = {
-    enable = true;
-    settings = {
-      Port = 22;
-      PermitRootLogin = "no";
-      PasswordAuthentication = false;
-      PermitEmptyPasswords = false;
-      StrictModes = true;
-      IgnoreRhosts = true;
-      UsePAM = true;
-      KbdInteractiveAuthentication = false;
-      X11Forwarding = false;
+  services = {
+    openssh = {
+      enable = true;
+      settings = {
+        Port = 22;
+        PermitRootLogin = "no";
+        PasswordAuthentication = false;
+        PermitEmptyPasswords = false;
+        StrictModes = true;
+        IgnoreRhosts = true;
+        UsePAM = true;
+        KbdInteractiveAuthentication = false;
+        X11Forwarding = false;
+      };
+      hostKeys = [
+        {
+          path = "/persist/etc/ssh/ssh_host_rsa_key";
+          type = "rsa";
+          bits = 4096;
+        }
+        {
+          path = "/persist/etc/ssh/ssh_host_ed25519_key";
+          type = "ed25519";
+        }
+      ];
     };
-    hostKeys = [
-      {
-        path = "/persist/etc/ssh/ssh_host_rsa_key";
-        type = "rsa";
-        bits = 4096;
-      }
-      {
-        path = "/persist/etc/ssh/ssh_host_ed25519_key";
-        type = "ed25519";
-      }
-    ];
+
+    smartd = {
+      enable = true;
+      defaults.autodetected = "-a -n standby,15,q -o on -S on -s (L/../../6/01|S/../.././02)";
+      notifications.mail = {
+        enable = true;
+        sender = "paul@bovbel.com";
+        recipient = "paul@bovbel.com";
+      };
+    };
+  };
+
+  programs.msmtp = {
+    enable = true;
+    defaults = {
+      aliases = "/etc/aliases";
+      auth = true;
+      tls = true;
+      tls_starttls = true;
+      port = 587;
+      syslog = "LOG_MAIL";
+    };
+    accounts.default = {
+      host = "smtp.gmail.com";
+      from = "paul@bovbel.com";
+      user = "paul@bovbel.com";
+      passwordeval = "cat ${config.age.secrets.gmail-password.path}";
+    };
   };
 
   users.mutableUsers = false;
@@ -183,10 +228,6 @@ in {
     pkgs.whois
     pkgs.yq-go
     pkgs.zip
-  ];
-
-  age.identityPaths = [
-    "/persist/etc/agenix/host.agekey"
   ];
 
   impermanenceRoot.persistDirectories = [

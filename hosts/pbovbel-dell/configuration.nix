@@ -12,6 +12,8 @@
   networking.hostName = "pbovbel-dell";
   networking.networkmanager.enable = true;
 
+  services.thermald.enable = true;
+
   impermanenceRoot = {
     diskId = "/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_2TB_7A0F07181E3D00004779";
     swapSize = "32G";

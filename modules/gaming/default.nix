@@ -12,6 +12,9 @@
     enable = true;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
+    extraPackages = [
+      pkgs.pulseaudio
+    ];
   };
 
   programs.gamemode = {

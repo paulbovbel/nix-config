@@ -7,6 +7,7 @@ in {
   "secrets/laptop/tailscale-oauth-authkey.age".publicKeys = [pbovbel white_tower pbovbel_dell];
   "secrets/server/tailscale-oauth-authkey.age".publicKeys = [pbovbel];
   "secrets/common/cachix-auth-token.age".publicKeys = [pbovbel white_tower pbovbel_dell];
+  "secrets/common/gmail-password.age".publicKeys = [pbovbel white_tower pbovbel_dell];
   "secrets/common/pbovbel-password-hash.age".publicKeys = [pbovbel white_tower pbovbel_dell];
   "secrets/common/rbovbel-password-hash.age".publicKeys = [pbovbel white_tower];
 }

@@ -73,6 +73,7 @@ in {
           };
         };
       };
+      permission.external_directory."/nix/store/**" = "allow";
     };
 
   programs.bash = {
