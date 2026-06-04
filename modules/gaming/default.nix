@@ -33,6 +33,13 @@
     };
   };
 
+  services.sunshine = {
+    enable = true;
+    autoStart = true;
+    openFirewall = true;
+    capSysAdmin = true;
+  };
+
   environment.systemPackages = with pkgs; [
     mangohud
     goverlay

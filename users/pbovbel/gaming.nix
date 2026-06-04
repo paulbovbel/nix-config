@@ -23,6 +23,7 @@
       Version=1.0
       Name=Steam
       Exec=steam -silent
+      Icon=steam
       X-GNOME-Autostart-enabled=true
     '';
 

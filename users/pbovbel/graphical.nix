@@ -48,7 +48,7 @@ in {
       GenericName=Text Editor
       Comment=Code Editing. Redefined.
       Exec=${vscodePackage}/bin/code --reuse-window %F
-      Icon=com.visualstudio.code
+      Icon=vscode
       Terminal=false
       StartupNotify=true
       StartupWMClass=Code
