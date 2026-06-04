@@ -1,8 +1,18 @@
 {
   lib,
+  osConfig,
   pkgs,
   ...
-}: {
+}: let
+  workEnv = osConfig.age.secrets.work-env.path;
+  sourceWorkEnv = ''
+    if [ -r ${workEnv} ]; then
+      set -a
+      . ${workEnv}
+      set +a
+    fi
+  '';
+in {
   imports = [
     ./graphical.nix
   ];
@@ -11,6 +21,11 @@
     "us.zoom.Zoom.desktop"
     "com.slack.Slack.desktop"
   ];
+
+  programs.bash = {
+    initExtra = sourceWorkEnv;
+    profileExtra = sourceWorkEnv;
+  };
 
   systemd.user.services = let
     mkDistroboxImage = name: tag: baseImage: rec {
