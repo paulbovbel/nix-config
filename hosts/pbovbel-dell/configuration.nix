@@ -9,8 +9,16 @@
     kernelPackages = pkgs.linuxPackages_latest;
   };
 
-  networking.hostName = "pbovbel-dell";
-  networking.networkmanager.enable = true;
+  networking = {
+    hostName = "pbovbel-dell";
+    networkmanager = {
+      enable = true;
+      dns = "systemd-resolved";
+    };
+    resolvconf.enable = false;
+  };
+
+  services.resolved.enable = true;
 
   services.thermald.enable = true;
 

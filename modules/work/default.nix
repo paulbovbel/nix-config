@@ -17,10 +17,20 @@
     pkgs.networkmanager-l2tp
   ];
 
-  environment.systemPackages = [
-    pkgs.distrobox
-    pkgs.ike-scan
+  systemd.tmpfiles.rules = [
+    "d /etc/ipsec.d 0755 root root -"
   ];
+
+  environment = {
+    etc = {
+      "strongswan.conf".text = "";
+    };
+
+    systemPackages = [
+      pkgs.distrobox
+      pkgs.ike-scan
+    ];
+  };
 
   services.flatpak.packages = [
     "com.slack.Slack"
