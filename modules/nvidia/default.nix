@@ -19,7 +19,7 @@ in {
         # Beta driver often carries suspend/resume and Wayland fixes sooner.
         package = config.boot.kernelPackages.nvidiaPackages.beta;
         powerManagement.enable = true;
-        powerManagement.finegrained = false;
+        powerManagement.finegrained = lib.mkDefault false;
       };
 
       boot.extraModprobeConfig = ''
@@ -70,6 +70,19 @@ in {
           serviceConfig = {
             Type = "simple";
             ExecStart = "${resumeSleepInhibitScript}";
+          };
+        };
+      };
+    })
+
+    (lib.mkIf cfg.prime.enable {
+      hardware.nvidia = {
+        powerManagement.finegrained = true;
+
+        prime = {
+          inherit (cfg.prime) intelBusId amdgpuBusId nvidiaBusId;
+          offload = {
+            inherit (cfg.prime.offload) enable enableOffloadCmd;
           };
         };
       };
