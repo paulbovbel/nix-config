@@ -12,10 +12,6 @@
     "com.discordapp.Discord.desktop"
   ];
 
-  home.packages = [
-    pkgs.gamescope
-  ];
-
   xdg.configFile = {
     "autostart/steam.desktop".text = ''
       [Desktop Entry]
