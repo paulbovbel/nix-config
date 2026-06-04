@@ -84,7 +84,6 @@ in {
     pkgs.libsecret
     pkgs.nixfmt
     pkgs.python3
-    pkgs.tail-tray
     pkgs.uv
     vscodePackage
   ];
@@ -104,15 +103,6 @@ in {
       Version=1.0
       Name=Solaar
       Exec=${pkgs.solaar}/bin/solaar --window=hide
-      X-GNOME-Autostart-enabled=true
-    '';
-
-    "autostart/tail-tray.desktop".text = ''
-      [Desktop Entry]
-      Type=Application
-      Version=1.0
-      Name=Tail Tray
-      Exec=${pkgs.tail-tray}/bin/tail-tray
       X-GNOME-Autostart-enabled=true
     '';
   };

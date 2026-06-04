@@ -19,7 +19,6 @@
       enable = true;
       authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
       authKeyParameters.ephemeral = false;
-      extraSetFlags = ["--operator=pbovbel"];
       extraUpFlags = [
         "--advertise-tags=tag:laptop"
         "--hostname=${config.networking.hostName}"
