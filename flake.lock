@@ -111,6 +111,27 @@
         "type": "github"
       }
     },
+    "locus-vpn-client": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1780596097,
+        "narHash": "sha256-7mmMAi5WNPSazRKsJ0LPXs2auFAjDRhszVfYFxtrgFM=",
+        "ref": "nix",
+        "rev": "19bc1582e6ad883d58e8bcea8bf7b988492b95bd",
+        "revCount": 11,
+        "type": "git",
+        "url": "ssh://git@github.com/locusrobotics/locus-vpn-client.git"
+      },
+      "original": {
+        "ref": "nix",
+        "type": "git",
+        "url": "ssh://git@github.com/locusrobotics/locus-vpn-client.git"
+      }
+    },
     "nix-flatpak": {
       "locked": {
         "lastModified": 1779998907,
@@ -200,6 +221,7 @@
         "disko": "disko",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
+        "locus-vpn-client": "locus-vpn-client",
         "nix-flatpak": "nix-flatpak",
         "nix-vscode-extensions": "nix-vscode-extensions",
         "nixpkgs": "nixpkgs",

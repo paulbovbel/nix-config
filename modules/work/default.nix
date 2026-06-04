@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  locus-vpn-client,
+  pkgs,
+  ...
+}: {
   imports = [
     ../graphical
   ];
@@ -21,6 +25,10 @@
     "d /etc/ipsec.d 0755 root root -"
   ];
 
+  impermanenceRoot.persistDirectories = [
+    "/etc/ipsec.d"
+  ];
+
   environment = {
     etc = {
       "strongswan.conf".text = "";
@@ -29,6 +37,7 @@
     systemPackages = [
       pkgs.distrobox
       pkgs.ike-scan
+      locus-vpn-client.packages.${pkgs.system}.default
     ];
   };
 

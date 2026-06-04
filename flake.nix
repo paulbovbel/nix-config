@@ -5,6 +5,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs/release-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:NixOS/nixpkgs/master";
+    locus-vpn-client = {
+      url = "git+ssh://git@github.com/locusrobotics/locus-vpn-client.git?ref=nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -39,6 +43,7 @@
     disko,
     agenix,
     impermanence,
+    locus-vpn-client,
     nix-vscode-extensions,
     ...
   }: let
@@ -82,7 +87,7 @@
       lib.nixosSystem {
         inherit system;
         specialArgs = {
-          inherit agenix unstablePkgs masterPkgs;
+          inherit agenix locus-vpn-client unstablePkgs masterPkgs;
         };
         modules =
           [

@@ -12,7 +12,8 @@
     "just": true,
     "./venv/bin/python3": true,
     "journalctl": true,
-    "nmcli": true
+    "nmcli": true,
+    "distrobox": true
   },
   "editor.renderWhitespace": "selection",
   "editor.rulers": [
