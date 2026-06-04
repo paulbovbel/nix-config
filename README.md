@@ -82,9 +82,8 @@ sudo systemd-cryptenroll /dev/disk/by-partlabel/disk-main-encrypted
 
 ## Deploy updates
 
-Deploy config changes to a remote host:
+Switch a host to its flake configuration, runs against localhost by default:
 
 ```bash
-host_name="<host>"
-nixos-rebuild switch --flake .#"$host_name" --target-host "$host_name" --build-host "$host_name" --sudo --ask-sudo-password
+just switch <host>
 ```
