@@ -1,4 +1,11 @@
 {
+  abovbel = {
+    gaming = {
+      module = ./abovbel/gaming.nix;
+      systemProfile = "gaming";
+    };
+  };
+
   pbovbel = {
     headless = {
       module = ./pbovbel/headless.nix;

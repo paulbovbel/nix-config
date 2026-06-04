@@ -10,5 +10,6 @@ in {
   "secrets/common/gmail-password.age".publicKeys = [pbovbel white_tower pbovbel_dell];
   "secrets/common/pbovbel-password-hash.age".publicKeys = [pbovbel white_tower pbovbel_dell];
   "secrets/common/rbovbel-password-hash.age".publicKeys = [pbovbel white_tower];
+  "secrets/common/abovbel-password-hash.age".publicKeys = [pbovbel white_tower];
   "secrets/work/env.age".publicKeys = [pbovbel pbovbel_dell];
 }

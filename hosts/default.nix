@@ -12,6 +12,11 @@
         systemModule = ../users/rbovbel.nix;
         profiles = ["graphical"];
       }
+      {
+        name = "abovbel";
+        systemModule = ../users/abovbel.nix;
+        profiles = ["gaming"];
+      }
     ];
   };
 
