@@ -15,7 +15,12 @@ in {
       files = lib.unique cfg.persistFiles;
     };
 
-    services.zfs.autoSnapshot.enable = true;
+    services.zfs.autoSnapshot = {
+      enable = true;
+      frequent = 0;
+    };
+
+    systemd.timers.zfs-snapshot-frequent.wantedBy = lib.mkForce [];
 
     boot.initrd.systemd.services.zfs-rollback-root = {
       description = "Rollback zroot/root to @blank snapshot";

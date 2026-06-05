@@ -3,6 +3,18 @@
     ../graphical
   ];
 
+  disko.devices.zpool.zroot.datasets = {
+    "root/steam-library" = {
+      type = "zfs_fs";
+      mountpoint = "/steam-library";
+      options."com.sun:auto-snapshot" = "false";
+    };
+  };
+
+  systemd.tmpfiles.rules = [
+    "d /steam-library 2775 root users - -"
+  ];
+
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
