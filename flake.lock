@@ -226,7 +226,8 @@
         "nix-vscode-extensions": "nix-vscode-extensions",
         "nixpkgs": "nixpkgs",
         "nixpkgs-master": "nixpkgs-master",
-        "nixpkgs-unstable": "nixpkgs-unstable"
+        "nixpkgs-unstable": "nixpkgs-unstable",
+        "vscode-workspace-populator": "vscode-workspace-populator"
       }
     },
     "systems": {
@@ -242,6 +243,23 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
+      }
+    },
+    "vscode-workspace-populator": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1775594601,
+        "narHash": "sha256-hMJMTM3kNgwEw08JVKwQobaClj/kPWqPZSKIx79FYC8=",
+        "ref": "refs/tags/v0.0.1",
+        "rev": "01c29b5c840ea6a9859639c2f5d0f65e8bf78b58",
+        "revCount": 4,
+        "type": "git",
+        "url": "ssh://git@github.com/locusrobotics/vscode-workspace-populator.git"
+      },
+      "original": {
+        "ref": "refs/tags/v0.0.1",
+        "type": "git",
+        "url": "ssh://git@github.com/locusrobotics/vscode-workspace-populator.git"
       }
     }
   },

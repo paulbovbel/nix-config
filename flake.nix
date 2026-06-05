@@ -18,6 +18,10 @@
       url = "github:nix-community/nix-vscode-extensions";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
+    vscode-workspace-populator = {
+      url = "git+ssh://git@github.com/locusrobotics/vscode-workspace-populator.git?ref=refs/tags/v0.0.1";
+      flake = false;
+    };
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     disko = {
       url = "github:nix-community/disko";
@@ -45,6 +49,7 @@
     impermanence,
     locus-vpn-client,
     nix-vscode-extensions,
+    vscode-workspace-populator,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -109,6 +114,7 @@
                 extraSpecialArgs = {
                   inherit unstablePkgs;
                   inherit masterPkgs;
+                  inherit vscode-workspace-populator;
                 };
               };
             }
