@@ -44,7 +44,7 @@
     systemPackages = [
       pkgs.distrobox
       pkgs.ike-scan
-      locus-vpn-client.packages.${pkgs.system}.default
+      locus-vpn-client.packages.${pkgs.stdenv.hostPlatform.system}.default
     ];
   };
 

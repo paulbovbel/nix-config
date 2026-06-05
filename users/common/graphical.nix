@@ -14,6 +14,12 @@
       button-layout = "appmenu:minimize,maximize,close";
       num-workspaces = lib.hm.gvariant.mkInt32 1;
     };
+    "org/gnome/desktop/wm/keybindings" = {
+      move-to-workspace-down = [""];
+      move-to-workspace-up = [""];
+      switch-to-workspace-down = [""];
+      switch-to-workspace-up = [""];
+    };
     "org/gnome/nautilus/preferences" = {
       default-folder-viewer = "list-view";
     };
@@ -78,14 +84,7 @@
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
-      "application/json" = "code.desktop";
-      "application/x-shellscript" = "code.desktop";
       "text/html" = "org.mozilla.firefox.desktop";
-      "text/markdown" = "code.desktop";
-      "text/plain" = "code.desktop";
-      "text/x-c" = "code.desktop";
-      "text/x-c++" = "code.desktop";
-      "text/x-python" = "code.desktop";
       "x-scheme-handler/about" = "org.mozilla.firefox.desktop";
       "x-scheme-handler/http" = "org.mozilla.firefox.desktop";
       "x-scheme-handler/https" = "org.mozilla.firefox.desktop";
