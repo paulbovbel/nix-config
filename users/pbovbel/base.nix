@@ -90,10 +90,17 @@ in {
     lfs.enable = true;
     settings = {
       alias = {
+        bclean = ''!f() { git branch --merged ''${1-master} | grep -v " ''${1-master}$" | xargs -r git branch -d; }; f'';
+        bdone = ''!f() { git checkout ''${1-master} && git up && git bclean ''${1-master}; }; f'';
         cm = "!git add -u && git commit -m";
         cmnew = "!git add -A && git commit -m";
+        co = "checkout";
+        cob = "checkout -b";
+        cp = "cherry-pick -x";
         fixup = "!git add -u && git commit --amend";
         pushb = "push -u origin";
+        rb = "rebase";
+        st = "status";
       };
       core.editor = "nano";
       credential.helper = "cache";
