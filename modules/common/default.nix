@@ -4,6 +4,7 @@
   pkgs,
   ...
 }: let
+  cliPackages = import ./cli-packages.nix {inherit pkgs;};
   inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
 in {
   # Performance-biased defaults: trades hardening for lower overhead.
@@ -183,52 +184,19 @@ in {
 
   nixpkgs.config.allowUnfree = true;
 
-  environment.systemPackages = [
-    pkgs.age
-    agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
-    pkgs.bat
-    pkgs.bind
-    pkgs.curl
-    pkgs.dnsutils
-    pkgs.duf
-    pkgs.dust
-    pkgs.ethtool
-    pkgs.eza
-    pkgs.fd
-    pkgs.file
-    pkgs.git
-    pkgs.git-lfs
-    pkgs.htop
-    pkgs.iotop
-    pkgs.iperf3
-    pkgs.jc
-    pkgs.jless
-    pkgs.jq
-    pkgs.just
-    pkgs.kitty.terminfo
-    pkgs.lsof
-    pkgs.mtr
-    pkgs.nettools
-    pkgs.ncdu
-    pkgs.nethogs
-    pkgs.nmap
-    pkgs.pciutils
-    pkgs.procs
-    pkgs.psmisc
-    pkgs.pv
-    pkgs.ripgrep
-    pkgs.socat
-    pkgs.strace
-    pkgs.tcpdump
-    pkgs.tmux
-    pkgs.tree
-    pkgs.unzip
-    pkgs.usbutils
-    pkgs.wget
-    pkgs.whois
-    pkgs.yq-go
-    pkgs.zip
-  ];
+  environment.systemPackages =
+    [
+      agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
+    ]
+    ++ cliPackages.nixPackages
+    ++ [
+      pkgs.dust
+      pkgs.eza
+      pkgs.jless
+      pkgs.just
+      pkgs.procs
+      pkgs.yq-go
+    ];
 
   impermanenceRoot.persistDirectories = [
     "/var/lib/cups"
