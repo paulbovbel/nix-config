@@ -34,6 +34,7 @@
     ["strace" pkgs.strace]
     ["tcpdump" pkgs.tcpdump]
     ["tmux" pkgs.tmux]
+    ["traceroute" pkgs.traceroute]
     ["tree" pkgs.tree]
     ["unzip" pkgs.unzip]
     ["usbutils" pkgs.usbutils]
