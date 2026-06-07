@@ -86,10 +86,14 @@
       lib.unique (map (profileName: profiles.${profileName}.systemProfile) user.profiles);
 
     mkHost = name: cfg: let
+      nixpkgsForHost =
+        if cfg.useUnstablePackages or false
+        then nixpkgs-unstable
+        else nixpkgs;
       unstablePkgs = mkPkgs nixpkgs-unstable;
       masterPkgs = mkPkgs nixpkgs-master;
     in
-      lib.nixosSystem {
+      nixpkgsForHost.lib.nixosSystem {
         inherit system;
         specialArgs = {
           inherit agenix locus-vpn-client unstablePkgs masterPkgs;
