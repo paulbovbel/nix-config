@@ -8,6 +8,7 @@ Inventory schema in `hosts/default.nix`:
 
 - host key: `<host>`
 - `systemProfiles`: list of module profile names (optional)
+- `useUnstablePackages`: use `nixpkgs-unstable` as the host-wide `pkgs` package set instead of release nixpkgs (optional, default `false`)
 - `users`: list of `{ name, systemModule, profiles }`
 
 User profiles map to modules under each user directory:
