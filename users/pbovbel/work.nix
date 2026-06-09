@@ -5,7 +5,6 @@
   ...
 }: let
   cliPackages = import ../../modules/common/cli-packages.nix {inherit pkgs;};
-  distroboxCliPackages = lib.concatStringsSep " " (["apt-transport-https"] ++ cliPackages.aptPackages);
   workEnv = osConfig.age.secrets.work-env.path;
   sourceWorkEnv = ''
     if [ -r ${workEnv} ]; then
@@ -45,7 +44,7 @@ in {
               --yes \
               --name ${lib.escapeShellArg name} \
               --image ${lib.escapeShellArg image} \
-              --additional-packages ${lib.escapeShellArg distroboxCliPackages}
+              --additional-packages ${lib.escapeShellArgs cliPackages.aptPackages}
           fi
         '';
       };

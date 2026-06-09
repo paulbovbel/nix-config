@@ -79,6 +79,15 @@ in {
   programs.bash = {
     enable = true;
     initExtra = ''
+      if [ -d "$HOME/.bashrc.d" ]; then
+        for bashrc_fragment in "$HOME"/.bashrc.d/*; do
+          if [ -f "$bashrc_fragment" ] && [ -r "$bashrc_fragment" ]; then
+            . "$bashrc_fragment"
+          fi
+        done
+        unset bashrc_fragment
+      fi
+
       if [ -n "''${CONTAINER_ID:-}" ]; then
         PS1='\[\e[34m\][\u@'$CONTAINER_ID':\w]\$ \[\e[0m\]'
       fi
