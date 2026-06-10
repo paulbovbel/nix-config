@@ -44,7 +44,18 @@ in {
               --yes \
               --name ${lib.escapeShellArg name} \
               --image ${lib.escapeShellArg image} \
-              --additional-packages ${lib.escapeShellArgs cliPackages.aptPackages}
+              --additional-packages ${lib.escapeShellArgs cliPackages.aptPackages} \
+              --init-hooks ${lib.escapeShellArg ''
+            sudo install -Dm755 /dev/stdin /usr/local/bin/xrandr <<'EOF'
+            #!/usr/bin/env sh
+            exec host-spawn xrandr "$@"
+            EOF
+
+            sudo install -Dm755 /dev/stdin /usr/local/bin/nmcli <<'EOF'
+            #!/usr/bin/env sh
+            exec host-spawn nmcli "$@"
+            EOF
+          ''}
           fi
         '';
       };

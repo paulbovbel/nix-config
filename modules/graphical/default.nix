@@ -142,6 +142,7 @@
       pkgs.remmina
       pkgs.vlc
       pkgs.wireshark
+      pkgs.xorg.xrandr
     ];
 
     sessionVariables = {
