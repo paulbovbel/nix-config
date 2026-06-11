@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   masterPkgs,
   vscode-workspace-populator,
@@ -29,9 +28,8 @@
     };
   };
 
-  vscodePackage = masterPkgs.vscode-with-extensions.override {
-    inherit (masterPkgs) vscode;
-    vscodeExtensions = with masterPkgs.vscode-marketplace; [
+  vscodeExtensions =
+    (with masterPkgs.vscode-marketplace; [
       github.codespaces
       github.copilot-chat
       github.vscode-github-actions
@@ -54,42 +52,22 @@
       samuelcolvin.jinjahtml
       tomoki1207.pdf
       twxs.cmake
+    ])
+    ++ [
       workspacePopulatorExtension
     ];
-  };
 in {
-  home.file.".local/share/applications/code.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Name=Visual Studio Code
-    GenericName=Text Editor
-    Comment=Code Editing. Redefined.
-    Exec=${vscodePackage}/bin/code --reuse-window %F
-    Icon=vscode
-    Terminal=false
-    StartupNotify=true
-    StartupWMClass=Code
-    Categories=Development;IDE;TextEditor;
-    MimeType=application/json;application/x-shellscript;text/markdown;text/plain;text/x-c;text/x-c++;text/x-python;
-  '';
+  programs.vscode = {
+    enable = true;
+    package = masterPkgs.vscode;
+    profiles.default = {
+      extensions = vscodeExtensions;
+    };
+  };
 
   dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [
     "code.desktop"
   ];
-
-  home.packages = [
-    vscodePackage
-  ];
-
-  xdg.configFile = {
-    "Code/User/settings.json".source = lib.mkForce (
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/users/${config.home.username}/vscode-settings.json"
-    );
-
-    "Code/User/keybindings.json".source = lib.mkForce (
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/users/${config.home.username}/vscode-keybindings.json"
-    );
-  };
 
   xdg.mimeApps = {
     enable = true;

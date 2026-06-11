@@ -100,6 +100,7 @@ in {
         ExecStart = "${pkgs.cachix}/bin/cachix watch-store paulbovbel";
         Restart = "always";
         RestartSec = 30;
+        TimeoutStopSec = "15s";
       };
     };
 

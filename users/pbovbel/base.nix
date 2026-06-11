@@ -38,7 +38,6 @@ in {
   '';
 
   home.packages = with pkgs; [
-    masterPkgs.opencode
     nix-tree
     (pkgs.writeShellApplication {
       name = "llama-client";
@@ -51,81 +50,84 @@ in {
     })
   ];
 
-  xdg.configFile."opencode/opencode.json".source =
-    (pkgs.formats.json {}).generate "opencode-config"
-    {
-      "$schema" = "https://opencode.ai/config.json";
-      model = "llama.cpp/qwen3.6";
-      provider = {
-        llama-cpp = {
-          npm = "@ai-sdk/openai-compatible";
-          name = "Local LLM";
-          options = {
-            baseURL = "http://white-tower:11434/v1";
-            stream = false;
-          };
-          models = {
-            "qwen3.6" = {
-              name = "Local Model";
-              tool_call = true;
-              options.toolParser = "auto";
+  programs = {
+    opencode = {
+      enable = true;
+      package = masterPkgs.opencode;
+      settings = {
+        model = "llama.cpp/qwen3.6";
+        provider = {
+          llama-cpp = {
+            npm = "@ai-sdk/openai-compatible";
+            name = "Local LLM";
+            options = {
+              baseURL = "http://white-tower:11434/v1";
+              stream = false;
+            };
+            models = {
+              "qwen3.6" = {
+                name = "Local Model";
+                tool_call = true;
+                options.toolParser = "auto";
+              };
             };
           };
         };
+        permission.external_directory."/nix/store/**" = "allow";
       };
-      permission.external_directory."/nix/store/**" = "allow";
     };
 
-  programs.bash = {
-    enable = true;
-    initExtra = ''
-      if [ -d "$HOME/.bashrc.d" ]; then
-        for bashrc_fragment in "$HOME"/.bashrc.d/*; do
-          if [ -f "$bashrc_fragment" ] && [ -r "$bashrc_fragment" ]; then
-            . "$bashrc_fragment"
-          fi
-        done
-        unset bashrc_fragment
-      fi
+    bash = {
+      enable = true;
+      initExtra = ''
+        if [ -d "$HOME/.bashrc.d" ]; then
+          for bashrc_fragment in "$HOME"/.bashrc.d/*; do
+            if [ -f "$bashrc_fragment" ] && [ -r "$bashrc_fragment" ]; then
+              . "$bashrc_fragment"
+            fi
+          done
+          unset bashrc_fragment
+        fi
 
-      if [ -n "''${CONTAINER_ID:-}" ]; then
-        PS1='\[\e[34m\][\u@'$CONTAINER_ID':\w]\$ \[\e[0m\]'
-      fi
-    '';
-  };
+        if [ -n "''${CONTAINER_ID:-}" ]; then
+          PS1='\[\e[34m\][\u@'$CONTAINER_ID':\w]\$ \[\e[0m\]'
+        fi
+      '';
+    };
 
-  programs.git = {
-    enable = true;
-    lfs.enable = true;
-    settings = {
-      alias = {
-        bclean = ''!f() { git branch --merged ''${1-master} | grep -v " ''${1-master}$" | xargs -r git branch -d; }; f'';
-        bdone = ''!f() { git checkout ''${1-master} && git up && git bclean ''${1-master}; }; f'';
-        cm = "!git add -u && git commit -m";
-        cmnew = "!git add -A && git commit -m";
-        co = "checkout";
-        cob = "checkout -b";
-        cp = "cherry-pick -x";
-        fixup = "!git add -u && git commit --amend";
-        pushb = "push -u origin";
-        rb = "rebase";
-        st = "status";
-      };
-      core.editor = "nano";
-      credential.helper = "cache";
-      fetch.prune = true;
-      pull.rebase = true;
-      push = {
-        default = "simple";
-        followTags = true;
-      };
-      url."git@github.com:".insteadOf = [
-        "https://github.com/"
-        "git://github.com/"
-      ];
-      user = {
-        email = "paul@bovbel.com";
-        name = "Paul Bovbel";
+    git = {
+      enable = true;
+      lfs.enable = true;
+      settings = {
+        alias = {
+          bclean = ''!f() { git branch --merged ''${1-master} | grep -v " ''${1-master}$" | xargs -r git branch -d; }; f'';
+          bdone = ''!f() { git checkout ''${1-master} && git up && git bclean ''${1-master}; }; f'';
+          cm = "!git add -u && git commit -m";
+          cmnew = "!git add -A && git commit -m";
+          co = "checkout";
+          cob = "checkout -b";
+          cp = "cherry-pick -x";
+          fixup = "!git add -u && git commit --amend";
+          pushb = "push -u origin";
+          rb = "rebase";
+          st = "status";
+        };
+        core.editor = "nano";
+        credential.helper = "cache";
+        fetch.prune = true;
+        pull.rebase = true;
+        push = {
+          default = "simple";
+          followTags = true;
+        };
+        url."git@github.com:".insteadOf = [
+          "https://github.com/"
+          "git://github.com/"
+        ];
+        user = {
+          email = "paul@bovbel.com";
+          name = "Paul Bovbel";
+        };
       };
     };
   };

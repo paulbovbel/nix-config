@@ -1,9 +1,60 @@
-{lib, ...}: {
+{
+  lib,
+  pkgs,
+  ...
+}: {
   imports = [
     ./base.nix
   ];
 
   dconf.enable = true;
+
+  catppuccin = {
+    enable = true;
+    autoEnable = true;
+    flavor = "mocha";
+    accent = "mauve";
+    cursors = {
+      enable = true;
+      flavor = "mocha";
+      accent = "mauve";
+    };
+  };
+
+  gtk = {
+    enable = true;
+    theme = {
+      name = "catppuccin-mocha-mauve-standard";
+      package = pkgs.catppuccin-gtk.override {
+        variant = "mocha";
+        accents = ["mauve"];
+      };
+    };
+  };
+
+  programs.kitty = {
+    enable = true;
+    keybindings = {
+      "ctrl+shift+e" = "launch --location=vsplit --cwd=current";
+      "ctrl+shift+o" = "launch --location=hsplit --cwd=current";
+      "alt+left" = "neighboring_window left";
+      "alt+right" = "neighboring_window right";
+      "alt+up" = "neighboring_window up";
+      "alt+down" = "neighboring_window down";
+      "ctrl+left" = "resize_window narrower";
+      "ctrl+right" = "resize_window wider";
+      "ctrl+up" = "resize_window taller";
+      "ctrl+down" = "resize_window shorter";
+      "ctrl+home" = "resize_window reset";
+    };
+    settings = {
+      enabled_layouts = "splits";
+      scrollback_lines = -1;
+      wheel_scroll_multiplier = 5;
+      touch_scroll_multiplier = 5;
+      confirm_os_window_close = 0;
+    };
+  };
 
   dconf.settings = {
     "org/gnome/mutter" = {
@@ -24,9 +75,6 @@
       default-folder-viewer = "list-view";
     };
     "org/gnome/desktop/interface" = {
-      gtk-theme = "Yaru";
-      icon-theme = "Yaru";
-      cursor-theme = "Yaru";
       color-scheme = "prefer-dark";
       enable-hot-corners = false;
       show-battery-percentage = true;

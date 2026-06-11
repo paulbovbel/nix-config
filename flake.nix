@@ -36,6 +36,10 @@
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    catppuccin = {
+      url = "github:catppuccin/nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -50,6 +54,7 @@
     locus-vpn-client,
     nix-vscode-extensions,
     vscode-workspace-populator,
+    catppuccin,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -78,7 +83,8 @@
     userHomeModules = user: let
       profiles = userProfiles.${user.name};
     in
-      map (profileName: profiles.${profileName}.module) user.profiles;
+      map (profileName: profiles.${profileName}.module) user.profiles
+      ++ [catppuccin.homeModules.catppuccin];
 
     userSystemProfileNames = user: let
       profiles = userProfiles.${user.name};
@@ -110,6 +116,7 @@
             disko.nixosModules.disko
             impermanence.nixosModules.impermanence
             home-manager.nixosModules.home-manager
+            catppuccin.nixosModules.catppuccin
             {
               home-manager = {
                 backupFileExtension = "backup";
