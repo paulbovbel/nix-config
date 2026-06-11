@@ -1,7 +1,7 @@
 {
   white-tower = {
     systemProfiles = ["impermanence-root" "llama-cpp" "nvidia"];
-    useUnstablePackages = true;
+    # useUnstablePackages = true;
     users = [
       {
         name = "pbovbel";
