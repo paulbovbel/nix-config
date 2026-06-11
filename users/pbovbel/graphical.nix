@@ -32,6 +32,10 @@
     fileName = "pbovbel-avatar.png";
   };
 
+  programs.vscode.profiles.default.userSettings = builtins.fromJSON (
+    builtins.readFile ./vscode-settings.json
+  );
+
   home.packages = [
     pkgs.libsecret
     pkgs.nixfmt
