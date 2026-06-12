@@ -87,6 +87,7 @@
       enabled-extensions = [
         "dash-to-dock@micxgx.gmail.com"
         "appindicatorsupport@rgcjonas.gmail.com"
+        "HeadsetControl@lauinger-clan.de"
       ];
       favorite-apps = [
         "org.mozilla.firefox.desktop"
@@ -94,6 +95,9 @@
         "com.rtosta.zapzap.desktop"
         "kitty.desktop"
       ];
+    };
+    "org/gnome/shell/extensions/HeadsetControl" = {
+      headsetcontrol-executable = lib.getExe pkgs.headsetcontrol;
     };
     "org/gnome/shell/extensions/dash-to-dock" = {
       apply-custom-theme = true;

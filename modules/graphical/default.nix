@@ -59,6 +59,8 @@
       };
     };
 
+    udev.packages = [pkgs.headsetcontrol];
+
     flatpak = {
       enable = true;
       remotes = [
@@ -125,6 +127,8 @@
       pkgs.gnome-tweaks
       pkgs.gnomeExtensions.dash-to-dock
       pkgs.gnomeExtensions.appindicator
+      pkgs.gnomeExtensions.headsetcontrol
+      pkgs.headsetcontrol
       pkgs.yaru-theme
       pkgs.libva-utils
       pkgs.remmina

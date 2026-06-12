@@ -59,7 +59,22 @@
   }: let
     inherit (nixpkgs) lib;
     system = "x86_64-linux";
-    overlays = [nix-vscode-extensions.overlays.default];
+    overlays = [
+      nix-vscode-extensions.overlays.default
+      (final: prev: {
+        headsetcontrol = prev.headsetcontrol.overrideAttrs (_: {
+          # Last released version of headsetcontrol doesn't include fixes for Audeze Maxwell headset
+          # https://github.com/Sapd/HeadsetControl/pull/412
+          version = "4d57d17af8b49d436b01822a23a3871aa7646f11";
+          src = final.fetchFromGitHub {
+            owner = "Sapd";
+            repo = "HeadsetControl";
+            rev = "4d57d17af8b49d436b01822a23a3871aa7646f11";
+            hash = "sha256-N59GYF5XEIdm2zeIbsHwFA6dkXaCCyi3oxIWuUVL1fk=";
+          };
+        });
+      })
+    ];
 
     mkPkgs = src:
       import src {
@@ -118,6 +133,8 @@
             home-manager.nixosModules.home-manager
             catppuccin.nixosModules.catppuccin
             {
+              nixpkgs.overlays = overlays;
+
               home-manager = {
                 backupFileExtension = "backup";
                 useGlobalPkgs = true;
