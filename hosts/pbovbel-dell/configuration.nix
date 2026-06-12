@@ -9,18 +9,12 @@
     kernelPackages = pkgs.linuxPackages_latest;
   };
 
-  networking = {
-    hostName = "pbovbel-dell";
-    networkmanager = {
-      enable = true;
-      dns = "systemd-resolved";
-    };
-    resolvconf.enable = false;
+  networking.hostName = "pbovbel-dell";
+
+  services = {
+    thermald.enable = true;
+    power-profiles-daemon.enable = true;
   };
-
-  services.resolved.enable = true;
-
-  services.thermald.enable = true;
 
   impermanenceRoot = {
     diskId = "/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_2TB_7A0F07181E3D00004779";

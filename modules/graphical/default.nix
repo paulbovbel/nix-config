@@ -29,6 +29,11 @@
     mode = "0400";
   };
 
+  networking.networkmanager = {
+    enable = true;
+    dns = "systemd-resolved";
+  };
+
   services = {
     tailscale = {
       enable = true;
@@ -128,13 +133,15 @@
       pkgs.gnomeExtensions.dash-to-dock
       pkgs.gnomeExtensions.appindicator
       pkgs.gnomeExtensions.headsetcontrol
+      pkgs.gnome-icon-theme
       pkgs.headsetcontrol
       pkgs.yaru-theme
       pkgs.libva-utils
+      pkgs.nvtopPackages.nvidia
       pkgs.remmina
       pkgs.vlc
       pkgs.wireshark
-      pkgs.xorg.xrandr
+      pkgs.xrandr
     ];
 
     sessionVariables = {

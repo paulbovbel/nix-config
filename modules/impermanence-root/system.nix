@@ -20,6 +20,8 @@ in {
       frequent = 0;
     };
 
+    services.zfs.autoScrub.enable = true;
+
     systemd.timers.zfs-snapshot-frequent.wantedBy = lib.mkForce [];
 
     boot.initrd.systemd.services.zfs-rollback-root = {
