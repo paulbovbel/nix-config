@@ -121,7 +121,15 @@ in {
   time.timeZone = "America/Toronto";
   i18n.defaultLocale = "en_CA.UTF-8";
 
+  networking = {
+    resolvconf.enable = false;
+  };
+
   services = {
+    fwupd.enable = true;
+
+    resolved.enable = true;
+
     openssh = {
       enable = true;
       settings = {
@@ -201,6 +209,7 @@ in {
 
   impermanenceRoot.persistDirectories = [
     "/var/lib/cups"
+    "/var/lib/fwupd"
     "/var/lib/nixos"
     "/var/lib/systemd"
     "/var/lib/systemd/coredump"

@@ -14,7 +14,6 @@
   };
 
   networking.hostName = "white-tower";
-  networking.networkmanager.enable = true;
 
   impermanenceRoot = {
     diskId = "/dev/disk/by-id/nvme-ADATA_SX8200PNP_2K4829A5C2U1";

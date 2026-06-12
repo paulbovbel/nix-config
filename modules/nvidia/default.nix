@@ -22,6 +22,15 @@ in {
         powerManagement.finegrained = lib.mkDefault false;
       };
 
+      hardware.graphics.extraPackages = [
+        pkgs.nvidia-vaapi-driver
+      ];
+
+      environment.sessionVariables = {
+        LIBVA_DRIVER_NAME = "nvidia";
+        NVD_BACKEND = "direct";
+      };
+
       boot.extraModprobeConfig = ''
         options nvidia NVreg_PreserveVideoMemoryAllocations=1
         options nvidia NVreg_TemporaryFilePath=/var/tmp
