@@ -11,16 +11,18 @@ Inventory schema in `hosts/default.nix`:
 - `useUnstablePackages`: use `nixpkgs-unstable` as the host-wide `pkgs` package set instead of release nixpkgs (optional, default `false`)
 - `users`: list of `{ name, systemModule, profiles }`
 
-User profiles map to modules under each user directory:
+User profiles are mapped in `users/default.nix` to modules under each user directory:
 
-- `users/pbovbel/{headless,graphical,work,gaming}.nix`
-- `users/rbovbel/graphical.nix`
-- Shared user Home Manager modules are in `users/common/{base,graphical,gravatar}.nix`
+- `users/pbovbel/{base,headless,graphical,work,gaming}.nix`
+- `users/rbovbel/{base,graphical}.nix`
+- `users/abovbel/{base,graphical,gaming}.nix`
+- Shared user Home Manager modules are in `users/common/{base,graphical,avatar,gaming,vscode}.nix`
 
 Run the full local check suite before commit/PR:
 
 ```bash
 just check
+just dry-run <host>
 ```
 
 ### Repository layout
@@ -40,6 +42,8 @@ just check
 - `gaming` includes `graphical`
 - `headless` includes `common`, for headless setups
 - `llama-cpp` includes `common`, runs an LLM server proxy
+- `nvidia` configures the proprietary NVIDIA driver and related suspend/resume handling
+- `impermanence-root` configures the persistent state layout for impermanent root filesystems
 
 ## Initial install
 
