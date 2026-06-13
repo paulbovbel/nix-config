@@ -17,7 +17,11 @@
 
   networking.interfaces.enp6s0.wakeOnLan = {
     enable = true;
+<<<<<<< HEAD
     policy = ["magic"];
+=======
+    policy = "magic";
+>>>>>>> 21ade6a (Simplify nvidia module, deal with suspend issues in white-tower host config)
   };
 
   impermanenceRoot = {
