@@ -5,8 +5,6 @@
   ...
 }: let
   cfg = config.nvidia;
-  disableWakeSourcesScript = ./disable-wake-sources.sh;
-  resumeSleepInhibitScript = ./resume-sleep-inhibit.sh;
 in {
   config = lib.mkMerge [
     {
@@ -54,35 +52,6 @@ in {
         };
       };
     }
-
-    (lib.mkIf cfg.sleep.enable {
-      services.logind.settings.Login = {
-        IdleAction = "ignore";
-      };
-
-      systemd.services = {
-        disable-wake-sources = {
-          description = "Disable wake sources except power buttons";
-          # Apply at boot and before sleep to avoid flaky spontaneous wakeups.
-          wantedBy = ["multi-user.target" "sleep.target"];
-          before = ["sleep.target"];
-          serviceConfig.Type = "oneshot";
-          script = builtins.readFile disableWakeSourcesScript;
-          path = [pkgs.coreutils pkgs.gnugrep pkgs.iproute2 pkgs.ethtool];
-        };
-
-        resume-sleep-inhibit = {
-          description = "Block suspend briefly after resume";
-          wantedBy = ["post-resume.target"];
-          after = ["post-resume.target"];
-          path = [pkgs.systemd pkgs.coreutils];
-          serviceConfig = {
-            Type = "simple";
-            ExecStart = "${resumeSleepInhibitScript}";
-          };
-        };
-      };
-    })
 
     (lib.mkIf cfg.prime.enable {
       hardware.nvidia = {

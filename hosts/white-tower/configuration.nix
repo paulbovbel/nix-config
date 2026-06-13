@@ -15,37 +15,42 @@
 
   networking.hostName = "white-tower";
 
+  networking.interfaces.enp6s0.wakeOnLan = {
+    enable = true;
+    policy = ["magic"];
+  };
+
   impermanenceRoot = {
     diskId = "/dev/disk/by-id/nvme-ADATA_SX8200PNP_2K4829A5C2U1";
     swapSize = "32G";
   };
-
-  nvidia.sleep.enable = true;
 
   services.udev.extraRules = ''
     # Prevent the Audeze Maxwell dongle from autosuspending mid-session.
     ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="3329", ATTR{idProduct}=="4b19", TEST=="power/control", ATTR{power/control}="on"
   '';
 
-  services.pipewire.wireplumber.extraConfig."51-hide-audio-devices" = {
-    "monitor.alsa.rules" = [
-      {
-        matches = [
-          {
-            "device.name" = "alsa_card.pci-0000_07_00.1";
-          }
-        ];
-        actions.update-props."device.disabled" = true;
-      }
-      {
-        matches = [
-          {
-            "device.name" = "alsa_card.pci-0000_09_00.4";
-          }
-        ];
-        actions.update-props."device.profile" = "output:iec958-stereo";
-      }
-    ];
+  systemd.services.disable-wake-sources = {
+    description = "Disable wake sources except power buttons";
+    # Apply at boot and before sleep to avoid flaky spontaneous wakeups.
+    wantedBy = ["multi-user.target" "sleep.target"];
+    before = ["sleep.target"];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      for wakeup in /sys/class/wakeup/*/device/power/wakeup; do
+        [ -e "$wakeup" ] || continue
+        source="''${wakeup#/sys/class/wakeup/}"
+        source="''${source%%/*}"
+        case "$source" in
+        PWRB | PWRF) ;;
+        *)
+          if [ ! -d "/sys/class/wakeup/$source/device/net" ]; then
+            printf 'disabled\n' >"$wakeup"
+          fi
+          ;;
+        esac
+      done
+    '';
   };
 
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
