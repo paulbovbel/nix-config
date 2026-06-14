@@ -5,7 +5,7 @@
 }: let
   cfg = config.impermanenceRoot;
 in {
-  config.disko.devices = {
+  config.disko.devices = lib.mkIf cfg.enable {
     disk.main = {
       type = "disk";
       device = cfg.diskId;

@@ -5,7 +5,7 @@
 }: let
   cfg = config.impermanenceRoot;
 in {
-  config = {
+  config = lib.mkIf cfg.enable {
     fileSystems.${cfg.persistPath}.neededForBoot = true;
 
     environment.persistence.${cfg.persistPath} = {
