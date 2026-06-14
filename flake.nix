@@ -27,6 +27,15 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    disko-zfs = {
+      url = "github:numtide/disko-zfs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+        disko.follows = "disko";
+      };
+    };
     impermanence = {
       url = "github:nix-community/impermanence";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -49,6 +58,7 @@
     home-manager,
     nix-flatpak,
     disko,
+    disko-zfs,
     agenix,
     impermanence,
     locus-vpn-client,
@@ -134,6 +144,7 @@
             agenix.nixosModules.default
             nix-flatpak.nixosModules.nix-flatpak
             disko.nixosModules.disko
+            disko-zfs.nixosModules.default
             impermanence.nixosModules.impermanence
             home-manager.nixosModules.home-manager
             catppuccin.nixosModules.catppuccin

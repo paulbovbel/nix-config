@@ -3,11 +3,10 @@
     ../graphical
   ];
 
-  disko.devices.zpool.zroot.datasets = {
-    "root/steam-library" = {
-      type = "zfs_fs";
+  disko.zfs.settings.datasets."zroot/root/steam-library" = {
+    properties = {
       mountpoint = "/steam-library";
-      options."com.sun:auto-snapshot" = "false";
+      "com.sun:auto-snapshot" = "false";
     };
   };
 

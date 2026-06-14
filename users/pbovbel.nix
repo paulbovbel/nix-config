@@ -1,7 +1,6 @@
 {config, ...}: {
-  disko.devices.zpool.zroot.datasets."root/home/pbovbel" = {
-    type = "zfs_fs";
-    mountpoint = "/home/pbovbel";
+  disko.zfs.settings.datasets."zroot/root/home/pbovbel" = {
+    properties.mountpoint = "/home/pbovbel";
   };
 
   age.secrets.pbovbel-ssh-private-key = {
