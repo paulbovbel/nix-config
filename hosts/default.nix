@@ -1,6 +1,5 @@
 {
   white-tower = {
-    systemProfiles = ["impermanence-root" "llama-cpp" "nvidia"];
     # useUnstablePackages = true;
     users = [
       {
@@ -22,7 +21,6 @@
   };
 
   pbovbel-dell = {
-    systemProfiles = ["impermanence-root" "nvidia"];
     users = [
       {
         name = "pbovbel";
@@ -32,14 +30,13 @@
     ];
   };
 
-  # media = {
-  #   systemProfiles = ["headless"];
-  #   users = [
-  #     {
-  #       name = "pbovbel";
-  #       systemModule = ../users/pbovbel.nix;
-  #       profiles = ["headless"];
-  #     }
-  #   ];
-  # };
+  media = {
+    users = [
+      {
+        name = "pbovbel";
+        systemModule = ../users/pbovbel.nix;
+        profiles = ["headless"];
+      }
+    ];
+  };
 }
