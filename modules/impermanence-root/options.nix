@@ -1,5 +1,11 @@
 {lib, ...}: {
   options.impermanenceRoot = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable impermanent root filesystem layout and rollback.";
+    };
+
     diskId = lib.mkOption {
       type = lib.types.str;
       description = "Disk id path for main system disk (e.g. /dev/disk/by-id/...)";

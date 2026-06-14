@@ -6,7 +6,9 @@
 }: let
   cfg = config.nvidia;
 in {
-  config = lib.mkMerge [
+  imports = [./options.nix];
+
+  config = lib.mkIf cfg.enable (lib.mkMerge [
     {
       services.xserver.videoDrivers = ["nvidia"];
 
@@ -65,5 +67,5 @@ in {
         };
       };
     })
-  ];
+  ]);
 }
