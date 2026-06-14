@@ -12,4 +12,11 @@ in {
   "secrets/common/rbovbel-password-hash.age".publicKeys = [pbovbel white_tower];
   "secrets/common/abovbel-password-hash.age".publicKeys = [pbovbel white_tower];
   "secrets/work/env.age".publicKeys = [pbovbel pbovbel_dell];
+  "secrets/server/google-oauth-env.age".publicKeys = [pbovbel];
+  "secrets/server/aws-access-env.age".publicKeys = [pbovbel];
+  "secrets/server/web-credentials-env.age".publicKeys = [pbovbel];
+  "secrets/server/pia-env.age".publicKeys = [pbovbel];
+  "secrets/server/mam-id-env.age".publicKeys = [pbovbel];
+  "secrets/server/plex-token-env.age".publicKeys = [pbovbel];
+  "secrets/server/abiotic-env.age".publicKeys = [pbovbel];
 }
