@@ -1,60 +1,67 @@
 {
+  config,
+  lib,
   pkgs,
   masterPkgs,
   ...
 }: let
+  cfg = config.llamaCpp;
   llamaProxy = ./llama-proxy.py;
 in {
-  imports = [
-    ../common
-  ];
-
-  environment.systemPackages = [
-    # Pin llama.cpp to nixpkgs master for newer CUDA support than stable.
-    (masterPkgs.llama-cpp.override {cudaSupport = true;})
-  ];
-
-  networking.firewall.allowedTCPPorts = [11434];
-
-  systemd.tmpfiles.rules = [
-    "d /var/lib/llama-cpp 0755 root root -"
-    "d /var/lib/llama-cpp/hf-cache 0755 root root -"
-  ];
-
-  systemd.services.llama-cpp-proxy = {
-    description = "Proxy server is always-on, model server is started lazily on demand.";
-    wantedBy = ["multi-user.target"];
-    wants = ["network-online.target"];
-    after = ["network-online.target"];
-    path = [
-      pkgs.systemd
-      pkgs.bash
-      pkgs.coreutils
-      pkgs.gnugrep
-      pkgs.sudo
-      pkgs.glib
-      (masterPkgs.llama-cpp.override {cudaSupport = true;})
-      pkgs.python3Packages.huggingface-hub
-      pkgs.python3Packages.hf-xet
-    ];
-    serviceConfig = {
-      Type = "simple";
-      Restart = "on-failure";
-      RestartSec = 5;
-      User = "root";
-      Group = "root";
-      ExecStart = ''
-        ${pkgs.python3.withPackages (ps: [ps.aiohttp ps.dbus-next ps.huggingface-hub ps.hf-xet])}/bin/python ${llamaProxy}
-      '';
-      Environment = [
-        "HF_HOME=/var/lib/llama-cpp/hf-cache"
-        "HF_HUB_DISABLE_PROGRESS_BARS=0"
-        "HF_HUB_DISABLE_XET=1"
-      ];
-      WorkingDirectory = "/var/lib/llama-cpp";
-    };
+  options.llamaCpp.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = false;
+    description = "Enable the llama.cpp proxy service.";
   };
-  impermanenceRoot.persistDirectories = [
-    "/var/lib/llama-cpp"
-  ];
+
+  config = lib.mkIf cfg.enable {
+    environment.systemPackages = [
+      # Pin llama.cpp to nixpkgs master for newer CUDA support than stable.
+      (masterPkgs.llama-cpp.override {cudaSupport = true;})
+    ];
+
+    networking.firewall.allowedTCPPorts = [11434];
+
+    systemd.tmpfiles.rules = [
+      "d /var/lib/llama-cpp 0755 root root -"
+      "d /var/lib/llama-cpp/hf-cache 0755 root root -"
+    ];
+
+    systemd.services.llama-cpp-proxy = {
+      description = "Proxy server is always-on, model server is started lazily on demand.";
+      wantedBy = ["multi-user.target"];
+      wants = ["network-online.target"];
+      after = ["network-online.target"];
+      path = [
+        pkgs.systemd
+        pkgs.bash
+        pkgs.coreutils
+        pkgs.gnugrep
+        pkgs.sudo
+        pkgs.glib
+        (masterPkgs.llama-cpp.override {cudaSupport = true;})
+        pkgs.python3Packages.huggingface-hub
+        pkgs.python3Packages.hf-xet
+      ];
+      serviceConfig = {
+        Type = "simple";
+        Restart = "on-failure";
+        RestartSec = 5;
+        User = "root";
+        Group = "root";
+        ExecStart = ''
+          ${pkgs.python3.withPackages (ps: [ps.aiohttp ps.dbus-next ps.huggingface-hub ps.hf-xet])}/bin/python ${llamaProxy}
+        '';
+        Environment = [
+          "HF_HOME=/var/lib/llama-cpp/hf-cache"
+          "HF_HUB_DISABLE_PROGRESS_BARS=0"
+          "HF_HUB_DISABLE_XET=1"
+        ];
+        WorkingDirectory = "/var/lib/llama-cpp";
+      };
+    };
+    impermanenceRoot.persistDirectories = [
+      "/var/lib/llama-cpp"
+    ];
+  };
 }
