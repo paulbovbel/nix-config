@@ -1,0 +1,7 @@
+setup sync across all machines? should sync be a container or nixpkg?
+
+add regular backups to rsync.net
+
+create dedicated users for different media-server services
+
+unify handling of paths, permissions between units?

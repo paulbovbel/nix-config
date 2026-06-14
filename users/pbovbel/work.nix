@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  cliPackages = import ../../modules/common/cli-packages.nix {inherit pkgs;};
+  cliPackages = import ../../profiles/common/cli-packages.nix {inherit pkgs;};
   workEnv = osConfig.age.secrets.work-env.path;
   sourceWorkEnv = ''
     if [ -r ${workEnv} ]; then
