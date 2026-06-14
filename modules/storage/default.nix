@@ -42,8 +42,11 @@
     tree;
   datasetAttrs = flattenDatasetTree "" allDatasets;
   renderDataset = dataset: {
-    type = "zfs_fs";
-    inherit (dataset) mountpoint options;
+    properties =
+      {
+        inherit (dataset) mountpoint;
+      }
+      // dataset.options;
   };
 in {
   imports = [./options.nix];
@@ -51,17 +54,17 @@ in {
   config = lib.mkIf cfg.enable {
     boot.zfs.extraPools = ["storage"];
 
-    disko.devices.zpool.storage = {
-      type = "zpool";
-      mountpoint = dataPath;
-      rootFsOptions = {
-        atime = "off";
-        canmount = "on";
-        "com.sun:auto-snapshot" = "false";
-        "com.sun:auto-snapshot:weekly" = "true,keep=12";
-        compression = "off";
-      };
-      datasets = lib.mapAttrs (_: renderDataset) datasetAttrs;
-    };
+    disko.zfs.settings.datasets =
+      {
+        storage.properties = {
+          mountpoint = dataPath;
+          atime = "off";
+          canmount = "on";
+          "com.sun:auto-snapshot" = "false";
+          "com.sun:auto-snapshot:weekly" = "true,keep=12";
+          compression = "off";
+        };
+      }
+      // lib.mapAttrs' (name: dataset: lib.nameValuePair "storage/${name}" (renderDataset dataset)) datasetAttrs;
   };
 }
