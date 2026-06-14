@@ -1,0 +1,222 @@
+{
+  agenix,
+  config,
+  pkgs,
+  ...
+}: let
+  cliPackages = import ./cli-packages.nix {inherit pkgs;};
+  inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
+in {
+  # Performance-biased defaults: trades hardening for lower overhead.
+  boot.kernelParams = [
+    # Disable most CPU vulnerability mitigations globally (kernel 5.2+).
+    "mitigations=off"
+    # Disable KPTI (Meltdown mitigation).
+    "nopti"
+    # Disable IBRS (Spectre v2 mitigation).
+    "noibrs"
+    # Disable IBPB (Spectre v2 mitigation).
+    "noibpb"
+    # Disable Spectre v2 mitigation paths.
+    "nospectre_v2"
+    # Disable Speculative Store Bypass mitigation.
+    "spec_store_bypass_disable=off"
+    # Disable L1TF mitigations.
+    "l1tf=off"
+    # Disable MDS mitigations.
+    "mds=off"
+  ];
+
+  nix = {
+    settings = {
+      experimental-features = ["nix-command" "flakes"];
+      trusted-users = ["root" "pbovbel"];
+      substituters = [
+        "https://cache.nixos.org"
+        "https://paulbovbel.cachix.org"
+        "https://nix-community.cachix.org"
+        "https://cuda-maintainers.cachix.org"
+      ];
+      trusted-public-keys = [
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbOJTs4f2vT5M9T8qN9kYChdD4="
+        "paulbovbel.cachix.org-1:9WWi/8x8my7+Hs6/ZmuYCBU3guG1zw7da/4nkZ+vViQ="
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
+      ];
+    };
+
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 14d";
+    };
+
+    optimise.automatic = true;
+  };
+
+  age = {
+    secrets = {
+      cachix-auth-token = {
+        file = ../../secrets/common/cachix-auth-token.age;
+        owner = "root";
+        group = "root";
+        mode = "0400";
+      };
+
+      gmail-password = {
+        file = ../../secrets/common/gmail-password.age;
+        owner = "root";
+        group = "root";
+        mode = "0400";
+      };
+    };
+
+    identityPaths = [
+      "/persist/etc/agenix/host.agekey"
+    ];
+  };
+
+  systemd.services = {
+    cachix-auth = {
+      description = "Configure Cachix auth token";
+      wantedBy = ["multi-user.target"];
+      wants = ["network-online.target"];
+      after = ["network-online.target" "agenix.service"];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = ''
+        ${pkgs.cachix}/bin/cachix authtoken "$(cat ${config.age.secrets.cachix-auth-token.path})"
+      '';
+    };
+
+    cachix-watch-store = {
+      description = "Watch Nix store and push paths to Cachix";
+      wantedBy = ["multi-user.target"];
+      wants = ["network-online.target"];
+      after = ["network-online.target" "cachix-auth.service"];
+      serviceConfig = {
+        ExecStart = "${pkgs.cachix}/bin/cachix watch-store paulbovbel";
+        Restart = "always";
+        RestartSec = 30;
+        TimeoutStopSec = "15s";
+      };
+    };
+
+    inhibit-sleep-while-ssh = {
+      description = "Inhibit sleep while SSH sessions are active";
+      wantedBy = ["multi-user.target"];
+      after = ["network.target"];
+      path = [pkgs.systemd pkgs.bash pkgs.procps pkgs.coreutils pkgs.gnugrep];
+      serviceConfig = {
+        Type = "simple";
+        Restart = "always";
+        RestartSec = 5;
+        ExecStart = "${pkgs.bash}/bin/bash ${inhibitSleepWhileSshScript}";
+      };
+    };
+  };
+
+  time.timeZone = "America/Toronto";
+  i18n.defaultLocale = "en_CA.UTF-8";
+
+  networking = {
+    resolvconf.enable = false;
+  };
+
+  services = {
+    fwupd.enable = true;
+
+    resolved.enable = true;
+
+    openssh = {
+      enable = true;
+      settings = {
+        Port = 22;
+        PermitRootLogin = "no";
+        PasswordAuthentication = false;
+        PermitEmptyPasswords = false;
+        StrictModes = true;
+        IgnoreRhosts = true;
+        UsePAM = true;
+        KbdInteractiveAuthentication = false;
+        X11Forwarding = false;
+      };
+      hostKeys = [
+        {
+          path = "/persist/etc/ssh/ssh_host_rsa_key";
+          type = "rsa";
+          bits = 4096;
+        }
+        {
+          path = "/persist/etc/ssh/ssh_host_ed25519_key";
+          type = "ed25519";
+        }
+      ];
+    };
+
+    smartd = {
+      enable = true;
+      defaults.autodetected = "-a -n standby,15,q -o on -S on -s (L/../../6/01|S/../.././02)";
+      notifications.mail = {
+        enable = true;
+        sender = "paul@bovbel.com";
+        recipient = "paul@bovbel.com";
+      };
+    };
+  };
+
+  programs.msmtp = {
+    enable = true;
+    defaults = {
+      aliases = "/etc/aliases";
+      auth = true;
+      tls = true;
+      tls_starttls = true;
+      port = 587;
+      syslog = "LOG_MAIL";
+    };
+    accounts.default = {
+      host = "smtp.gmail.com";
+      from = "paul@bovbel.com";
+      user = "paul@bovbel.com";
+      passwordeval = "cat ${config.age.secrets.gmail-password.path}";
+    };
+  };
+
+  users.mutableUsers = false;
+
+  security.sudo.extraConfig = ''
+    Defaults lecture=never
+  '';
+
+  nixpkgs.config.allowUnfree = true;
+
+  environment.systemPackages =
+    [
+      agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
+    ]
+    ++ cliPackages.nixPackages
+    ++ [
+      pkgs.dust
+      pkgs.eza
+      pkgs.jless
+      pkgs.just
+      pkgs.procs
+      pkgs.yq-go
+    ];
+
+  impermanenceRoot.persistDirectories = [
+    "/var/lib/cups"
+    "/var/lib/fwupd"
+    "/var/lib/nixos"
+    "/var/lib/systemd"
+    "/var/lib/systemd/coredump"
+    "/var/log"
+  ];
+
+  impermanenceRoot.persistFiles = [
+    "/etc/machine-id"
+  ];
+}
