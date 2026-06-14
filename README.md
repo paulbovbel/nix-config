@@ -2,20 +2,20 @@
 
 ## Overview
 
-Hosts are declared in `hosts/default.nix` with per-host `systemProfiles` and `users`; `flake.nix` imports this inventory and loads each host module from `hosts/<host>/configuration.nix` by convention.
+Hosts are declared in `hosts/default.nix` with `users`; `flake.nix` imports this inventory and loads each host module from `hosts/<host>/configuration.nix` by convention. Host-level modules are enabled in each host's `configuration.nix`.
 
 Inventory schema in `hosts/default.nix`:
 
 - host key: `<host>`
-- `systemProfiles`: list of module profile names (optional)
 - `useUnstablePackages`: use `nixpkgs-unstable` as the host-wide `pkgs` package set instead of release nixpkgs (optional, default `false`)
 - `users`: list of `{ name, systemModule, profiles }`
 
-User profiles are mapped in `users/default.nix` to modules under each user directory:
+User profiles are mapped in `users/default.nix` to a Home Manager module and an implied system profile. `flake.nix` imports each selected user profile's Home Manager module and also imports the unique set of implied system profiles for the host.
 
-- `users/pbovbel/{base,headless,graphical,work,gaming}.nix`
-- `users/rbovbel/{base,graphical}.nix`
-- `users/abovbel/{base,graphical,gaming}.nix`
+- `pbovbel`: `headless`, `graphical`, `work`, `gaming`
+- `rbovbel`: `graphical`
+- `abovbel`: `gaming`
+- Per-user Home Manager modules live under `users/<user>/<profile>.nix`
 - Shared user Home Manager modules are in `users/common/{base,graphical,avatar,gaming,vscode}.nix`
 
 Run the full local check suite before commit/PR:
@@ -28,22 +28,47 @@ just dry-run <host>
 ### Repository layout
 
 - `hosts/` host inventory in `hosts/default.nix` plus machine-specific NixOS configs
-- `modules/` composable NixOS modules (each module is a directory with `default.nix`)
+- `modules/` host-level NixOS modules (each module is a directory with `default.nix`)
+- `profiles/` user-implied system profiles such as graphical, gaming, work, and headless
 - `users/` user-level NixOS and Home Manager configs (`users/<user>.nix` plus per-profile modules under `users/<user>/`)
 - `secrets/` agenix-encrypted secrets
 - `secrets.nix` agenix public key declarations
 - `assets/` static assets (wallpapers, etc.)
 
-### Module composition
+### Modules
 
-- `common` is the base module
-- `graphical` includes `common`, for workstations
-- `work` includes `graphical`
-- `gaming` includes `graphical`
-- `headless` includes `common`, for headless setups
-- `llama-cpp` includes `common`, runs an LLM server proxy
-- `nvidia` configures the proprietary NVIDIA driver and related suspend/resume handling
-- `impermanence-root` configures the persistent state layout for impermanent root filesystems
+Modules in `modules/` are imported globally by `flake.nix`. Host-facing modules expose an `*.enable` option and are enabled from `hosts/<host>/configuration.nix`; internal plumbing modules activate from fragments declared by those host-facing modules.
+
+- `caddy.enable` configures the public Caddy ingress, auth, Caddyfile rendering, endpoint aggregation, fail2ban, and share/filebrowser components
+- `ddns.enable` configures Route53 dynamic DNS updates
+- `gameServer.enable` configures game-server components such as Minecraft and Abiotic Factor
+- `impermanenceRoot.enable` configures the persistent state layout for impermanent root filesystems
+- `llamaCpp.enable` runs an LLM server proxy
+- `mediaServer.enable` configures media components such as Plex, downloads, books, and sync services
+- `cockpit.enable` configures the Cockpit web UI; `smokeping.enable` controls the Smokeping companion service
+- `nvidia.enable` configures the proprietary NVIDIA driver and related suspend/resume handling
+- `podman-server` owns shared Quadlet rendering, Podman runtime setup, container storage datasets, and derived env files; it has no public `enable` flag and activates when containers are declared
+- `storage.enable` configures shared host storage paths and ZFS datasets
+- `syncthing.enable` configures the native Syncthing service, storage datasets, and optional Caddy endpoint
+- `upnp` exposes `upnp.forwards` and activates when forwards are declared
+
+### Profiles
+
+System profiles in `profiles/` are selected indirectly from `hosts/default.nix` through user profile declarations. They are import-driven; `graphical` and `headless` import `common`, while `work` and `gaming` import `graphical`.
+
+ ```text
+ profiles/
+ ├── common
+ ├── graphical
+ │   ├── gaming
+ │   └── work
+ └── headless
+ ```
+- `common` sets shared Nix settings, Cachix integration, agenix identity paths, base packages, SSH, sudo, locale, and persistent state defaults
+- `graphical` adds GNOME, GDM, Flatpak, PipeWire, NetworkManager, Tailscale laptop enrollment, theming, and graphical persistence
+- `headless` adds server Tailscale enrollment and headless persistence on top of `common`
+- `gaming` adds Steam, Sunshine, GameMode, 32-bit graphics support, and a persistent Steam library on top of `graphical`
+- `work` adds Podman/Docker compatibility, VPN tooling, work secrets, Slack, and Zoom on top of `graphical`
 
 ## Initial install
 

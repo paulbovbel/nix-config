@@ -61,7 +61,7 @@ jobs:
         host:
           - white-tower
           - pbovbel-dell
-          # - media
+          - media
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

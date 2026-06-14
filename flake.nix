@@ -82,15 +82,12 @@
         config.allowUnfree = true;
       };
 
-    systemProfiles = {
-      common = ./modules/common;
-      graphical = ./modules/graphical;
-      work = ./modules/work;
-      gaming = ./modules/gaming;
-      nvidia = ./modules/nvidia;
-      headless = ./modules/headless;
-      llama-cpp = ./modules/llama-cpp;
-      impermanence-root = ./modules/impermanence-root;
+    userSystemProfiles = {
+      common = ./profiles/common;
+      graphical = ./profiles/graphical;
+      work = ./profiles/work;
+      gaming = ./profiles/gaming;
+      headless = ./profiles/headless;
     };
 
     userProfiles = import ./users;
@@ -122,10 +119,18 @@
         modules =
           [
             ./hosts/${name}/configuration.nix
-            # Declare custom option schemas globally so hosts can set options
-            # even when the corresponding profile module is not imported.
-            ./modules/impermanence-root/options.nix
-            ./modules/nvidia/options.nix
+            ./modules/ddns
+            ./modules/upnp
+            ./modules/caddy
+            ./modules/storage
+            ./modules/monitor
+            ./modules/syncthing
+            ./modules/podman-server
+            ./modules/impermanence-root
+            ./modules/nvidia
+            ./modules/llama-cpp
+            ./modules/media-server
+            ./modules/game-server
             agenix.nixosModules.default
             nix-flatpak.nixosModules.nix-flatpak
             disko.nixosModules.disko
@@ -147,9 +152,8 @@
               };
             }
           ]
-          # System profiles are the union of host-selected profiles and
-          # transitive profiles implied by each user's chosen HM profile.
-          ++ map (profile: systemProfiles.${profile}) (lib.unique ((cfg.systemProfiles or []) ++ lib.flatten (map userSystemProfileNames cfg.users)))
+          # User profiles still imply their workstation/headless base module.
+          ++ map (profile: userSystemProfiles.${profile}) (lib.unique (lib.flatten (map userSystemProfileNames cfg.users)))
           ++ map (user: user.systemModule) cfg.users
           ++ map (user: {
             home-manager.users.${user.name} = {
