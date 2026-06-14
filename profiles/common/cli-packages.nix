@@ -1,0 +1,50 @@
+{pkgs}: let
+  packagePairs = [
+    ["age" pkgs.age]
+    ["bat" pkgs.bat]
+    ["bind9-dnsutils" pkgs.bind]
+    ["ca-certificates" pkgs.cacert]
+    ["curl" pkgs.curl]
+    ["dnsutils" pkgs.dnsutils]
+    ["duf" pkgs.duf]
+    ["ethtool" pkgs.ethtool]
+    ["fd-find" pkgs.fd]
+    ["file" pkgs.file]
+    ["git" pkgs.git]
+    ["git-lfs" pkgs.git-lfs]
+    ["gnupg" pkgs.gnupg]
+    ["htop" pkgs.htop]
+    ["iotop" pkgs.iotop]
+    ["iperf3" pkgs.iperf3]
+    ["jc" pkgs.jc]
+    ["jq" pkgs.jq]
+    ["kitty-terminfo" pkgs.kitty.terminfo]
+    ["lsof" pkgs.lsof]
+    ["mtr-tiny" pkgs.mtr]
+    ["nano" pkgs.nano]
+    ["ncdu" pkgs.ncdu]
+    ["nethogs" pkgs.nethogs]
+    ["net-tools" pkgs.nettools]
+    ["nmap" pkgs.nmap]
+    ["pciutils" pkgs.pciutils]
+    ["psmisc" pkgs.psmisc]
+    ["pv" pkgs.pv]
+    ["ripgrep" pkgs.ripgrep]
+    ["socat" pkgs.socat]
+    ["strace" pkgs.strace]
+    ["tcpdump" pkgs.tcpdump]
+    ["tmux" pkgs.tmux]
+    ["traceroute" pkgs.traceroute]
+    ["tree" pkgs.tree]
+    ["unzip" pkgs.unzip]
+    ["usbutils" pkgs.usbutils]
+    ["wget" pkgs.wget]
+    ["whois" pkgs.whois]
+    ["zip" pkgs.zip]
+  ];
+in {
+  inherit packagePairs;
+
+  aptPackages = map builtins.head packagePairs;
+  nixPackages = map (pair: builtins.elemAt pair 1) packagePairs;
+}
