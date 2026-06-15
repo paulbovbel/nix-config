@@ -22,7 +22,6 @@ in {
         "${datasets.media.path}:/data:ro"
       ];
       devices = ["/dev/dri:/dev/dri"];
-      requiresMountsFor = ["/storage"];
     };
 
     caddy.endpoints.jellyfin = {

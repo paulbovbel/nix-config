@@ -65,7 +65,6 @@ in {
             TZ = config.time.timeZone;
           };
           volumes = ["${datasets.app.children.jackett.path}:/config"];
-          requiresMountsFor = ["/storage"];
         };
 
         deluge = {
@@ -95,14 +94,12 @@ in {
           derivedEnvironmentFiles = ["deluge"];
           secretEnvironmentFiles = [config.age.secrets.web-credentials-env.path];
           execStopPre = "${pauseTorrents} deluge";
-          requiresMountsFor = ["/storage"];
         };
 
         autobrr = {
           image = "ghcr.io/autobrr/autobrr:latest";
           environment.TZ = config.time.timeZone;
           volumes = ["${datasets.app.children.autobrr.path}:/config"];
-          requiresMountsFor = ["/storage"];
         };
 
         flaresolverr = {
@@ -122,7 +119,6 @@ in {
             "${datasets.downloads.path}:/downloads"
             "${datasets.app.children.unpackerr.path}:/config"
           ];
-          requiresMountsFor = ["/storage"];
         };
       };
     };

@@ -30,7 +30,6 @@ in {
           "${datasets.media.children.tv.path}:/tv"
           "${datasets.downloads.path}:/downloads"
         ];
-        requiresMountsFor = ["/storage"];
       };
 
       radarr = {
@@ -47,7 +46,6 @@ in {
           "${datasets.media.children.movies.path}:/movies"
           "${datasets.downloads.path}:/downloads"
         ];
-        requiresMountsFor = ["/storage"];
       };
 
       bazarr = {
@@ -62,7 +60,6 @@ in {
           "${datasets.media.children.tv.path}:/tv"
           "${datasets.media.children.movies.path}:/movies"
         ];
-        requiresMountsFor = ["/storage"];
       };
 
       maintainerr = {
@@ -73,7 +70,6 @@ in {
           DEBUG = "true";
           TZ = config.time.timeZone;
         };
-        requiresMountsFor = ["/storage"];
       };
     };
 

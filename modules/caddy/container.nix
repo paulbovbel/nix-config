@@ -64,7 +64,6 @@ in {
         derivedEnvironmentFiles = ["caddy-token-secret" "caddy-basic-auth"];
         unitRequires = ["caddy-proxy-image.service"];
         unitAfter = ["caddy-proxy-image.service"];
-        requiresMountsFor = ["/storage"];
       };
 
       derivedEnvFiles = {

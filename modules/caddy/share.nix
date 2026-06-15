@@ -19,7 +19,6 @@ in {
             "${datasets.app.children.filebrowser.path}/filebrowser.db:/database.db"
           ];
           command = "-b /browser";
-          requiresMountsFor = ["/storage"];
         };
       };
     };

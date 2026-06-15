@@ -46,7 +46,6 @@ in {
             TZ = config.time.timeZone;
           };
           derivedEnvironmentFiles = ["plex"];
-          requiresMountsFor = ["/storage"];
         };
 
         tautulli = {
@@ -61,7 +60,6 @@ in {
             "${datasets.app.children.tautulli.path}:/config"
             "${datasets.app.children.plex.path}/Library/Application Support/Plex Media Server/Logs:/logs:ro"
           ];
-          requiresMountsFor = ["/storage"];
         };
       };
     };

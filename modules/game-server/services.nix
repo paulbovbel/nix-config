@@ -49,7 +49,6 @@ in {
             SEED = "-7903651094132931013";
           };
           derivedEnvironmentFiles = ["minecraft"];
-          requiresMountsFor = ["/storage"];
         };
 
         abiotic = lib.mkIf cfg.components.abiotic.enable {
@@ -70,7 +69,6 @@ in {
             AutoUpdate = true;
           };
           secretEnvironmentFiles = [config.age.secrets.abiotic-env.path];
-          requiresMountsFor = ["/storage"];
         };
       };
     };

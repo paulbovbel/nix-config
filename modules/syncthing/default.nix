@@ -4,6 +4,7 @@
   ...
 }: let
   datasets = config.storage.datasets;
+  storagePath = config.storage.dataPath;
   inherit (config.podmanServer) user;
 in {
   imports = [./options.nix];
@@ -26,13 +27,13 @@ in {
       enable = true;
       inherit (user) group;
       user = user.name;
-      dataDir = "/storage";
+      dataDir = storagePath;
       configDir = datasets.app.children.syncthing.path;
       guiAddress = "0.0.0.0:8384";
       openDefaultPorts = true;
     };
 
-    systemd.services.syncthing.unitConfig.RequiresMountsFor = ["/storage"];
+    systemd.services.syncthing.unitConfig.RequiresMountsFor = [storagePath];
 
     caddy.endpoints.syncthing = lib.mkIf config.syncthing.caddy.enable {
       type = "proxy";

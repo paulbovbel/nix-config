@@ -1,4 +1,8 @@
-{lib, ...}: let
+{
+  config,
+  lib,
+  ...
+}: let
   snapshotValueType = lib.types.oneOf [lib.types.bool lib.types.str];
   autoSnapshotType = lib.types.submodule {
     options = {
@@ -77,9 +81,23 @@ in {
     };
 
     datasets = lib.mkOption {
-      type = lib.types.lazyAttrsOf (datasetType "/storage");
+      type = lib.types.lazyAttrsOf (datasetType config.storage.dataPath);
       default = {};
       description = "Nested shared host storage datasets.";
+    };
+
+    pool = lib.mkOption {
+      type = lib.types.str;
+      default = "storage";
+      readOnly = true;
+      description = "ZFS pool backing shared host storage.";
+    };
+
+    dataPath = lib.mkOption {
+      type = lib.types.str;
+      default = "/${config.storage.pool}";
+      readOnly = true;
+      description = "Root mount path for shared host storage.";
     };
   };
 }

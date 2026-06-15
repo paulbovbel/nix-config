@@ -27,7 +27,6 @@ in {
           "${datasets.app.children.smokeping.path}/config:/config"
           "${datasets.app.children.smokeping.path}/data:/data"
         ];
-        requiresMountsFor = ["/storage"];
       };
     };
 
