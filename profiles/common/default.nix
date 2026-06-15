@@ -1,12 +1,18 @@
 {
   agenix,
   config,
+  lib,
   pkgs,
   ...
 }: let
   cliPackages = import ./cli-packages.nix {inherit pkgs;};
   inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
 in {
+  catppuccin = {
+    enable = lib.mkDefault false;
+    autoEnable = lib.mkDefault false;
+  };
+
   # Performance-biased defaults: trades hardening for lower overhead.
   boot.kernelParams = [
     # Disable most CPU vulnerability mitigations globally (kernel 5.2+).
