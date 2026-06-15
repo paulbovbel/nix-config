@@ -14,10 +14,9 @@ in {
 
       hardware.nvidia = {
         modesetting.enable = true;
-        open = true;
+        inherit (cfg) open;
         nvidiaSettings = true;
-        # Beta driver often carries suspend/resume and Wayland fixes sooner.
-        package = lib.mkDefault config.boot.kernelPackages.nvidiaPackages.beta;
+        package = lib.mkDefault config.boot.kernelPackages.nvidiaPackages.latest;
         powerManagement.enable = true;
         powerManagement.finegrained = lib.mkDefault false;
       };
