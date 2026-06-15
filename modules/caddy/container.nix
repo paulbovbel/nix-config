@@ -19,7 +19,7 @@
   };
   customCaddy = pkgs.caddy.withPlugins {
     plugins = lib.mapAttrsToList (_: plugin: "${plugin.module}@${plugin.version}") caddyPlugins;
-    hash = lib.fakeHash;
+    hash = "sha256-8XgZ54l78hWcQGYMpT+wxmKl2U/07j1Ygeb05ppGMnY=";
   };
   caddyImageTag = customCaddy.version;
   caddyImage = pkgs.dockerTools.buildLayeredImage {
