@@ -6,6 +6,12 @@
       description = "Enable proprietary NVIDIA driver support.";
     };
 
+    open = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Use NVIDIA's open kernel modules.";
+    };
+
     prime = {
       enable = lib.mkOption {
         type = lib.types.bool;

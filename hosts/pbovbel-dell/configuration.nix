@@ -24,7 +24,10 @@
     swapSize = "32G";
   };
 
-  nvidia.enable = true;
+  nvidia = {
+    enable = true;
+    open = false;
+  };
 
   system.stateVersion = "26.05";
 }
