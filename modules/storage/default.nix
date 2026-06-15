@@ -4,7 +4,6 @@
   ...
 }: let
   cfg = config.storage;
-  dataPath = "/storage";
   baseDatasets = {};
   allDatasets = lib.recursiveUpdate baseDatasets cfg.datasets;
   renderAutoSnapshot = autoSnapshot:
@@ -52,12 +51,12 @@ in {
   imports = [./options.nix];
 
   config = lib.mkIf cfg.enable {
-    boot.zfs.extraPools = ["storage"];
+    boot.zfs.extraPools = [cfg.pool];
 
     disko.zfs.settings.datasets =
       {
-        storage.properties = {
-          mountpoint = dataPath;
+        ${cfg.pool}.properties = {
+          mountpoint = cfg.dataPath;
           atime = "off";
           canmount = "on";
           "com.sun:auto-snapshot" = "false";
@@ -65,6 +64,6 @@ in {
           compression = "off";
         };
       }
-      // lib.mapAttrs' (name: dataset: lib.nameValuePair "storage/${name}" (renderDataset dataset)) datasetAttrs;
+      // lib.mapAttrs' (name: dataset: lib.nameValuePair "${cfg.pool}/${name}" (renderDataset dataset)) datasetAttrs;
   };
 }

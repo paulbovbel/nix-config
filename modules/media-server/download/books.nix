@@ -60,7 +60,6 @@ in {
           "${datasets.media.children.books.path}:/books"
           "${datasets.media.children.audiobooks.path}:/audiobooks"
         ];
-        requiresMountsFor = ["/storage"];
       };
 
       shelfmark = {
@@ -74,7 +73,6 @@ in {
           "${datasets.downloads.path}/bookdrop:/cwa-book-ingest"
           "${datasets.app.children.shelfmark.path}:/config"
         ];
-        requiresMountsFor = ["/storage"];
       };
     };
 

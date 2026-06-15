@@ -17,6 +17,11 @@
   lines = key: values: map (line key) values;
   derivedEnvUnits = names: map (name: "podman-server-${name}-env.service") names;
   derivedEnvFiles = names: map (name: cfg.derivedEnvFiles.${name}.path) names;
+  volumeHostPath = volume: let
+    parts = lib.splitString ":" volume;
+    hostPath = lib.head parts;
+  in
+    lib.optional (lib.length parts > 1 && lib.hasPrefix "/" hostPath) hostPath;
 
   renderContainer = name: container: let
     dependencyUnits = map (dependency: "${dependency}.service") container.dependsOn;
@@ -25,6 +30,7 @@
     secretEnvUnits = lib.optional (container.secretEnvironmentFiles != []) "agenix.service";
     requiredUnits = dependencyUnits ++ derivedEnvUnitNames ++ secretEnvUnits ++ container.unitRequires;
     afterUnits = dependencyUnits ++ derivedEnvUnitNames ++ secretEnvUnits ++ container.unitAfter;
+    requiredMounts = lib.unique (container.requiresMountsFor ++ lib.concatMap volumeHostPath container.volumes);
     containerUser = "${toString user.uid}:${toString user.gid}";
   in
     lib.concatStringsSep "\n" (
@@ -35,7 +41,7 @@
       ]
       ++ lib.optional (requiredUnits != []) "Requires=${lib.concatStringsSep " " requiredUnits}"
       ++ lib.optional (afterUnits != []) "After=${lib.concatStringsSep " " afterUnits}"
-      ++ lines "RequiresMountsFor" container.requiresMountsFor
+      ++ lines "RequiresMountsFor" requiredMounts
       ++ [
         ""
         "[Container]"

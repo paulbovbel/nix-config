@@ -6,7 +6,8 @@
   boot = {
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
-    kernelPackages = pkgs.linuxPackages_latest;
+    # use LTS for appliance
+    kernelPackages = pkgs.linuxPackages;
   };
 
   networking = {
@@ -72,7 +73,7 @@
   smokeping.enable = true;
 
   syncthing = {
-    enable = true;
+    # enable = true;
     caddy.enable = true;
   };
 

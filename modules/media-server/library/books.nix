@@ -44,7 +44,6 @@ in {
           };
           derivedEnvironmentFiles = ["grimmory-db"];
           volumes = ["${datasets.app.children."grimmory-db".path}:/config"];
-          requiresMountsFor = ["/storage"];
         };
 
         grimmory = {
@@ -71,7 +70,6 @@ in {
             "${datasets.media.children.books.path}:/books"
             "${datasets.downloads.path}/bookdrop:/bookdrop"
           ];
-          requiresMountsFor = ["/storage"];
         };
       };
     };
