@@ -14,7 +14,7 @@
     services.cockpit = {
       enable = true;
       openFirewall = false;
-      plugins = [pkgs.cockpit-zfs];
+      # plugins = [pkgs.cockpit-zfs];
       settings.WebService = {
         AllowUnencrypted = true;
         LoginTo = false;
