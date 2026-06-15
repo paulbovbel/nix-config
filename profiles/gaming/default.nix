@@ -3,11 +3,10 @@
     ../graphical
   ];
 
-  disko.zfs.settings.datasets."zroot/root/steam-library" = {
-    properties = {
-      mountpoint = "/steam-library";
-      "com.sun:auto-snapshot" = "false";
-    };
+  disko.devices.zpool.zroot.datasets."root/steam-library" = {
+    type = "zfs_fs";
+    mountpoint = "/steam-library";
+    options."com.sun:auto-snapshot" = "false";
   };
 
   systemd.tmpfiles.rules = [

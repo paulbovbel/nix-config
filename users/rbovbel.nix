@@ -10,7 +10,8 @@
     extraGroups = ["networkmanager"];
   };
 
-  disko.zfs.settings.datasets."zroot/root/home/rbovbel" = {
-    properties.mountpoint = "/home/rbovbel";
+  disko.devices.zpool.zroot.datasets."root/home/rbovbel" = {
+    type = "zfs_fs";
+    mountpoint = "/home/rbovbel";
   };
 }
