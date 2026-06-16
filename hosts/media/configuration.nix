@@ -69,6 +69,8 @@
 
   storage.enable = true;
 
+  environment.systemPackages = [pkgs.intel-gpu-tools];
+
   cockpit.enable = true;
   smokeping.enable = true;
 
