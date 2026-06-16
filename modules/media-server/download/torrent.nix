@@ -7,8 +7,18 @@
   cfg = config.mediaServer;
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
+  containerUser = "${toString user.uid}:${toString user.gid}";
   cleanupDownloadsAgeDays = 60;
   cleanupDownloadsCalendar = "04:30";
+  # PR fixes the stale 7-Zip URL and Python site-packages path resolution.
+  # https://github.com/binhex/arch-delugevpn/pull/446
+  # A fresh build also pulls in nftables support
+  # https://github.com/binhex/arch-int-vpn/pull/53
+  delugeRev = "d14bf66246ff176ef07bd26f0c896c1f3c7465d6";
+  delugeSrc = builtins.fetchGit {
+    url = "https://github.com/partymola/arch-delugevpn.git";
+    rev = delugeRev;
+  };
   pauseTorrents = pkgs.writeShellScript "pause-deluge" ''
     ${lib.getExe pkgs.podman} exec "$1" /bin/bash -c 'deluge-console "connect 127.0.0.1 $WEB_USER $WEB_PASSWORD; pause *"' || true
   '';
@@ -58,67 +68,86 @@ in {
 
       containers = {
         jackett = {
-          image = "lscr.io/linuxserver/jackett";
-          environment = {
-            PUID = user.uid;
-            PGID = user.gid;
-            TZ = config.time.timeZone;
+          quadlet.containerConfig = {
+            image = "lscr.io/linuxserver/jackett";
+            environments = {
+              PUID = toString user.uid;
+              PGID = toString user.gid;
+              TZ = config.time.timeZone;
+            };
+            volumes = ["${datasets.app.children.jackett.path}:/config"];
           };
-          volumes = ["${datasets.app.children.jackett.path}:/config"];
         };
 
         deluge = {
-          image = "binhex/arch-delugevpn";
-          privileged = true;
-          sysctls = ["net.ipv4.conf.all.src_valid_mark=1"];
-          capabilities = ["NET_ADMIN"];
-          ports = ["58846:58846"];
-          volumes = [
-            "/etc/localtime:/etc/localtime:ro"
-            "${datasets.app.children.deluge.path}:/config"
-            "${datasets.downloads.path}:/downloads"
-          ];
-          environment = {
-            PUID = user.uid;
-            PGID = user.gid;
-            TZ = config.time.timeZone;
-            STRICT_PORT_FORWARD = "yes";
-            NAME_SERVERS = "8.8.8.8,8.8.4.4";
-            DELUGE_DAEMON_LOG_LEVEL = "info";
-            DELUGE_WEB_LOG_LEVEL = "info";
-            DELUGE_ENABLE_WEBUI_PASSWORD = "no";
-            VPN_ENABLED = "yes";
-            VPN_PROV = "pia";
-            VPN_CLIENT = "wireguard";
+          build.buildConfig = {
+            workdir = "${delugeSrc}";
+            buildArgs = {
+              APPNAME = "deluge";
+              RELEASETAG = "nix-${delugeRev}";
+              TARGETARCH = "amd64";
+            };
+          };
+          quadlet.containerConfig = {
+            sysctl."net.ipv4.conf.all.src_valid_mark" = "1";
+            addCapabilities = ["NET_ADMIN"];
+            publishPorts = ["58846:58846"];
+            volumes = [
+              "/etc/localtime:/etc/localtime:ro"
+              "${datasets.app.children.deluge.path}:/config"
+              "${datasets.downloads.path}:/downloads"
+            ];
+            environments = {
+              PUID = toString user.uid;
+              PGID = toString user.gid;
+              TZ = config.time.timeZone;
+              STRICT_PORT_FORWARD = "yes";
+              NAME_SERVERS = "8.8.8.8,8.8.4.4";
+              DELUGE_DAEMON_LOG_LEVEL = "info";
+              DELUGE_WEB_LOG_LEVEL = "info";
+              DELUGE_ENABLE_WEBUI_PASSWORD = "no";
+              VPN_ENABLED = "yes";
+              VPN_PROV = "pia";
+              VPN_CLIENT = "wireguard";
+            };
+            podmanArgs = ["--privileged"];
           };
           derivedEnvironmentFiles = ["deluge"];
           secretEnvironmentFiles = [config.age.secrets.web-credentials-env.path];
-          execStopPre = "${pauseTorrents} deluge";
+          quadlet.serviceConfig.ExecStopPre = "${pauseTorrents} deluge";
         };
 
         autobrr = {
-          image = "ghcr.io/autobrr/autobrr:latest";
-          environment.TZ = config.time.timeZone;
-          volumes = ["${datasets.app.children.autobrr.path}:/config"];
+          quadlet.containerConfig = {
+            image = "ghcr.io/autobrr/autobrr:latest";
+            user = containerUser;
+            environments.TZ = config.time.timeZone;
+            volumes = ["${datasets.app.children.autobrr.path}:/config"];
+          };
         };
 
         flaresolverr = {
-          image = "ghcr.io/flaresolverr/flaresolverr:latest";
-          environment = {
-            PUID = user.uid;
-            PGID = user.gid;
-            TZ = config.time.timeZone;
-            CAPTCHA_SOLVER = "none";
+          quadlet.containerConfig = {
+            image = "ghcr.io/flaresolverr/flaresolverr:latest";
+            environments = {
+              PUID = toString user.uid;
+              PGID = toString user.gid;
+              TZ = config.time.timeZone;
+              CAPTCHA_SOLVER = "none";
+            };
           };
         };
 
         unpackerr = {
-          image = "golift/unpackerr";
-          environment.TZ = config.time.timeZone;
-          volumes = [
-            "${datasets.downloads.path}:/downloads"
-            "${datasets.app.children.unpackerr.path}:/config"
-          ];
+          quadlet.containerConfig = {
+            image = "golift/unpackerr";
+            user = containerUser;
+            environments.TZ = config.time.timeZone;
+            volumes = [
+              "${datasets.downloads.path}:/downloads"
+              "${datasets.app.children.unpackerr.path}:/config"
+            ];
+          };
         };
       };
     };

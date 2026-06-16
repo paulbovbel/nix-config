@@ -5,16 +5,8 @@
   ...
 }: let
   cfg = config.podmanServer;
-  inherit (cfg) user;
   active = cfg.containers != {};
 
-  envValue = value:
-    if lib.isBool value
-    then lib.boolToString value
-    else toString value;
-
-  line = key: value: "${key}=${value}";
-  lines = key: values: map (line key) values;
   derivedEnvUnits = names: map (name: "podman-server-${name}-env.service") names;
   derivedEnvFiles = names: map (name: cfg.derivedEnvFiles.${name}.path) names;
   volumeHostPath = volume: let
@@ -22,56 +14,48 @@
     hostPath = lib.head parts;
   in
     lib.optional (lib.length parts > 1 && lib.hasPrefix "/" hostPath) hostPath;
+  removeNulls = value:
+    if lib.isAttrs value
+    then lib.filterAttrs (_: nested: nested != null) (lib.mapAttrs (_: removeNulls) value)
+    else value;
 
-  renderContainer = name: container: let
+  mkQuadletContainer = name: container: let
     dependencyUnits = map (dependency: "${dependency}.service") container.dependsOn;
     derivedEnvUnitNames = derivedEnvUnits container.derivedEnvironmentFiles;
     derivedEnvFilePaths = derivedEnvFiles container.derivedEnvironmentFiles;
-    secretEnvUnits = lib.optional (container.secretEnvironmentFiles != []) "agenix.service";
-    requiredUnits = dependencyUnits ++ derivedEnvUnitNames ++ secretEnvUnits ++ container.unitRequires;
-    afterUnits = dependencyUnits ++ derivedEnvUnitNames ++ secretEnvUnits ++ container.unitAfter;
-    requiredMounts = lib.unique (container.requiresMountsFor ++ lib.concatMap volumeHostPath container.volumes);
-    containerUser = "${toString user.uid}:${toString user.gid}";
+    requiredUnits = dependencyUnits ++ derivedEnvUnitNames;
+    afterUnits = dependencyUnits ++ derivedEnvUnitNames;
+    quadletConfig = removeNulls (lib.filterAttrs (key: _: !(lib.hasPrefix "_" key) && key != "ref") container.quadlet);
   in
-    lib.concatStringsSep "\n" (
-      [
-        "[Unit]"
-        "Wants=network-online.target"
-        "After=network-online.target"
-      ]
-      ++ lib.optional (requiredUnits != []) "Requires=${lib.concatStringsSep " " requiredUnits}"
-      ++ lib.optional (afterUnits != []) "After=${lib.concatStringsSep " " afterUnits}"
-      ++ lines "RequiresMountsFor" requiredMounts
-      ++ [
-        ""
-        "[Container]"
-        (line "ContainerName" name)
-        "Network=apps"
-        (line "Image" container.image)
-      ]
-      ++ lib.mapAttrsToList (key: value: line "Environment" "${key}=${envValue value}") container.environment
-      ++ lines "EnvironmentFile" (container.environmentFiles ++ container.secretEnvironmentFiles ++ derivedEnvFilePaths)
-      ++ lines "PublishPort" container.ports
-      ++ lines "Volume" container.volumes
-      ++ lines "Tmpfs" container.tmpfs
-      ++ lines "AddDevice" container.devices
-      ++ lines "AddCapability" container.capabilities
-      ++ lines "Sysctl" container.sysctls
-      ++ [(line "User" containerUser)]
-      ++ lib.optional (container.command != null) (line "Exec" container.command)
-      ++ lib.optional container.privileged "PodmanArgs=--privileged"
-      ++ [
-        ""
-        "[Service]"
-      ]
-      ++ lib.optional (container.execStopPre != null) "ExecStopPre=${container.execStopPre}"
-      ++ [
-        ""
-        "[Install]"
-        "WantedBy=multi-user.target"
-        ""
-      ]
-    );
+    lib.mkMerge [
+      (quadletConfig
+        // {
+          containerConfig = builtins.removeAttrs quadletConfig.containerConfig ["name"];
+        })
+      {
+        unitConfig = {
+          Wants = lib.mkBefore ["network-online.target"];
+          After = lib.mkBefore (["network-online.target"] ++ afterUnits);
+          Requires = lib.mkBefore requiredUnits;
+          RequiresMountsFor = lib.mkAfter (lib.unique (lib.concatMap volumeHostPath config.virtualisation.quadlet.containers.${name}.containerConfig.volumes));
+        };
+
+        containerConfig = {
+          inherit name;
+          networks = lib.mkBefore [config.virtualisation.quadlet.networks.apps.ref];
+          environmentFiles = lib.mkAfter (container.secretEnvironmentFiles ++ derivedEnvFilePaths);
+          podmanArgs = lib.mkBefore ["--no-healthcheck"];
+        };
+      }
+      (lib.mkIf (container.build != null) {
+        containerConfig.image = config.virtualisation.quadlet.builds.${name}.ref;
+      })
+    ];
+
+  mkQuadletBuild = build:
+    removeNulls (lib.filterAttrs (key: _: !(lib.hasPrefix "_" key) && key != "ref") build);
+  mkQuadletBuilds = containers:
+    lib.mapAttrs (_: mkQuadletBuild) (lib.filterAttrs (_: build: build != null) (lib.mapAttrs (_: container: container.build) containers));
 
   renderDerivedEnvFile = name: envFile: let
     derivedEnvUnitNames = derivedEnvUnits envFile.derivedEnvironmentFiles;
@@ -79,11 +63,12 @@
     renderedVariables = lib.concatStringsSep "\n" (lib.mapAttrsToList (key: value: "${key}=${value}") envFile.variables);
   in {
     description = "Render Podman server ${name} environment";
-    wants = lib.optional (envFile.secretEnvironmentFiles != []) "agenix.service" ++ derivedEnvUnitNames ++ envFile.wants;
-    after = lib.optional (envFile.secretEnvironmentFiles != []) "agenix.service" ++ derivedEnvUnitNames ++ envFile.after;
+    wants = derivedEnvUnitNames ++ envFile.wants;
+    after = derivedEnvUnitNames ++ envFile.after;
     path = [pkgs.coreutils] ++ envFile.packages;
     serviceConfig = {
       Type = "oneshot";
+      RemainAfterExit = true;
       EnvironmentFile = envFile.environmentFiles ++ envFile.secretEnvironmentFiles ++ derivedEnvFilePaths;
     };
     script = ''
@@ -100,11 +85,7 @@
     '';
   };
 
-  quadletFiles = lib.mapAttrs' (name: container:
-    lib.nameValuePair "containers/systemd/${name}.container" {
-      text = renderContainer name container;
-    })
-  cfg.containers;
+  declaredContainerNames = lib.attrNames cfg.containers;
 in {
   config = lib.mkIf active {
     virtualisation.podman = {
@@ -112,15 +93,39 @@ in {
       dockerCompat = true;
     };
 
-    environment.etc =
-      quadletFiles
-      // {
-        "containers/systemd/apps.network".text = ''
-          [Network]
-          NetworkName=apps
-        '';
-      };
+    virtualisation.quadlet = {
+      networks.apps.networkConfig.name = "apps";
+      builds = mkQuadletBuilds cfg.containers;
+      containers = lib.mapAttrs mkQuadletContainer cfg.containers;
+    };
 
     systemd.services = lib.mapAttrs' (name: envFile: lib.nameValuePair "podman-server-${name}-env" (renderDerivedEnvFile name envFile)) cfg.derivedEnvFiles;
+
+    system.activationScripts.podman-server-prune-containers = lib.stringAfter ["etc"] ''
+      declared_names=(${lib.escapeShellArgs declaredContainerNames})
+
+      is_declared_container() {
+        local candidate="$1"
+        local declared
+        for declared in "''${declared_names[@]}"; do
+          if [ "$candidate" = "$declared" ]; then
+            return 0
+          fi
+        done
+        return 1
+      }
+
+      for container in $(${pkgs.podman}/bin/podman ps --all --format '{{.Names}}' 2>/dev/null); do
+        if is_declared_container "$container"; then
+          continue
+        fi
+
+        load_state="$(${pkgs.systemd}/bin/systemctl show --property=LoadState --value "$container.service" 2>/dev/null || true)"
+        if [ "$load_state" = not-found ]; then
+          ${pkgs.coreutils}/bin/timeout 20s ${pkgs.podman}/bin/podman rm --force --time 10 --ignore "$container" 2>/dev/null || true
+          ${pkgs.coreutils}/bin/timeout 5s ${pkgs.systemd}/bin/systemctl reset-failed "$container.service" 2>/dev/null || true
+        fi
+      done
+    '';
   };
 }

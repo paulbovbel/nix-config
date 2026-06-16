@@ -1,111 +1,40 @@
-{lib, ...}: let
+{
+  lib,
+  options,
+  ...
+}: let
+  quadletContainerType = options.virtualisation.quadlet.containers.type.nestedTypes.elemType;
+  quadletBuildType = options.virtualisation.quadlet.builds.type.nestedTypes.elemType;
   containerType = lib.types.submodule {
     options = {
-      image = lib.mkOption {
-        type = lib.types.str;
-        description = "Container image to run.";
+      build = lib.mkOption {
+        type = lib.types.nullOr quadletBuildType;
+        default = null;
+        description = "quadlet-nix build module for this container. When set, the container image uses the generated build ref.";
       };
 
-      environment = lib.mkOption {
-        type = lib.types.attrsOf (lib.types.oneOf [lib.types.str lib.types.int lib.types.bool]);
+      quadlet = lib.mkOption {
+        type = quadletContainerType;
         default = {};
-        description = "Container environment variables.";
-      };
-
-      environmentFiles = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Environment files passed to the container.";
-      };
-
-      secretEnvironmentFiles = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Secret environment files passed to the container.";
-      };
-
-      derivedEnvironmentFiles = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Keys from podmanServer.derivedEnvFiles passed to the container.";
-      };
-
-      ports = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Published ports in host:container[/proto] form.";
-      };
-
-      volumes = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Container volume mounts.";
-      };
-
-      tmpfs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Tmpfs mounts.";
-      };
-
-      devices = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Device mappings.";
-      };
-
-      capabilities = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Additional capabilities.";
-      };
-
-      sysctls = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Container sysctls.";
+        description = "quadlet-nix container module merged with Podman server defaults.";
       };
 
       dependsOn = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
-        description = "Other container names this one depends on.";
+        description = "Other Podman server container names this one requires and starts after.";
       };
 
-      unitRequires = lib.mkOption {
+      secretEnvironmentFiles = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
-        description = "Additional systemd units required by this container.";
+        description = "Secret environment files appended to containerConfig.environmentFiles.";
       };
 
-      unitAfter = lib.mkOption {
+      derivedEnvironmentFiles = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
-        description = "Additional systemd units this container starts after.";
-      };
-
-      requiresMountsFor = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-        description = "Host paths that must be mounted before starting.";
-      };
-
-      command = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
-        default = null;
-        description = "Container command.";
-      };
-
-      execStopPre = lib.mkOption {
-        type = lib.types.nullOr lib.types.lines;
-        default = null;
-        description = "Commands to run before container shutdown.";
-      };
-
-      privileged = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Run the container privileged.";
+        description = "Keys from podmanServer.derivedEnvFiles appended to containerConfig.environmentFiles.";
       };
     };
   };

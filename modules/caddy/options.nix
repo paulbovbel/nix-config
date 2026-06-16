@@ -53,7 +53,7 @@ in {
     components.share.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable share and file browser components.";
+      description = "Enable share component.";
     };
 
     roles = lib.mkOption {

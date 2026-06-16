@@ -6,35 +6,23 @@
 }: let
   datasets = config.storage.datasets;
   tailscaleSocket = "/run/tailscale/tailscaled.sock";
-  caddyImageName = "localhost/caddy-proxy";
-  caddyPlugins = {
-    security = {
-      module = "github.com/greenpau/caddy-security";
-      version = "v1.1.62";
-    };
-    route53 = {
-      module = "github.com/caddy-dns/route53";
-      version = "v1.6.2";
-    };
-  };
-  customCaddy = pkgs.caddy.withPlugins {
-    plugins = lib.mapAttrsToList (_: plugin: "${plugin.module}@${plugin.version}") caddyPlugins;
-    hash = "sha256-8XgZ54l78hWcQGYMpT+wxmKl2U/07j1Ygeb05ppGMnY=";
-  };
-  caddyImageTag = customCaddy.version;
-  caddyImage = pkgs.dockerTools.buildLayeredImage {
-    name = caddyImageName;
-    tag = caddyImageTag;
-    contents = [
-      customCaddy
-      pkgs.cacert
-      pkgs.tzdata
-    ];
-    config = {
-      Entrypoint = ["${customCaddy}/bin/caddy"];
-      Cmd = ["run" "--config" "/etc/caddy/Caddyfile" "--adapter" "caddyfile"];
-    };
-  };
+  caddyVersion = "2.9.1";
+  caddyPlugins = [
+    "github.com/greenpau/caddy-security@v1.1.29"
+    "github.com/caddy-dns/route53@v1.5.1"
+  ];
+  caddyContainerfile = pkgs.writeText "Containerfile" ''
+    FROM caddy:${caddyVersion}-builder AS builder
+
+    RUN xcaddy build ${lib.concatMapStringsSep " " (plugin: "\\\n      --with ${plugin}") caddyPlugins}
+
+    FROM caddy:${caddyVersion}
+
+    COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+
+    # see https://github.com/caddyserver/caddy-docker/issues/58
+    RUN apk add --no-cache tzdata
+  '';
 in {
   config = lib.mkIf config.caddy.enable {
     age.secrets = {
@@ -47,23 +35,29 @@ in {
 
     podmanServer = {
       containers.caddy = {
-        image = "${caddyImageName}:${caddyImageTag}";
-        ports = ["80:80" "443:443"];
-        volumes = [
-          "/etc/caddy/Caddyfile:/etc/caddy/Caddyfile:ro"
-          "${datasets.app.children.caddy.path}/data:/data"
-          "${datasets.app.children.caddy.path}/config:/config"
-          "${tailscaleSocket}:${tailscaleSocket}"
-        ];
-        environment.TZ = config.time.timeZone;
+        build.buildConfig.file = caddyContainerfile.outPath;
+        quadlet.containerConfig = {
+          publishPorts = ["80:80" "443:443"];
+          volumes = [
+            "/etc/caddy/Caddyfile:/etc/caddy/Caddyfile:ro"
+            "${datasets.app.children.caddy.path}/data:/data"
+            "${datasets.app.children.caddy.path}/config:/config"
+            "${tailscaleSocket}:${tailscaleSocket}"
+          ];
+          environments = {
+            TZ = config.time.timeZone;
+          };
+        };
         secretEnvironmentFiles = [
           config.age.secrets.google-oauth-env.path
           config.age.secrets.aws-access-env.path
           config.age.secrets.web-credentials-env.path
         ];
         derivedEnvironmentFiles = ["caddy-token-secret" "caddy-basic-auth"];
-        unitRequires = ["caddy-proxy-image.service"];
-        unitAfter = ["caddy-proxy-image.service"];
+        quadlet.unitConfig = {
+          Requires = ["caddy-render.service"];
+          After = ["caddy-render.service"];
+        };
       };
 
       derivedEnvFiles = {
@@ -98,26 +92,19 @@ in {
           after = ["network-online.target"];
           before = ["caddy.service"];
           path = [pkgs.coreutils];
-          serviceConfig.Type = "oneshot";
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          };
           script = ''
             set -euo pipefail
             install -d -m 0755 /etc/caddy
             install -m 0644 ${config.caddy.caddyfile} /etc/caddy/Caddyfile
+            ${pkgs.podman}/bin/podman exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile || true
           '';
-        };
-
-        caddy = {
-          requires = ["caddy-render.service" "caddy-proxy-image.service"];
-          after = ["caddy-render.service" "caddy-proxy-image.service"];
         };
       };
     };
-
-    environment.etc."containers/systemd/caddy-proxy.image".text = ''
-      [Image]
-      Image=oci-archive:${caddyImage}
-      ImageTag=${caddyImageName}:${caddyImageTag}
-    '';
 
     networking.firewall.allowedTCPPorts = [80 443];
   };

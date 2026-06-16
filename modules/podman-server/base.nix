@@ -1,5 +1,7 @@
 {
   config,
+  lanAddressCommand,
+  lanNetworkCommand,
   lib,
   pkgs,
   ...
@@ -7,9 +9,6 @@
   cfg = config.podmanServer;
   active = cfg.containers != {};
   tailscaleNetwork = "100.64.0.0/10";
-  lanInterfaceCommand = "ip -o -4 route show to default | awk '{print $5; exit}'";
-  lanAddressCommand = "iface=$(${lanInterfaceCommand}); ip -o -4 addr show dev \"$iface\" scope global | awk '{split($4, a, \"/\"); print a[1]; exit}'";
-  lanNetworkCommand = "iface=$(${lanInterfaceCommand}); ip -o -4 route show dev \"$iface\" proto kernel scope link | awk '{print $1; exit}'";
 in {
   config = lib.mkMerge [
     {

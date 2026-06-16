@@ -17,16 +17,18 @@ in {
 
     podmanServer = {
       containers.smokeping = {
-        image = "lscr.io/linuxserver/smokeping:latest";
-        environment = {
-          PUID = user.uid;
-          PGID = user.gid;
-          TZ = config.time.timeZone;
+        quadlet.containerConfig = {
+          image = "lscr.io/linuxserver/smokeping:latest";
+          environments = {
+            PUID = toString user.uid;
+            PGID = toString user.gid;
+            TZ = config.time.timeZone;
+          };
+          volumes = [
+            "${datasets.app.children.smokeping.path}/config:/config"
+            "${datasets.app.children.smokeping.path}/data:/data"
+          ];
         };
-        volumes = [
-          "${datasets.app.children.smokeping.path}/config:/config"
-          "${datasets.app.children.smokeping.path}/data:/data"
-        ];
       };
     };
 
