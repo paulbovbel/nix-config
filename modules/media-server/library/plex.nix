@@ -27,14 +27,14 @@ in {
       derivedEnvFiles.plex = {
         derivedEnvironmentFiles = ["lan"];
         mode = "0644";
-        variables.ADVERTISE_IP = "http://$LAN_ADDRESS:32400/";
+        variables.ADVERTISE_IP = "http://$LAN_ADDRESS:50505/";
       };
 
       containers = {
         plex = {
           quadlet.containerConfig = {
             image = "plexinc/pms-docker:plexpass";
-            publishPorts = ["32400:32400"];
+            publishPorts = ["50505:32400"];
             volumes = [
               "${datasets.app.children.plex.path}:/config"
               "${datasets.media.path}:/mnt/storage/share:ro"
@@ -103,11 +103,11 @@ in {
     };
 
     upnp.forwards.plex = lib.mkIf cfg.upnp.enable {
-      from = 32400;
-      to = 32400;
+      from = 50505;
+      to = 50505;
       proto = "tcp";
     };
 
-    networking.firewall.allowedTCPPorts = [32400];
+    networking.firewall.allowedTCPPorts = [50505];
   };
 }
