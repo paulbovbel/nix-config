@@ -19,6 +19,8 @@
     power-profiles-daemon.enable = true;
   };
 
+  environment.systemPackages = [pkgs.intel-gpu-tools];
+
   impermanenceRoot = {
     enable = true;
     swapSize = "32G";
