@@ -7,6 +7,7 @@ Hosts are declared in `hosts/default.nix` with `users`; `flake.nix` imports this
 Inventory schema in `hosts/default.nix`:
 
 - host key: `<host>`
+- `tailscaleDomain`: tailnet MagicDNS domain used for generated hostnames
 - `useUnstablePackages`: use `nixpkgs-unstable` as the host-wide `pkgs` package set instead of release nixpkgs (optional, default `false`)
 - `users`: list of `{ name, systemModule, profiles }`
 
@@ -39,7 +40,7 @@ just dry-run <host>
 
 Modules in `modules/` are imported globally by `flake.nix`. Host-facing modules expose an `*.enable` option and are enabled from `hosts/<host>/configuration.nix`; internal plumbing modules activate from fragments declared by those host-facing modules.
 
-- `caddy.enable` configures the public Caddy ingress, auth, Caddyfile rendering, endpoint aggregation, fail2ban, and share/filebrowser components
+- `caddy.enable` configures the public Caddy ingress, auth, Caddyfile rendering, endpoint aggregation, fail2ban, and share component
 - `ddns.enable` configures Route53 dynamic DNS updates
 - `gameServer.enable` configures game-server components such as Minecraft and Abiotic Factor
 - `impermanenceRoot.enable` configures the persistent state layout for impermanent root filesystems
