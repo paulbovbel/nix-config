@@ -114,7 +114,8 @@ in {
           };
           derivedEnvironmentFiles = ["deluge"];
           secretEnvironmentFiles = [config.age.secrets.web-credentials-env.path];
-          quadlet.serviceConfig.ExecStopPre = "${pauseTorrents} deluge";
+          # TODO hangs container on shutdown, quadlets have an internal ExecStop that this clobbers
+          # quadlet.serviceConfig.ExecStop = lib.mkBefore ["${pauseTorrents} deluge"];
         };
 
         autobrr = {
