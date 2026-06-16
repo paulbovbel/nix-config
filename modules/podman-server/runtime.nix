@@ -41,6 +41,8 @@
           environmentFiles = lib.mkAfter (container.secretEnvironmentFiles ++ derivedEnvFilePaths);
           podmanArgs = lib.mkBefore ["--no-healthcheck"];
         };
+
+        serviceConfig.ExecStartPre = lib.mkBefore ["-${pkgs.podman}/bin/podman rm --force --ignore ${name}"];
       }
       (lib.mkIf (container.build != null) {
         containerConfig.image = config.virtualisation.quadlet.builds.${name}.ref;
@@ -51,6 +53,12 @@
     removeNulls (lib.filterAttrs (key: _: !(lib.hasPrefix "_" key) && key != "ref") build);
   mkQuadletBuilds = containers:
     lib.mapAttrs (_: mkQuadletBuild) (lib.filterAttrs (_: build: build != null) (lib.mapAttrs (_: container: container.build) containers));
+
+  mkContainerService = name: container: {
+    restartTriggers = [
+      (pkgs.writeText "podman-server-${name}-config" (builtins.toJSON container))
+    ];
+  };
 
   renderDerivedEnvFile = name: envFile: let
     derivedEnvUnitNames = derivedEnvUnits envFile.derivedEnvironmentFiles;
@@ -94,7 +102,10 @@ in {
       containers = lib.mapAttrs mkQuadletContainer cfg.containers;
     };
 
-    systemd.services = lib.mapAttrs' (name: envFile: lib.nameValuePair "podman-server-${name}-env" (renderDerivedEnvFile name envFile)) cfg.derivedEnvFiles;
+    systemd.services = lib.mkMerge [
+      (lib.mapAttrs' (name: envFile: lib.nameValuePair "podman-server-${name}-env" (renderDerivedEnvFile name envFile)) cfg.derivedEnvFiles)
+      (lib.mapAttrs mkContainerService cfg.containers)
+    ];
 
     system.activationScripts.podman-server-prune-containers = lib.stringAfter ["etc"] ''
       declared_names=(${lib.escapeShellArgs declaredContainerNames})
