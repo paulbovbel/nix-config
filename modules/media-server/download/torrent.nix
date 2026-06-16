@@ -192,7 +192,5 @@ in {
         headerUp = ["X-Deluge-Base \"/deluge-basic\""];
       };
     };
-
-    networking.firewall.allowedTCPPorts = [58846];
   };
 }

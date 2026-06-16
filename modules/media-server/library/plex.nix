@@ -107,7 +107,5 @@ in {
       to = 50505;
       proto = "tcp";
     };
-
-    networking.firewall.allowedTCPPorts = [50505];
   };
 }
