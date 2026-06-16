@@ -62,6 +62,7 @@ in {
           "com.sun:auto-snapshot" = "false";
           "com.sun:auto-snapshot:weekly" = "true,keep=12";
           compression = "off";
+          snapdir = "hidden";
         };
       }
       // lib.mapAttrs' (name: dataset: lib.nameValuePair "${cfg.pool}/${name}" (renderDataset dataset)) datasetAttrs;

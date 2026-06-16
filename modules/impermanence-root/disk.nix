@@ -64,6 +64,7 @@ in {
           dnodesize = "auto";
           mountpoint = "none";
           normalization = "formD";
+          snapdir = "hidden";
           xattr = "sa";
         };
 

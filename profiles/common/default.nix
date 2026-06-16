@@ -13,25 +13,35 @@ in {
     autoEnable = lib.mkDefault false;
   };
 
-  # Performance-biased defaults: trades hardening for lower overhead.
-  boot.kernelParams = [
-    # Disable most CPU vulnerability mitigations globally (kernel 5.2+).
-    "mitigations=off"
-    # Disable KPTI (Meltdown mitigation).
-    "nopti"
-    # Disable IBRS (Spectre v2 mitigation).
-    "noibrs"
-    # Disable IBPB (Spectre v2 mitigation).
-    "noibpb"
-    # Disable Spectre v2 mitigation paths.
-    "nospectre_v2"
-    # Disable Speculative Store Bypass mitigation.
-    "spec_store_bypass_disable=off"
-    # Disable L1TF mitigations.
-    "l1tf=off"
-    # Disable MDS mitigations.
-    "mds=off"
-  ];
+  boot = {
+    # Performance-biased defaults: trades hardening for lower overhead.
+    kernelParams = [
+      # Disable most CPU vulnerability mitigations globally (kernel 5.2+).
+      "mitigations=off"
+      # Disable KPTI (Meltdown mitigation).
+      "nopti"
+      # Disable IBRS (Spectre v2 mitigation).
+      "noibrs"
+      # Disable IBPB (Spectre v2 mitigation).
+      "noibpb"
+      # Disable Spectre v2 mitigation paths.
+      "nospectre_v2"
+      # Disable Speculative Store Bypass mitigation.
+      "spec_store_bypass_disable=off"
+      # Disable L1TF mitigations.
+      "l1tf=off"
+      # Disable MDS mitigations.
+      "mds=off"
+    ];
+
+    loader.systemd-boot = lib.mkIf config.boot.loader.systemd-boot.enable {
+      extraFiles."EFI/netboot/netboot.xyz.efi" = pkgs.netbootxyz-efi.outPath;
+      extraEntries."netboot-xyz.conf" = ''
+        title netboot.xyz
+        efi /EFI/netboot/netboot.xyz.efi
+      '';
+    };
+  };
 
   nix = {
     settings = {
