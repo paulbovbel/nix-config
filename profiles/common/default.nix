@@ -87,7 +87,7 @@ in {
       description = "Configure Cachix auth token";
       wantedBy = ["multi-user.target"];
       wants = ["network-online.target"];
-      after = ["network-online.target" "agenix.service"];
+      after = ["network-online.target"];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
@@ -134,7 +134,10 @@ in {
   services = {
     fwupd.enable = true;
 
-    resolved.enable = true;
+    resolved = {
+      enable = true;
+      settings.Resolve.ResolveUnicastSingleLabel = true;
+    };
 
     openssh = {
       enable = true;

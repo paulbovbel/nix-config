@@ -1,5 +1,8 @@
-{
+let
+  tailscaleDomain = "axolotl-vibe.ts.net";
+in {
   white-tower = {
+    inherit tailscaleDomain;
     # useUnstablePackages = true;
     users = [
       {
@@ -21,6 +24,7 @@
   };
 
   pbovbel-dell = {
+    inherit tailscaleDomain;
     users = [
       {
         name = "pbovbel";
@@ -31,6 +35,7 @@
   };
 
   media = {
+    inherit tailscaleDomain;
     users = [
       {
         name = "pbovbel";
