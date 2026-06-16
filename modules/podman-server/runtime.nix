@@ -9,11 +9,7 @@
 
   derivedEnvUnits = names: map (name: "podman-server-${name}-env.service") names;
   derivedEnvFiles = names: map (name: cfg.derivedEnvFiles.${name}.path) names;
-  volumeHostPath = volume: let
-    parts = lib.splitString ":" volume;
-    hostPath = lib.head parts;
-  in
-    lib.optional (lib.length parts > 1 && lib.hasPrefix "/" hostPath) hostPath;
+  storageUnits = lib.optional config.storage.enable "zfs-mount.service";
   removeNulls = value:
     if lib.isAttrs value
     then lib.filterAttrs (_: nested: nested != null) (lib.mapAttrs (_: removeNulls) value)
@@ -35,9 +31,8 @@
       {
         unitConfig = {
           Wants = lib.mkBefore ["network-online.target"];
-          After = lib.mkBefore (["network-online.target"] ++ afterUnits);
-          Requires = lib.mkBefore requiredUnits;
-          RequiresMountsFor = lib.mkAfter (lib.unique (lib.concatMap volumeHostPath config.virtualisation.quadlet.containers.${name}.containerConfig.volumes));
+          After = lib.mkBefore (["network-online.target"] ++ storageUnits ++ afterUnits);
+          Requires = lib.mkBefore (storageUnits ++ requiredUnits);
         };
 
         containerConfig = {
