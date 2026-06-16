@@ -2,11 +2,10 @@
   description = "pbovbel NixOS configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-26.05";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-master.url = "github:NixOS/nixpkgs/master";
+    nixpkgs.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1";
+    nixpkgs-unstable.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1";
     locus-vpn-client = {
-      url = "git+ssh://git@github.com/locusrobotics/locus-vpn-client.git?ref=nix";
+      url = "git+ssh://git@github.com/locusrobotics/locus-vpn-client.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     agenix = {
@@ -19,7 +18,7 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     vscode-workspace-populator = {
-      url = "git+ssh://git@github.com/locusrobotics/vscode-workspace-populator.git?ref=refs/tags/v0.0.1";
+      url = "git+ssh://git@github.com/locusrobotics/vscode-workspace-populator.git";
       flake = false;
     };
     nix-flatpak.url = "github:gmodena/nix-flatpak";
@@ -55,7 +54,6 @@
   outputs = {
     nixpkgs,
     nixpkgs-unstable,
-    nixpkgs-master,
     home-manager,
     nix-flatpak,
     disko,
@@ -140,12 +138,11 @@
         then nixpkgs-unstable
         else nixpkgs;
       unstablePkgs = mkPkgs nixpkgs-unstable;
-      masterPkgs = mkPkgs nixpkgs-master;
     in
       nixpkgsForHost.lib.nixosSystem {
         inherit system;
         specialArgs = {
-          inherit agenix locus-vpn-client unstablePkgs masterPkgs;
+          inherit agenix locus-vpn-client unstablePkgs;
           inherit (cfg) tailscaleDomain;
         };
         modules =
@@ -170,7 +167,6 @@
                 extraSpecialArgs = {
                   inherit (cfg) tailscaleDomain;
                   inherit unstablePkgs;
-                  inherit masterPkgs;
                   inherit vscode-workspace-populator;
                 };
               };
