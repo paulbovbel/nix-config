@@ -49,6 +49,7 @@
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
   };
 
   outputs = {
@@ -65,6 +66,7 @@
     nix-vscode-extensions,
     vscode-workspace-populator,
     catppuccin,
+    quadlet-nix,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -72,6 +74,25 @@
     overlays = [
       nix-vscode-extensions.overlays.default
       (final: prev: {
+        # overlay for https://github.com/NixOS/nixpkgs/pull/530771
+        cockpit-zfs = prev.cockpit-zfs.overrideAttrs (old: {
+          nativeBuildInputs = old.nativeBuildInputs ++ [final.zip final.unzip];
+          preBuild =
+            (old.preBuild or "")
+            + ''
+              tailwindZip=$(ls .yarn/cache/tailwindcss-npm-*-*.zip)
+              mkdir -p tmp-tailwind
+              cd tmp-tailwind
+              unzip -q ../$tailwindZip
+              substituteInPlace node_modules/tailwindcss/lib/lib/setupTrackingContext.js \
+                --replace-fail 'delete require.cache[file];' 'if (require.cache) delete require.cache[file];'
+              zip -q -r ../$tailwindZip .
+              cd ..
+              rm -rf tmp-tailwind
+              echo "checksumBehavior: update" >> .yarnrc.yml
+            '';
+        });
+
         headsetcontrol = prev.headsetcontrol.overrideAttrs (_: {
           # Last released version of headsetcontrol doesn't include fixes for Audeze Maxwell headset
           # https://github.com/Sapd/HeadsetControl/pull/412
@@ -125,22 +146,12 @@
         inherit system;
         specialArgs = {
           inherit agenix locus-vpn-client unstablePkgs masterPkgs;
+          inherit (cfg) tailscaleDomain;
         };
         modules =
           [
             ./hosts/${name}/configuration.nix
-            ./modules/ddns
-            ./modules/upnp
-            ./modules/caddy
-            ./modules/storage
-            ./modules/monitor
-            ./modules/syncthing
-            ./modules/podman-server
-            ./modules/impermanence-root
-            ./modules/nvidia
-            ./modules/llama-cpp
-            ./modules/media-server
-            ./modules/game-server
+            ./modules
             agenix.nixosModules.default
             nix-flatpak.nixosModules.nix-flatpak
             disko.nixosModules.disko
@@ -148,6 +159,7 @@
             impermanence.nixosModules.impermanence
             home-manager.nixosModules.home-manager
             catppuccin.nixosModules.catppuccin
+            quadlet-nix.nixosModules.quadlet
             {
               nixpkgs.overlays = overlays;
 
@@ -156,6 +168,7 @@
                 useGlobalPkgs = true;
                 useUserPackages = true;
                 extraSpecialArgs = {
+                  inherit (cfg) tailscaleDomain;
                   inherit unstablePkgs;
                   inherit masterPkgs;
                   inherit vscode-workspace-populator;
