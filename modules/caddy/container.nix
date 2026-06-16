@@ -94,7 +94,6 @@ in {
           path = [pkgs.coreutils];
           serviceConfig = {
             Type = "oneshot";
-            RemainAfterExit = true;
           };
           script = ''
             set -euo pipefail
