@@ -13,8 +13,8 @@ in {
 
     systemd.services.ddns-update = {
       description = "Update Route53 records";
-      wants = ["network-online.target" "tailscaled.service" "agenix.service"];
-      after = ["network-online.target" "tailscaled.service" "agenix.service"];
+      wants = ["network-online.target" "tailscaled.service"];
+      after = ["network-online.target" "tailscaled.service"];
       path = [pkgs.awscli2 pkgs.coreutils pkgs.tailscale];
       serviceConfig = {
         Type = "oneshot";

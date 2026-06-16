@@ -2,10 +2,12 @@
   config,
   lib,
   pkgs,
+  tailscaleDomain,
   ...
 }: let
   cfg = config.caddy;
   inherit (config) ddns;
+  endpoints = lib.sort (a: b: lib.stringLength a.path > lib.stringLength b.path) (lib.attrValues cfg.endpoints);
 
   renderUser = user: ''
           transform user {
@@ -72,32 +74,31 @@
   '';
 
   caddyfile = pkgs.writeText "Caddyfile.template" ''
-    {
-      email paul@bovbel.com
+      {
+        email paul@bovbel.com
 
-      order authenticate before respond
-      order authorize before basicauth
+        order authenticate before respond
+        order authorize before basicauth
 
-      security {
-        oauth identity provider google {
-          realm google
-          driver google
-          client_id {$GOOGLE_OAUTH2_CLIENT_ID}
-          client_secret {$GOOGLE_OAUTH2_CLIENT_SECRET}
-          scopes openid email profile
-        }
+        security {
+          oauth identity provider google {
+            realm google
+            driver google
+            client_id {$GOOGLE_OAUTH2_CLIENT_ID}
+            client_secret {$GOOGLE_OAUTH2_CLIENT_SECRET}
+            scopes openid email profile
+          }
 
-        authentication portal defaultportal {
-          crypto default token lifetime 7884000
-          crypto key sign-verify {$CADDY_TOKEN_SECRET}
-          enable identity provider google
-          cookie domain bovbel.com
-          cookie lifetime 7884000
+          authentication portal defaultportal {
+            crypto default token lifetime 7884000
+            crypto key sign-verify {$CADDY_TOKEN_SECRET}
+            enable identity provider google
+            cookie lifetime 7884000
 
-    ${lib.concatMapStrings renderUser cfg.users}
-        }
+      ${lib.concatMapStrings renderUser cfg.users}
+          }
 
-    ${lib.concatMapStrings (role: ''
+      ${lib.concatMapStrings (role: ''
         authorization policy ${role} {
           set auth url /auth/oauth2/google
           crypto key verify {$CADDY_TOKEN_SECRET}
@@ -108,35 +109,47 @@
         }
       '')
       cfg.roles}
-      }
-    }
-
-    media.axolotl-vibe.ts.net, ${ddns.record} {
-      log {
-        level INFO
-        format console {
-          time_format wall
         }
       }
 
-      tls {
-        dns route53 {
-          access_key_id "{$AWS_ACCESS_KEY_ID}"
-          secret_access_key "{$AWS_SECRET_ACCESS_KEY}"
-          region "{$AWS_REGION}"
+      (media-site) {
+        log {
+          level INFO
+          format console {
+            time_format wall
+          }
         }
-      }
 
-      ${lib.optionalString (cfg.redirect != null) ''
+        ${lib.optionalString (cfg.redirect != null) ''
       route / {
         redir / ${cfg.redirect}
       }
     ''}
-      route /auth* {
-        authenticate with defaultportal
+        route /auth* {
+          authenticate with defaultportal
+        }
+
+    ${lib.concatMapStrings renderEndpoint endpoints}}
+
+      ${ddns.record} {
+        import media-site
+
+        tls {
+          dns route53 {
+            access_key_id "{$AWS_ACCESS_KEY_ID}"
+            secret_access_key "{$AWS_SECRET_ACCESS_KEY}"
+            region "{$AWS_REGION}"
+          }
+        }
       }
 
-    ${lib.concatMapStrings renderEndpoint (lib.attrValues cfg.endpoints)}}
+      media.${tailscaleDomain} {
+        import media-site
+
+        tls {
+          get_certificate tailscale
+        }
+      }
   '';
 in {
   config = lib.mkIf config.caddy.enable {

@@ -6,6 +6,7 @@
   cfg = config.mediaServer;
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
+  containerUser = "${toString user.uid}:${toString user.gid}";
 in {
   config = lib.mkIf (cfg.enable && cfg.components.downloads.enable) {
     storage.datasets.app.children = {
@@ -17,58 +18,67 @@ in {
 
     podmanServer.containers = {
       sonarr = {
-        image = "lscr.io/linuxserver/sonarr:latest";
         dependsOn = ["jackett"];
-        environment = {
-          PUID = user.uid;
-          PGID = user.gid;
-          TZ = config.time.timeZone;
+        quadlet.containerConfig = {
+          image = "lscr.io/linuxserver/sonarr:latest";
+          environments = {
+            PUID = toString user.uid;
+            PGID = toString user.gid;
+            TZ = config.time.timeZone;
+          };
+          volumes = [
+            "/etc/localtime:/etc/localtime:ro"
+            "${datasets.app.children.sonarr.path}:/config"
+            "${datasets.media.children.tv.path}:/tv"
+            "${datasets.downloads.path}:/downloads"
+          ];
         };
-        volumes = [
-          "/etc/localtime:/etc/localtime:ro"
-          "${datasets.app.children.sonarr.path}:/config"
-          "${datasets.media.children.tv.path}:/tv"
-          "${datasets.downloads.path}:/downloads"
-        ];
       };
 
       radarr = {
-        image = "lscr.io/linuxserver/radarr";
         dependsOn = ["jackett"];
-        environment = {
-          PUID = user.uid;
-          PGID = user.gid;
-          TZ = config.time.timeZone;
+        quadlet.containerConfig = {
+          image = "lscr.io/linuxserver/radarr";
+          environments = {
+            PUID = toString user.uid;
+            PGID = toString user.gid;
+            TZ = config.time.timeZone;
+          };
+          volumes = [
+            "/etc/localtime:/etc/localtime:ro"
+            "${datasets.app.children.radarr.path}:/config"
+            "${datasets.media.children.movies.path}:/movies"
+            "${datasets.downloads.path}:/downloads"
+          ];
         };
-        volumes = [
-          "/etc/localtime:/etc/localtime:ro"
-          "${datasets.app.children.radarr.path}:/config"
-          "${datasets.media.children.movies.path}:/movies"
-          "${datasets.downloads.path}:/downloads"
-        ];
       };
 
       bazarr = {
-        image = "lscr.io/linuxserver/bazarr";
-        environment = {
-          PUID = user.uid;
-          PGID = user.gid;
-          TZ = config.time.timeZone;
+        quadlet.containerConfig = {
+          image = "lscr.io/linuxserver/bazarr";
+          environments = {
+            PUID = toString user.uid;
+            PGID = toString user.gid;
+            TZ = config.time.timeZone;
+          };
+          volumes = [
+            "${datasets.app.children.bazarr.path}:/config"
+            "${datasets.media.children.tv.path}:/tv"
+            "${datasets.media.children.movies.path}:/movies"
+          ];
         };
-        volumes = [
-          "${datasets.app.children.bazarr.path}:/config"
-          "${datasets.media.children.tv.path}:/tv"
-          "${datasets.media.children.movies.path}:/movies"
-        ];
       };
 
       maintainerr = {
-        image = "ghcr.io/maintainerr/maintainerr:latest";
-        volumes = ["${datasets.app.children.maintainerr.path}:/opt/data"];
-        environment = {
-          BASE_PATH = "/maintainerr";
-          DEBUG = "true";
-          TZ = config.time.timeZone;
+        quadlet.containerConfig = {
+          image = "ghcr.io/maintainerr/maintainerr:latest";
+          user = containerUser;
+          volumes = ["${datasets.app.children.maintainerr.path}:/opt/data"];
+          environments = {
+            BASE_PATH = "/maintainerr";
+            DEBUG = "true";
+            TZ = config.time.timeZone;
+          };
         };
       };
     };

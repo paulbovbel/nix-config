@@ -11,17 +11,20 @@ in {
     storage.datasets.app.children.jellyfin = {};
 
     podmanServer.containers.jellyfin = {
-      image = "lscr.io/linuxserver/jellyfin:latest";
-      environment = {
-        PUID = user.uid;
-        PGID = user.gid;
-        TZ = config.time.timeZone;
+      quadlet.containerConfig = {
+        image = "lscr.io/linuxserver/jellyfin:latest";
+        publishPorts = ["8096:8096"];
+        environments = {
+          PUID = toString user.uid;
+          PGID = toString user.gid;
+          TZ = config.time.timeZone;
+        };
+        volumes = [
+          "${datasets.app.children.jellyfin.path}:/config"
+          "${datasets.media.path}:/data:ro"
+        ];
+        devices = ["/dev/dri:/dev/dri"];
       };
-      volumes = [
-        "${datasets.app.children.jellyfin.path}:/config"
-        "${datasets.media.path}:/data:ro"
-      ];
-      devices = ["/dev/dri:/dev/dri"];
     };
 
     caddy.endpoints.jellyfin = {
@@ -31,5 +34,7 @@ in {
       host = "jellyfin";
       port = 8096;
     };
+
+    networking.firewall.allowedTCPPorts = [8096];
   };
 }

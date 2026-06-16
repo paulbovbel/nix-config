@@ -32,34 +32,38 @@ in {
 
       containers = {
         plex = {
-          image = "plexinc/pms-docker:plexpass";
-          ports = ["32400:32400"];
-          volumes = [
-            "${datasets.app.children.plex.path}:/config"
-            "${datasets.media.path}:/mnt/storage/share:ro"
-          ];
-          tmpfs = ["/transcode"];
-          devices = ["/dev/dri:/dev/dri"];
-          environment = {
-            PLEX_UID = toString user.uid;
-            PLEX_GID = toString user.gid;
-            TZ = config.time.timeZone;
+          quadlet.containerConfig = {
+            image = "plexinc/pms-docker:plexpass";
+            publishPorts = ["32400:32400"];
+            volumes = [
+              "${datasets.app.children.plex.path}:/config"
+              "${datasets.media.path}:/mnt/storage/share:ro"
+            ];
+            tmpfses = ["/transcode"];
+            devices = ["/dev/dri:/dev/dri"];
+            environments = {
+              PLEX_UID = toString user.uid;
+              PLEX_GID = toString user.gid;
+              TZ = config.time.timeZone;
+            };
           };
           derivedEnvironmentFiles = ["plex"];
         };
 
         tautulli = {
-          image = "lscr.io/linuxserver/tautulli:latest";
           dependsOn = ["plex"];
-          environment = {
-            PUID = user.uid;
-            PGID = user.gid;
-            TZ = config.time.timeZone;
+          quadlet.containerConfig = {
+            image = "lscr.io/linuxserver/tautulli:latest";
+            environments = {
+              PUID = toString user.uid;
+              PGID = toString user.gid;
+              TZ = config.time.timeZone;
+            };
+            volumes = [
+              "${datasets.app.children.tautulli.path}:/config"
+              "${datasets.app.children.plex.path}/Library/Application Support/Plex Media Server/Logs:/logs:ro"
+            ];
           };
-          volumes = [
-            "${datasets.app.children.tautulli.path}:/config"
-            "${datasets.app.children.plex.path}/Library/Application Support/Plex Media Server/Logs:/logs:ro"
-          ];
         };
       };
     };
@@ -76,8 +80,8 @@ in {
     systemd = {
       services.rip-to-audio = {
         description = "Rip audio";
-        wants = ["network-online.target" "agenix.service"];
-        after = ["network-online.target" "agenix.service"];
+        wants = ["network-online.target"];
+        after = ["network-online.target"];
         path = [pkgs.ffmpeg python];
         serviceConfig = {
           Type = "oneshot";
