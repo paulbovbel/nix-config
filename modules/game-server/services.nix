@@ -91,10 +91,5 @@ in {
         proto = "udp";
       };
     };
-
-    networking.firewall = {
-      allowedTCPPorts = lib.mkIf cfg.components.minecraft.enable [25565];
-      allowedUDPPorts = lib.mkIf cfg.components.abiotic.enable [7777 27015];
-    };
   };
 }

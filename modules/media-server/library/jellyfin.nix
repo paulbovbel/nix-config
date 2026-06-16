@@ -34,7 +34,5 @@ in {
       host = "jellyfin";
       port = 8096;
     };
-
-    networking.firewall.allowedTCPPorts = [8096];
   };
 }

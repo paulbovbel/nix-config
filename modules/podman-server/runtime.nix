@@ -60,6 +60,33 @@
     ];
   };
 
+  parsePublishPort = publishPort: let
+    protoParts = lib.splitString "/" publishPort;
+    address = builtins.elemAt protoParts 0;
+    proto =
+      if builtins.length protoParts > 1
+      then builtins.elemAt protoParts 1
+      else "tcp";
+    addressParts = lib.splitString ":" address;
+    addressPartCount = builtins.length addressParts;
+    hostPort =
+      if addressPartCount > 1
+      then builtins.elemAt addressParts (addressPartCount - 2)
+      else builtins.elemAt addressParts 0;
+  in {
+    inherit proto;
+    port = builtins.fromJSON hostPort;
+  };
+
+  publishedFirewallPorts = let
+    publishPorts = lib.concatLists (lib.mapAttrsToList (_: container: container.quadlet.containerConfig.publishPorts or []) cfg.containers);
+    parsedPorts = map parsePublishPort publishPorts;
+    portsFor = proto: map (port: port.port) (builtins.filter (port: port.proto == proto) parsedPorts);
+  in {
+    tcp = lib.unique (portsFor "tcp");
+    udp = lib.unique (portsFor "udp");
+  };
+
   renderDerivedEnvFile = name: envFile: let
     derivedEnvUnitNames = derivedEnvUnits envFile.derivedEnvironmentFiles;
     derivedEnvFilePaths = derivedEnvFiles envFile.derivedEnvironmentFiles;
@@ -100,6 +127,11 @@ in {
       networks.apps.networkConfig.name = "apps";
       builds = mkQuadletBuilds cfg.containers;
       containers = lib.mapAttrs mkQuadletContainer cfg.containers;
+    };
+
+    networking.firewall = {
+      allowedTCPPorts = publishedFirewallPorts.tcp;
+      allowedUDPPorts = publishedFirewallPorts.udp;
     };
 
     systemd.services = lib.mkMerge [
