@@ -19,9 +19,9 @@
     url = "https://github.com/partymola/arch-delugevpn.git";
     rev = delugeRev;
   };
-  pauseTorrents = pkgs.writeShellScript "pause-deluge" ''
-    ${lib.getExe pkgs.podman} exec "$1" /bin/bash -c 'deluge-console "connect 127.0.0.1 $WEB_USER $WEB_PASSWORD; pause *"' || true
-  '';
+  # pauseTorrents = pkgs.writeShellScript "pause-deluge" ''
+  #   ${lib.getExe pkgs.podman} exec "$1" /bin/bash -c 'deluge-console "connect 127.0.0.1 $WEB_USER $WEB_PASSWORD; pause *"' || true
+  # '';
 in {
   config = lib.mkIf (cfg.enable && cfg.components.downloads.enable) {
     age.secrets = {

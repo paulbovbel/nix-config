@@ -2,7 +2,7 @@
   config,
   lib,
   pkgs,
-  masterPkgs,
+  unstablePkgs,
   ...
 }: let
   cfg = config.llamaCpp;
@@ -16,8 +16,8 @@ in {
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [
-      # Pin llama.cpp to nixpkgs master for newer CUDA support than stable.
-      (masterPkgs.llama-cpp.override {cudaSupport = true;})
+      # Pin llama.cpp to unstable for newer CUDA support than stable.
+      (unstablePkgs.llama-cpp.override {cudaSupport = true;})
     ];
 
     networking.firewall.allowedTCPPorts = [11434];
@@ -39,7 +39,7 @@ in {
         pkgs.gnugrep
         pkgs.sudo
         pkgs.glib
-        (masterPkgs.llama-cpp.override {cudaSupport = true;})
+        (unstablePkgs.llama-cpp.override {cudaSupport = true;})
         pkgs.python3Packages.huggingface-hub
         pkgs.python3Packages.hf-xet
       ];

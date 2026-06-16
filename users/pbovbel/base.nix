@@ -1,7 +1,7 @@
 {
   lib,
   pkgs,
-  masterPkgs,
+  unstablePkgs,
   ...
 }: let
   sshConfig = pkgs.writeText "pbovbel-ssh-config" ''
@@ -53,7 +53,7 @@ in {
   programs = {
     opencode = {
       enable = true;
-      package = masterPkgs.opencode;
+      package = unstablePkgs.opencode;
       settings = {
         model = "llama.cpp/qwen3.6";
         provider = {
