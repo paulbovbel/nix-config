@@ -1,4 +1,6 @@
-{config, ...}: {
+{config, ...}: let
+  inherit (config.podmanServer) user;
+in {
   imports = [
     ../common
   ];
@@ -14,11 +16,21 @@
     enable = true;
     authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
     authKeyParameters.ephemeral = false;
+    useRoutingFeatures = "server";
     extraUpFlags = [
       "--advertise-tags=tag:server"
       "--advertise-exit-node"
     ];
   };
+
+  systemd.services.tailscaled-autoconnect = {
+    wants = ["network-online.target" "systemd-resolved.service"];
+    after = ["network-online.target" "systemd-resolved.service"];
+  };
+
+  systemd.services.tailscaled.serviceConfig.Environment = [
+    "TS_PERMIT_CERT_UID=${toString user.uid}"
+  ];
 
   impermanenceRoot.persistDirectories = [
     "/var/lib/tailscale"

@@ -21,13 +21,6 @@
     pkgs.networkmanager-l2tp
   ];
 
-  age.secrets.work-env = {
-    file = ../../secrets/work/env.age;
-    owner = "pbovbel";
-    group = "users";
-    mode = "0400";
-  };
-
   systemd.tmpfiles.rules = [
     "d /etc/ipsec.d 0755 root root -"
   ];
