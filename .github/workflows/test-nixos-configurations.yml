@@ -31,12 +31,6 @@ jobs:
         with:
           name: cuda-maintainers
 
-      - name: Configure project Cachix cache
-        uses: cachix/cachix-action@v15
-        with:
-          name: paulbovbel
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-
       - name: Install SSH Key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -84,12 +78,6 @@ jobs:
         uses: cachix/cachix-action@v15
         with:
           name: cuda-maintainers
-
-      - name: Configure project Cachix cache
-        uses: cachix/cachix-action@v15
-        with:
-          name: paulbovbel
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Install SSH Key
         uses: webfactory/ssh-agent@v0.9.0

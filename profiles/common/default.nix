@@ -49,13 +49,11 @@ in {
       trusted-users = ["root" "pbovbel"];
       substituters = [
         "https://cache.nixos.org"
-        "https://paulbovbel.cachix.org"
         "https://nix-community.cachix.org"
         "https://cuda-maintainers.cachix.org"
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:6NCHdD59X431o0gWypbOJTs4f2vT5M9T8qN9kYChdD4="
-        "paulbovbel.cachix.org-1:9WWi/8x8my7+Hs6/ZmuYCBU3guG1zw7da/4nkZ+vViQ="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
       ];
@@ -105,19 +103,6 @@ in {
       script = ''
         ${pkgs.cachix}/bin/cachix authtoken "$(cat ${config.age.secrets.cachix-auth-token.path})"
       '';
-    };
-
-    cachix-watch-store = {
-      description = "Watch Nix store and push paths to Cachix";
-      wantedBy = ["multi-user.target"];
-      wants = ["network-online.target"];
-      after = ["network-online.target" "cachix-auth.service"];
-      serviceConfig = {
-        ExecStart = "${pkgs.cachix}/bin/cachix watch-store paulbovbel";
-        Restart = "always";
-        RestartSec = 30;
-        TimeoutStopSec = "15s";
-      };
     };
 
     inhibit-sleep-while-ssh = {
