@@ -36,14 +36,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Cache Nix store
-        uses: nix-community/cache-nix-action@v6
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-check
-          restore-prefixes-first-match: |
-            nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-
-            nix-${{ runner.os }}-
-
       - name: Run check suite
         run: |
           set -euo pipefail
@@ -83,14 +75,6 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Cache Nix store
-        uses: nix-community/cache-nix-action@v6
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-${{ matrix.host }}
-          restore-prefixes-first-match: |
-            nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}-
-            nix-${{ runner.os }}-
 
       - name: Dry-run host toplevel build
         run: |
