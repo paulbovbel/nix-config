@@ -70,13 +70,6 @@ in {
 
   age = {
     secrets = {
-      cachix-auth-token = {
-        file = ../../secrets/common/cachix-auth-token.age;
-        owner = "root";
-        group = "root";
-        mode = "0400";
-      };
-
       gmail-password = {
         file = ../../secrets/common/gmail-password.age;
         owner = "root";
@@ -91,20 +84,6 @@ in {
   };
 
   systemd.services = {
-    cachix-auth = {
-      description = "Configure Cachix auth token";
-      wantedBy = ["multi-user.target"];
-      wants = ["network-online.target"];
-      after = ["network-online.target"];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      script = ''
-        ${pkgs.cachix}/bin/cachix authtoken "$(cat ${config.age.secrets.cachix-auth-token.path})"
-      '';
-    };
-
     inhibit-sleep-while-ssh = {
       description = "Inhibit sleep while SSH sessions are active";
       wantedBy = ["multi-user.target"];

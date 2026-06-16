@@ -7,7 +7,6 @@ in {
   "secrets/common/pbovbel-id_rsa.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
   "secrets/laptop/tailscale-oauth-authkey.age".publicKeys = [pbovbel white_tower pbovbel_dell];
   "secrets/server/tailscale-oauth-authkey.age".publicKeys = [pbovbel media];
-  "secrets/common/cachix-auth-token.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
   "secrets/common/gmail-password.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
   "secrets/common/pbovbel-password-hash.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
   "secrets/common/rbovbel-password-hash.age".publicKeys = [pbovbel white_tower];

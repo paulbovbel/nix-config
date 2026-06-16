@@ -98,7 +98,7 @@
     path = [pkgs.coreutils] ++ envFile.packages;
     serviceConfig = {
       Type = "oneshot";
-      RemainAfterExit = true;
+      RemainAfterExit = false;
       EnvironmentFile = envFile.environmentFiles ++ envFile.secretEnvironmentFiles ++ derivedEnvFilePaths;
     };
     script = ''

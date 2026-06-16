@@ -32,7 +32,7 @@ in {
       path = [pkgs.gawk pkgs.iproute2 pkgs.miniupnpc];
       serviceConfig = {
         Type = "oneshot";
-        RemainAfterExit = true;
+        RemainAfterExit = false;
       };
       script =
         ''
