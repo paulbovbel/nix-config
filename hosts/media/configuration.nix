@@ -6,6 +6,7 @@
   boot = {
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
+    kernelParams = ["drm.edid_firmware=edid/1920x1080.bin"];
     # use LTS for appliance
     kernelPackages = pkgs.linuxPackages;
   };
