@@ -73,6 +73,7 @@
   environment.systemPackages = [pkgs.intel-gpu-tools];
 
   cockpit.enable = true;
+  caddy.redirect = "/cockpit/";
   smokeping.enable = true;
 
   syncthing = {

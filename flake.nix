@@ -49,6 +49,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
+    pcp = {
+      url = "github:performancecopilot/pcp";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -65,6 +69,7 @@
     vscode-workspace-populator,
     catppuccin,
     quadlet-nix,
+    pcp,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -123,7 +128,7 @@
       nixpkgsForHost.lib.nixosSystem {
         inherit system;
         specialArgs = {
-          inherit agenix locus-vpn-client unstablePkgs;
+          inherit agenix locus-vpn-client unstablePkgs pcp;
           inherit (cfg) tailscaleDomain;
         };
         modules =
@@ -138,6 +143,7 @@
             home-manager.nixosModules.home-manager
             catppuccin.nixosModules.catppuccin
             quadlet-nix.nixosModules.quadlet
+            "${pcp}/build/nix/nixos-module.nix"
             {
               nixpkgs.overlays = overlays;
 

@@ -47,7 +47,7 @@ in {
 
     redirect = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = "/cockpit/";
+      default = null;
     };
 
     components.share.enable = lib.mkOption {
