@@ -12,7 +12,7 @@ in {
     description = "Enable Smokeping container and Caddy endpoint.";
   };
 
-  config = lib.mkIf (config.cockpit.enable && config.smokeping.enable) {
+  config = lib.mkIf config.smokeping.enable {
     storage.datasets.app.children.smokeping = {};
 
     podmanServer = {
