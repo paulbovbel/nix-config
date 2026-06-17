@@ -72,25 +72,6 @@
     overlays = [
       nix-vscode-extensions.overlays.default
       (final: prev: {
-        # overlay for https://github.com/NixOS/nixpkgs/pull/530771
-        cockpit-zfs = prev.cockpit-zfs.overrideAttrs (old: {
-          nativeBuildInputs = old.nativeBuildInputs ++ [final.zip final.unzip];
-          preBuild =
-            (old.preBuild or "")
-            + ''
-              tailwindZip=$(ls .yarn/cache/tailwindcss-npm-*-*.zip)
-              mkdir -p tmp-tailwind
-              cd tmp-tailwind
-              unzip -q ../$tailwindZip
-              substituteInPlace node_modules/tailwindcss/lib/lib/setupTrackingContext.js \
-                --replace-fail 'delete require.cache[file];' 'if (require.cache) delete require.cache[file];'
-              zip -q -r ../$tailwindZip .
-              cd ..
-              rm -rf tmp-tailwind
-              echo "checksumBehavior: update" >> .yarnrc.yml
-            '';
-        });
-
         headsetcontrol = prev.headsetcontrol.overrideAttrs (_: {
           # Last released version of headsetcontrol doesn't include fixes for Audeze Maxwell headset
           # https://github.com/Sapd/HeadsetControl/pull/412
