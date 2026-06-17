@@ -40,16 +40,16 @@ in {
           };
         };
       in {
-        myanonamouse-deluge = mkMamUpdate {
-          container = "deluge";
+        myanonamouse-torrent = mkMamUpdate {
+          container = "qbittorrent";
           iface = "wg0";
-          mamIdVariable = "MAM_ID_DELUGE";
+          mamIdVariable = "MAM_ID_TORRENT";
         };
 
-        myanonamouse-jackett = mkMamUpdate {
+        myanonamouse-indexer = mkMamUpdate {
           container = "jackett";
           iface = "eth0";
-          mamIdVariable = "MAM_ID_JACKETT";
+          mamIdVariable = "MAM_ID_INDEXER";
         };
       };
 
@@ -63,8 +63,8 @@ in {
           };
         };
       in {
-        myanonamouse-deluge = mkMamTimer "myanonamouse-deluge.service";
-        myanonamouse-jackett = mkMamTimer "myanonamouse-jackett.service";
+        myanonamouse-torrent = mkMamTimer "myanonamouse-torrent.service";
+        myanonamouse-indexer = mkMamTimer "myanonamouse-indexer.service";
       };
     };
 

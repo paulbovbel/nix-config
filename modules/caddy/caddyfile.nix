@@ -46,32 +46,43 @@
       header_up +Authorization "Basic {$BASIC_AUTH_HEADER}"
     '';
 
-  renderEndpoint = endpoint: ''
-      redir ${endpoint.path} ${endpoint.path}/
-
-      route ${endpoint.path}* {
-    ${authBlock endpoint}${lib.optionalString (endpoint.type == "share" || endpoint.stripPrefix) "    uri strip_prefix ${endpoint.path}\n"}
-    ${
-      if endpoint.type == "proxy"
-      then ''
-            reverse_proxy * ${endpoint.scheme}://${endpoint.host}:${toString endpoint.port} {
-        ${proxyTransport endpoint}${headerLines endpoint}    }
-      ''
-      else if endpoint.type == "share"
-      then ''
-        root * ${endpoint.path}
-        file_server {
-          browse
-          hide .*
-        }
-      ''
-      else ''
-        ${throw "Unsupported Caddy endpoint type: ${endpoint.type}"}
-      ''
-    }
-      }
-
+  reverseProxy = endpoint: ''
+        reverse_proxy * ${endpoint.scheme}://${endpoint.host}:${toString endpoint.port} {
+    ${proxyTransport endpoint}${headerLines endpoint}    }
   '';
+
+  renderEndpoint = endpoint:
+    if endpoint.type == "proxy" && endpoint.handlePath
+    then ''
+        redir ${endpoint.path} ${endpoint.path}/
+
+        handle_path ${endpoint.path}* {
+      ${authBlock endpoint}${reverseProxy endpoint}  }
+
+    ''
+    else ''
+        redir ${endpoint.path} ${endpoint.path}/
+
+        route ${endpoint.path}* {
+      ${authBlock endpoint}${lib.optionalString (endpoint.type == "share" || endpoint.stripPrefix) "    uri strip_prefix ${endpoint.path}\n"}
+      ${
+        if endpoint.type == "proxy"
+        then reverseProxy endpoint
+        else if endpoint.type == "share"
+        then ''
+          root * ${endpoint.path}
+          file_server {
+            browse
+            hide .*
+          }
+        ''
+        else ''
+          ${throw "Unsupported Caddy endpoint type: ${endpoint.type}"}
+        ''
+      }
+        }
+
+    '';
 
   caddyfile = pkgs.writeText "Caddyfile.template" ''
       {
