@@ -27,6 +27,10 @@
         type = lib.types.bool;
         default = false;
       };
+      handlePath = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+      };
       spoofBasic = lib.mkOption {
         type = lib.types.bool;
         default = false;

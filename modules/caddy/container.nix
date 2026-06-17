@@ -85,6 +85,8 @@ in {
       ];
 
       services = {
+        caddy.restartTriggers = [config.caddy.caddyfile];
+
         caddy-render = {
           description = "Render containerized Caddy configuration";
           wantedBy = ["multi-user.target"];

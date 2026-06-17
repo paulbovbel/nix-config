@@ -8,20 +8,10 @@
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
   containerUser = "${toString user.uid}:${toString user.gid}";
+  qbittorrentConfigFile = "${datasets.app.children.qbittorrent.path}/qBittorrent/config/qBittorrent.conf";
+  qbittorrentConfigScript = pkgs.writeShellScript "qbittorrent-config" (builtins.readFile ./qbittorrent-config.sh);
   cleanupDownloadsAgeDays = 60;
   cleanupDownloadsCalendar = "04:30";
-  # PR fixes the stale 7-Zip URL and Python site-packages path resolution.
-  # https://github.com/binhex/arch-delugevpn/pull/446
-  # A fresh build also pulls in nftables support
-  # https://github.com/binhex/arch-int-vpn/pull/53
-  delugeRev = "d14bf66246ff176ef07bd26f0c896c1f3c7465d6";
-  delugeSrc = builtins.fetchGit {
-    url = "https://github.com/partymola/arch-delugevpn.git";
-    rev = delugeRev;
-  };
-  # pauseTorrents = pkgs.writeShellScript "pause-deluge" ''
-  #   ${lib.getExe pkgs.podman} exec "$1" /bin/bash -c 'deluge-console "connect 127.0.0.1 $WEB_USER $WEB_PASSWORD; pause *"' || true
-  # '';
 in {
   config = lib.mkIf (cfg.enable && cfg.components.downloads.enable) {
     age.secrets = {
@@ -31,19 +21,37 @@ in {
 
     storage.datasets.app.children = {
       autobrr = {};
-      deluge = {};
+      qbittorrent = {};
       unpackerr = {};
       jackett = {};
     };
 
     systemd = {
-      services.cleanup-downloads = {
-        description = "Cleanup old downloads from ${datasets.downloads.path}";
-        serviceConfig.Type = "oneshot";
-        path = [pkgs.findutils];
-        script = ''
-          find ${datasets.downloads.path}/torrents -maxdepth 1 -mtime +${toString cleanupDownloadsAgeDays} -exec rm -rf {} \;
-        '';
+      services = {
+        cleanup-downloads = {
+          description = "Cleanup old downloads from ${datasets.downloads.path}";
+          serviceConfig.Type = "oneshot";
+          path = [pkgs.findutils];
+          script = ''
+            find ${datasets.downloads.path}/torrents -maxdepth 1 -mtime +${toString cleanupDownloadsAgeDays} -exec rm -rf {} \;
+          '';
+        };
+
+        qbittorrent-config = {
+          description = "Configure qBittorrent WebUI settings";
+          wants = ["apps-network.service"];
+          after = ["apps-network.service"];
+          before = ["qbittorrent.service"];
+          path = [pkgs.coreutils pkgs.crudini pkgs.jq pkgs.podman];
+          serviceConfig.Type = "oneshot";
+          script = ''
+            ${qbittorrentConfigScript} ${lib.escapeShellArgs [qbittorrentConfigFile (toString user.uid) (toString user.gid)]}
+          '';
+        };
+
+        qbittorrent.restartTriggers = [
+          qbittorrentConfigScript
+        ];
       };
 
       timers.cleanup-downloads = {
@@ -56,7 +64,7 @@ in {
     };
 
     podmanServer = {
-      derivedEnvFiles.deluge = {
+      derivedEnvFiles.qbittorrent = {
         derivedEnvironmentFiles = ["lan"];
         secretEnvironmentFiles = [config.age.secrets.pia-env.path];
         variables = {
@@ -79,22 +87,18 @@ in {
           };
         };
 
-        deluge = {
-          build.buildConfig = {
-            workdir = "${delugeSrc}";
-            buildArgs = {
-              APPNAME = "deluge";
-              RELEASETAG = "nix-${delugeRev}";
-              TARGETARCH = "amd64";
-            };
+        qbittorrent = {
+          quadlet.unitConfig = {
+            Requires = ["qbittorrent-config.service"];
+            After = ["qbittorrent-config.service"];
           };
           quadlet.containerConfig = {
+            image = "ghcr.io/binhex/arch-qbittorrentvpn:latest";
             sysctl."net.ipv4.conf.all.src_valid_mark" = "1";
             addCapabilities = ["NET_ADMIN"];
-            publishPorts = ["58846:58846"];
             volumes = [
               "/etc/localtime:/etc/localtime:ro"
-              "${datasets.app.children.deluge.path}:/config"
+              "${datasets.app.children.qbittorrent.path}:/config"
               "${datasets.downloads.path}:/downloads"
             ];
             environments = {
@@ -103,19 +107,15 @@ in {
               TZ = config.time.timeZone;
               STRICT_PORT_FORWARD = "yes";
               NAME_SERVERS = "8.8.8.8,8.8.4.4";
-              DELUGE_DAEMON_LOG_LEVEL = "info";
-              DELUGE_WEB_LOG_LEVEL = "info";
-              DELUGE_ENABLE_WEBUI_PASSWORD = "no";
               VPN_ENABLED = "yes";
               VPN_PROV = "pia";
               VPN_CLIENT = "wireguard";
+              VPN_REMOTE_SERVER = "ca-toronto.privacy.network";
             };
             podmanArgs = ["--privileged"];
           };
-          derivedEnvironmentFiles = ["deluge"];
+          derivedEnvironmentFiles = ["qbittorrent"];
           secretEnvironmentFiles = [config.age.secrets.web-credentials-env.path];
-          # TODO hangs container on shutdown, quadlets have an internal ExecStop that this clobbers
-          # quadlet.serviceConfig.ExecStop = lib.mkBefore ["${pauseTorrents} deluge"];
         };
 
         autobrr = {
@@ -172,25 +172,14 @@ in {
         role = "admin";
       };
 
-      deluge = {
+      qbittorrent = {
         type = "proxy";
         auth = "oauth";
-        path = "/deluge";
-        host = "deluge";
-        port = 8112;
+        path = "/qbittorrent";
+        host = "qbittorrent";
+        port = 8080;
         role = "admin";
-        stripPrefix = true;
-        headerUp = ["X-Deluge-Base \"/deluge\""];
-      };
-
-      deluge-basic = {
-        type = "proxy";
-        auth = "basic";
-        path = "/deluge-basic";
-        host = "deluge";
-        port = 8112;
-        stripPrefix = true;
-        headerUp = ["X-Deluge-Base \"/deluge-basic\""];
+        handlePath = true;
       };
     };
   };
