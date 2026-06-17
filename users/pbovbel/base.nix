@@ -74,6 +74,10 @@ in {
           };
         };
         permission.external_directory."/nix/store/**" = "allow";
+        mcp.nixos = {
+          type = "local";
+          command = ["${unstablePkgs.mcp-nixos}/bin/mcp-nixos"];
+        };
       };
     };
 
