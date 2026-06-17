@@ -21,7 +21,7 @@
         "https://${config.networking.hostName}.${tailscaleDomain}"
         "wss://${config.networking.hostName}.${tailscaleDomain}"
       ];
-      plugins = [pkgs.cockpit-files pkgs.cockpit-podman pkgs.cockpit-zfs];
+      plugins = [pkgs.cockpit-files pkgs.cockpit-podman];
       settings.WebService = {
         AllowUnencrypted = true;
         LoginTo = false;
