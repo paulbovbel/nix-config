@@ -146,6 +146,8 @@
             quadlet-nix.nixosModules.quadlet
             "${pcp}/build/nix/nixos-module.nix"
             {
+              caddy.publicDomain = cfg.publicDomain;
+
               nixpkgs.overlays = overlays;
 
               home-manager = {

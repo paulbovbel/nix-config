@@ -6,7 +6,11 @@
   ...
 }: let
   cfg = config.caddy;
-  inherit (config) ddns;
+  primarySubdomain =
+    if cfg.primarySubdomain != null
+    then cfg.primarySubdomain
+    else config.networking.hostName;
+  primaryDomain = "${primarySubdomain}.${cfg.publicDomain}";
   endpoints = lib.sort (a: b: lib.stringLength a.path > lib.stringLength b.path) (lib.attrValues cfg.endpoints);
 
   renderUser = user: ''
@@ -84,6 +88,31 @@
 
     '';
 
+  authDomainBlock = domainCfg:
+    if domainCfg.auth == "oauth"
+    then
+      if domainCfg.role == null
+      then throw "caddy.domains.<name>.role must be set when auth is oauth"
+      else "    authorize with ${domainCfg.role}\n"
+    else if domainCfg.auth == "basic"
+    then ''
+      basicauth {
+        {$WEB_USER} {$BASIC_AUTH_HASH}
+      }
+    ''
+    else if domainCfg.auth == null
+    then ""
+    else throw "Unsupported Caddy domain auth: ${domainCfg.auth}";
+
+  renderDomain = domain: domainCfg: ''
+    ${domain} {
+      ${authDomainBlock domainCfg}reverse_proxy ${domainCfg.host}:${toString domainCfg.port}
+
+      import public-tls
+    }
+
+  '';
+
   caddyfile = pkgs.writeText "Caddyfile.template" ''
       {
         email paul@bovbel.com
@@ -123,7 +152,24 @@
         }
       }
 
-      (media-site) {
+    (public-tls) {
+      tls {
+        propagation_delay 60s
+        propagation_timeout 5m
+        dns route53 {
+          access_key_id "{$AWS_ACCESS_KEY_ID}"
+            secret_access_key "{$AWS_SECRET_ACCESS_KEY}"
+            region "{$AWS_REGION}"
+            hosted_zone_id "{$AWS_HOSTED_ZONE}"
+          }
+        }
+      }
+
+    *.${cfg.publicDomain} {
+      import public-tls
+    }
+
+    (primary-site) {
         log {
           level INFO
           format console {
@@ -142,25 +188,21 @@
 
     ${lib.concatMapStrings renderEndpoint endpoints}}
 
-      ${ddns.record} {
-        import media-site
+      ${primaryDomain} {
+        import primary-site
 
-        tls {
-          dns route53 {
-            access_key_id "{$AWS_ACCESS_KEY_ID}"
-            secret_access_key "{$AWS_SECRET_ACCESS_KEY}"
-            region "{$AWS_REGION}"
-          }
-        }
+        import public-tls
       }
 
-      media.${tailscaleDomain} {
-        import media-site
+      ${primarySubdomain}.${tailscaleDomain} {
+        import primary-site
 
         tls {
           get_certificate tailscale
         }
       }
+
+      ${lib.concatStringsSep "\n" (lib.mapAttrsToList renderDomain cfg.domains)}
   '';
 in {
   config = lib.mkIf config.caddy.enable {
