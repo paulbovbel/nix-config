@@ -9,9 +9,4 @@
     description = "arthur@bovbel.com";
     extraGroups = ["networkmanager"];
   };
-
-  disko.devices.zpool.zroot.datasets."root/home/abovbel" = {
-    type = "zfs_fs";
-    mountpoint = "/home/abovbel";
-  };
 }

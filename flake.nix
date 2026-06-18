@@ -128,6 +128,7 @@
       nixpkgsForHost.lib.nixosSystem {
         inherit system;
         specialArgs = {
+          hostUsers = cfg.users;
           inherit agenix locus-vpn-client unstablePkgs pcp;
           inherit (cfg) tailscaleDomain;
         };

@@ -23,6 +23,12 @@
       description = "Mount path for persisted state.";
     };
 
+    datasets = lib.mkOption {
+      type = lib.types.lazyAttrsOf lib.types.anything;
+      default = {};
+      description = "Additional zroot dataset fragments for the impermanent root layout.";
+    };
+
     rootDataset = lib.mkOption {
       type = lib.types.str;
       default = "zroot/root";
