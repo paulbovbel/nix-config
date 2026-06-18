@@ -1,21 +1,15 @@
-{lib, ...}: let
-  componentOption = description:
-    lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      inherit description;
-    };
-in {
+{lib, ...}: {
   options.mediaServer = {
-    enable = lib.mkOption {
+    library.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable media server services.";
+      description = "Enable Plex, Jellyfin, and Tautulli services.";
     };
 
-    components = {
-      library.enable = componentOption "Enable Plex, Jellyfin, and Tautulli components.";
-      downloads.enable = componentOption "Enable download manager components.";
+    downloads.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable download manager services.";
     };
 
     upnp.enable = lib.mkOption {

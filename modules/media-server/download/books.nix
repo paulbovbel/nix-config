@@ -10,7 +10,7 @@
   mamCalendar = "hourly";
   mamIpUpdate = ./mam-ip-update.sh;
 in {
-  config = lib.mkIf (cfg.enable && cfg.components.downloads.enable) {
+  config = lib.mkIf cfg.downloads.enable {
     age.secrets.mam-id-env.file = ../../../secrets/server/mam-id-env.age;
 
     storage.datasets.app.children = {

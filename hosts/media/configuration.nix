@@ -38,7 +38,7 @@
   caddy = {
     enable = true;
     primarySubdomain = "media";
-    components.share.enable = true;
+    share.enable = true;
 
     users = [
       {
@@ -84,26 +84,18 @@
   caddy.redirect = "/cockpit/";
   smokeping.enable = true;
 
-  syncthing = {
-    # enable = true;
-    caddy.enable = true;
-  };
+  # syncthing = {
+  #   enable = true;
+  # };
 
   mediaServer = {
-    enable = true;
-    components = {
-      downloads.enable = true;
-      library.enable = true;
-    };
-    upnp.enable = true;
+    downloads.enable = true;
+    library.enable = true;
   };
 
   # gameServer = {
-  #   enable = true;
-  #   components = {
-  #     abiotic.enable = true;
-  #     minecraft.enable = true;
-  #   };
+  #   abiotic.enable = true;
+  #   minecraft.enable = true;
   #   upnp.enable = true;
 
   #   minecraft = {

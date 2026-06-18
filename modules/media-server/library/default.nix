@@ -11,7 +11,7 @@ in {
     ./books.nix
   ];
 
-  config = lib.mkIf (cfg.enable && cfg.components.library.enable) {
+  config = lib.mkIf cfg.library.enable {
     storage.datasets.media = {
       autoSnapshot = {
         enable = true;
@@ -27,7 +27,6 @@ in {
         books = {};
         comics = {};
         movies.options.recordsize = "1M";
-        "switch" = {};
         tv.options.recordsize = "1M";
       };
     };

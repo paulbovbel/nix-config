@@ -5,7 +5,7 @@
 }: let
   datasets = config.storage.datasets;
 in {
-  config = lib.mkIf (config.caddy.enable && config.caddy.components.share.enable) {
+  config = lib.mkIf (config.caddy.enable && config.caddy.share.enable) {
     storage.datasets = {
       media = {};
     };

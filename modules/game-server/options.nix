@@ -1,24 +1,18 @@
-{lib, ...}: let
-  componentOption = description:
-    lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      inherit description;
-    };
-in {
+{lib, ...}: {
   options.gameServer = {
-    enable = lib.mkOption {
+    abiotic.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable game server services.";
-    };
-
-    components = {
-      minecraft.enable = componentOption "Enable Minecraft server.";
-      abiotic.enable = componentOption "Enable Abiotic Factor server.";
+      description = "Enable Abiotic Factor server.";
     };
 
     minecraft = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enable Minecraft server.";
+      };
+
       ops = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];

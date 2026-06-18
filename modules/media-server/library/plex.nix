@@ -15,7 +15,7 @@
     destination = "${datasets.media.children.audiobooks.path}/Jeopardy!";
   };
 in {
-  config = lib.mkIf (cfg.enable && cfg.components.library.enable) {
+  config = lib.mkIf cfg.library.enable {
     age.secrets.plex-token-env.file = ../../../secrets/server/plex-token-env.age;
 
     storage.datasets.app.children = {

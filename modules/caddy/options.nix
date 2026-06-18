@@ -91,10 +91,10 @@ in {
       description = "Primary public subdomain for the Caddy media site.";
     };
 
-    components.share.enable = lib.mkOption {
+    share.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Enable share component.";
+      description = "Enable share endpoint.";
     };
 
     roles = lib.mkOption {

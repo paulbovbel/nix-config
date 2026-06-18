@@ -11,7 +11,7 @@ in {
     ./books.nix
   ];
 
-  config = lib.mkIf (cfg.enable && cfg.components.downloads.enable) {
+  config = lib.mkIf cfg.downloads.enable {
     storage.datasets = {
       downloads.autoSnapshot.enable = false;
       media.children = {

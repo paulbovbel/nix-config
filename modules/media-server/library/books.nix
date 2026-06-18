@@ -7,7 +7,7 @@
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
 in {
-  config = lib.mkIf (cfg.enable && cfg.components.library.enable) {
+  config = lib.mkIf cfg.library.enable {
     age.secrets.web-credentials-env.file = ../../../secrets/server/web-credentials-env.age;
 
     storage.datasets = {
