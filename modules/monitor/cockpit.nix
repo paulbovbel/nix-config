@@ -6,6 +6,11 @@
   pcp,
   ...
 }: let
+  primarySubdomain =
+    if config.caddy.primarySubdomain != null
+    then config.caddy.primarySubdomain
+    else config.networking.hostName;
+  primaryDomain = "${primarySubdomain}.${config.caddy.publicDomain}";
   cockpitPython = pkgs.cockpit.passthru.python3Packages.python;
   pcpPackage = import "${pcp}/build/nix/package.nix" {
     pkgs =
@@ -65,8 +70,8 @@ in {
       package = cockpitPackage;
       openFirewall = false;
       allowed-origins = [
-        "https://${config.ddns.record}"
-        "wss://${config.ddns.record}"
+        "https://${primaryDomain}"
+        "wss://${primaryDomain}"
         "https://${config.networking.hostName}.${tailscaleDomain}"
         "wss://${config.networking.hostName}.${tailscaleDomain}"
       ];

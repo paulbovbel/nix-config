@@ -94,8 +94,10 @@ in {
           after = ["network-online.target"];
           before = ["caddy.service"];
           path = [pkgs.coreutils];
+          restartTriggers = [config.caddy.caddyfile];
           serviceConfig = {
             Type = "oneshot";
+            RemainAfterExit = true;
           };
           script = ''
             set -euo pipefail
