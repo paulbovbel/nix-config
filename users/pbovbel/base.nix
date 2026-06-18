@@ -17,6 +17,8 @@
     Host *
       IdentityFile ~/.ssh/id_rsa
       IdentitiesOnly yes
+
+    Include config.d/*
   '';
 in {
   imports = [
