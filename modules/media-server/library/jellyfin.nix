@@ -7,7 +7,7 @@
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
 in {
-  config = lib.mkIf (cfg.enable && cfg.components.library.enable) {
+  config = lib.mkIf cfg.library.enable {
     storage.datasets.app.children.jellyfin = {};
 
     podmanServer.containers.jellyfin = {

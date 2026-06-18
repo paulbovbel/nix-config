@@ -13,7 +13,7 @@
   cleanupDownloadsAgeDays = 60;
   cleanupDownloadsCalendar = "04:30";
 in {
-  config = lib.mkIf (cfg.enable && cfg.components.downloads.enable) {
+  config = lib.mkIf cfg.downloads.enable {
     age.secrets = {
       pia-env.file = ../../../secrets/server/pia-env.age;
       web-credentials-env.file = ../../../secrets/server/web-credentials-env.age;

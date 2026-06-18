@@ -8,7 +8,7 @@
   inherit (config.podmanServer) user;
   containerUser = "${toString user.uid}:${toString user.gid}";
 in {
-  config = lib.mkIf (cfg.enable && cfg.components.downloads.enable) {
+  config = lib.mkIf cfg.downloads.enable {
     storage.datasets.app.children = {
       bazarr = {};
       maintainerr = {};

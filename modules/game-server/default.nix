@@ -1,6 +1,7 @@
 {
   imports = [
     ./options.nix
-    ./services.nix
+    ./abiotic.nix
+    ./minecraft.nix
   ];
 }
