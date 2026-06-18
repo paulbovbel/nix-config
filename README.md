@@ -16,8 +16,8 @@ User profiles are mapped in `users/default.nix` to a Home Manager module and an 
 - `pbovbel`: `headless`, `graphical`, `work`, `gaming`
 - `rbovbel`: `graphical`
 - `abovbel`: `gaming`
-- Per-user Home Manager modules live under `users/<user>/<profile>.nix`
-- Shared user Home Manager modules are in `users/common/{base,graphical,avatar,gaming,vscode}.nix`
+- Per-user Home Manager modules live under `users/<user>/<profile>.nix`.
+- Shared user Home Manager modules live under `users/common/{base,graphical,avatar,gaming,vscode}.nix`
 
 Run the full local check suite before commit/PR:
 
@@ -38,33 +38,51 @@ just dry-run <host>
 
 ### Modules
 
-Modules in `modules/` are imported globally by `flake.nix`. Host-facing modules expose an `*.enable` option and are enabled from `hosts/<host>/configuration.nix`; internal plumbing modules activate from fragments declared by those host-facing modules.
+Modules in `modules/` are imported globally by `flake.nix`. Host-facing modules expose options such as `*.enable` and are enabled from `hosts/<host>/configuration.nix`; plumbing modules activate from the declarations they own.
 
-- `caddy.enable` configures the public Caddy ingress, auth, Caddyfile rendering, endpoint aggregation, fail2ban, and share component
-- `ddns.enable` configures Route53 dynamic DNS updates
-- `gameServer.enable` configures game-server components such as Minecraft and Abiotic Factor
-- `impermanenceRoot.enable` configures the persistent state layout for impermanent root filesystems
-- `llamaCpp.enable` runs an LLM server proxy
-- `mediaServer.enable` configures media components such as Plex, downloads, books, and sync services
-- `cockpit.enable` configures the Cockpit web UI; `smokeping.enable` controls the Smokeping companion service
-- `nvidia.enable` configures the proprietary NVIDIA driver and related suspend/resume handling
-- `podman-server` owns shared Quadlet rendering, Podman runtime setup, container storage datasets, and derived env files; it has no public `enable` flag and activates when containers are declared
-- `storage.enable` configures shared host storage paths and ZFS datasets
-- `syncthing.enable` configures the native Syncthing service, storage datasets, and optional Caddy endpoint
-- `upnp` exposes `upnp.forwards` and activates when forwards are declared
+```text
+modules/
+├── attic-cache        atticd server and watch-store client
+├── caddy              public ingress, auth, Caddyfile, fail2ban, share
+├── ddns               Route53 dynamic DNS
+├── game-server        game services
+│   ├── abiotic        Abiotic Factor container
+│   └── minecraft      Minecraft container
+├── impermanence-root  persistent root layout and disk definition
+│   ├── disk           disko/ZFS disk layout
+│   └── system         rollback, snapshots, persistence plumbing
+├── llama-cpp          LLM server proxy
+├── media-server       media services
+│   ├── download       download clients
+│   │   ├── books      book downloads
+│   │   ├── torrent    torrent client
+│   │   └── video      video downloads
+│   └── library        media libraries
+│       ├── books      book library
+│       ├── jellyfin   Jellyfin server
+│       └── plex       Plex server
+├── monitor            host monitoring
+│   ├── cockpit        Cockpit web UI and PCP metrics
+│   └── smokeping      Smokeping container and Caddy endpoint
+├── nvidia             proprietary NVIDIA driver setup
+├── podman-server      shared Quadlet/runtime plumbing
+├── storage            shared storage paths and ZFS datasets
+├── syncthing          native Syncthing service and endpoint
+└── upnp               declarative port forwards
+```
 
 ### Profiles
 
 System profiles in `profiles/` are selected indirectly from `hosts/default.nix` through user profile declarations. They are import-driven; `graphical` and `headless` import `common`, while `work` and `gaming` import `graphical`.
 
- ```text
- profiles/
- ├── common
- ├── graphical
- │   ├── gaming
- │   └── work
- └── headless
- ```
+```text
+profiles/
+├── common
+├── graphical
+│   ├── gaming
+│   └── work
+└── headless
+```
 - `common` sets shared Nix settings, Cachix integration, agenix identity paths, base packages, SSH, sudo, locale, and persistent state defaults
 - `graphical` adds GNOME, GDM, Flatpak, PipeWire, NetworkManager, Tailscale laptop enrollment, theming, and graphical persistence
 - `headless` adds server Tailscale enrollment and headless persistence on top of `common`
