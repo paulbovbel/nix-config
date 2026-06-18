@@ -5,6 +5,7 @@ let
 in {
   imports = [
     ./ddns
+    ./attic-cache
     ./upnp
     ./caddy
     ./storage

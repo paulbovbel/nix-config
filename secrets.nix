@@ -8,6 +8,7 @@ in {
   "secrets/laptop/tailscale-oauth-authkey.age".publicKeys = [pbovbel white_tower pbovbel_dell];
   "secrets/server/tailscale-oauth-authkey.age".publicKeys = [pbovbel media];
   "secrets/common/gmail-password.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
+  "secrets/common/attic-watch-store-token.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
   "secrets/common/pbovbel-password-hash.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
   "secrets/common/rbovbel-password-hash.age".publicKeys = [pbovbel white_tower];
   "secrets/common/abovbel-password-hash.age".publicKeys = [pbovbel white_tower];
@@ -18,4 +19,5 @@ in {
   "secrets/server/mam-id-env.age".publicKeys = [pbovbel media];
   "secrets/server/plex-token-env.age".publicKeys = [pbovbel media];
   "secrets/server/abiotic-env.age".publicKeys = [pbovbel media];
+  "secrets/server/attic-server-env.age".publicKeys = [pbovbel media];
 }
