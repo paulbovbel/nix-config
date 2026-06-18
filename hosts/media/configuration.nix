@@ -19,7 +19,14 @@
   ddns = {
     enable = true;
     zone = "bovbel.com";
-    record = "media.bovbel.com";
+    records = [
+      "media.bovbel.com"
+      "nix-cache.bovbel.com"
+    ];
+  };
+
+  atticCache = {
+    enable = true;
   };
 
   upnp.forwards.ssh = {
