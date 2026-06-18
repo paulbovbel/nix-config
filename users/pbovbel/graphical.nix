@@ -2,7 +2,9 @@
   config,
   pkgs,
   ...
-}: {
+}: let
+  mkAutostart = import ../common/autostart.nix;
+in {
   imports = [
     ./base.nix
     ../common/graphical.nix
@@ -43,14 +45,9 @@
     pkgs.uv
   ];
 
-  xdg.configFile = {
-    "autostart/solaar.desktop".text = ''
-      [Desktop Entry]
-      Type=Application
-      Version=1.0
-      Name=Solaar
-      Exec=${pkgs.solaar}/bin/solaar --window=hide
-      X-GNOME-Autostart-enabled=true
-    '';
+  xdg.configFile = mkAutostart {
+    file = "solaar";
+    name = "Solaar";
+    exec = "${pkgs.solaar}/bin/solaar --window=hide";
   };
 }

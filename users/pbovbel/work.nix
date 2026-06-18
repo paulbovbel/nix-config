@@ -4,6 +4,13 @@
   ...
 }: let
   cliPackages = import ../../profiles/common/cli-packages.nix {inherit pkgs;};
+  mkAutostart = import ../common/autostart.nix;
+  mkHostWrapper = command: ''
+    sudo install -Dm755 /dev/stdin /usr/local/bin/${command} <<'EOF'
+    #!/usr/bin/env sh
+    exec host-spawn ${command} "$@"
+    EOF
+  '';
 in {
   imports = [
     ./graphical.nix
@@ -31,17 +38,7 @@ in {
               --name ${lib.escapeShellArg name} \
               --image ${lib.escapeShellArg image} \
               --additional-packages ${lib.escapeShellArgs cliPackages.aptPackages} \
-              --init-hooks ${lib.escapeShellArg ''
-            sudo install -Dm755 /dev/stdin /usr/local/bin/xrandr <<'EOF'
-            #!/usr/bin/env sh
-            exec host-spawn xrandr "$@"
-            EOF
-
-            sudo install -Dm755 /dev/stdin /usr/local/bin/nmcli <<'EOF'
-            #!/usr/bin/env sh
-            exec host-spawn nmcli "$@"
-            EOF
-          ''}
+              --init-hooks ${lib.escapeShellArg (lib.concatMapStrings mkHostWrapper ["xrandr" "nmcli"])}
           fi
         '';
       };
@@ -53,32 +50,21 @@ in {
     distrobox-ubuntu-resolute = mkDistrobox "ubuntu-resolute" "docker.io/library/ubuntu:26.04";
   };
 
-  xdg.configFile = {
-    "autostart/slack.desktop".text = ''
-      [Desktop Entry]
-      Type=Application
-      Version=1.0
-      Name=Slack
-      Exec=flatpak run com.slack.Slack
-      X-GNOME-Autostart-enabled=true
-    '';
-
-    "autostart/zoom.desktop".text = ''
-      [Desktop Entry]
-      Type=Application
-      Version=1.0
-      Name=Zoom
-      Exec=flatpak run us.zoom.Zoom
-      X-GNOME-Autostart-enabled=true
-    '';
-
-    "autostart/whatsapp.desktop".text = ''
-      [Desktop Entry]
-      Type=Application
-      Version=1.0
-      Name=ZapZap
-      Exec=flatpak run com.rtosta.zapzap
-      X-GNOME-Autostart-enabled=true
-    '';
-  };
+  xdg.configFile = lib.mkMerge (map mkAutostart [
+    {
+      file = "slack";
+      name = "Slack";
+      exec = "flatpak run com.slack.Slack";
+    }
+    {
+      file = "zoom";
+      name = "Zoom";
+      exec = "flatpak run us.zoom.Zoom";
+    }
+    {
+      file = "whatsapp";
+      name = "ZapZap";
+      exec = "flatpak run com.rtosta.zapzap";
+    }
+  ]);
 }
