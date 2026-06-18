@@ -9,6 +9,13 @@ in {
   imports = [./options.nix];
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.records != [];
+        message = "ddns.records must contain at least one record when ddns.enable is true.";
+      }
+    ];
+
     age.secrets.aws-access-env.file = ../../secrets/server/aws-access-env.age;
 
     systemd.services.ddns-update = {
@@ -26,24 +33,26 @@ in {
         runtime_dir="$RUNTIME_DIRECTORY"
         tailscale_ip=$(tailscale ip -4 | head -n1)
 
-        cat >"$runtime_dir/record.json" <<EOF
-        {
-          "Changes": [
-            {
-              "Action": "UPSERT",
-              "ResourceRecordSet": {
-                "Name": "${cfg.record}.",
-                "Type": "A",
-                "TTL": 300,
-                "ResourceRecords": [
-                  { "Value": "$tailscale_ip" }
-                ]
+        for record in ${lib.escapeShellArgs cfg.records}; do
+          cat >"$runtime_dir/record.json" <<EOF
+          {
+            "Changes": [
+              {
+                "Action": "UPSERT",
+                "ResourceRecordSet": {
+                  "Name": "$record.",
+                  "Type": "A",
+                  "TTL": 300,
+                  "ResourceRecords": [
+                    { "Value": "$tailscale_ip" }
+                  ]
+                }
               }
-            }
-          ]
-        }
+            ]
+          }
         EOF
-        aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE" --change-batch "file://$runtime_dir/record.json"
+          aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE" --change-batch "file://$runtime_dir/record.json"
+        done
       '';
     };
 
