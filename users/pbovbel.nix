@@ -1,9 +1,4 @@
 {config, ...}: {
-  disko.devices.zpool.zroot.datasets."root/home/pbovbel" = {
-    type = "zfs_fs";
-    mountpoint = "/home/pbovbel";
-  };
-
   age.secrets.pbovbel-ssh-private-key = {
     file = ../secrets/common/pbovbel-id_rsa.age;
     path = "/home/pbovbel/.ssh/id_rsa";
