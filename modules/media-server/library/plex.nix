@@ -33,7 +33,7 @@ in {
       containers = {
         plex = {
           quadlet.containerConfig = {
-            image = "plexinc/pms-docker:plexpass";
+            image = "docker.io/plexinc/pms-docker:plexpass";
             publishPorts = ["50505:32400"];
             volumes = [
               "${datasets.app.children.plex.path}:/config"

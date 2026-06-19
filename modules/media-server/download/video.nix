@@ -38,7 +38,7 @@ in {
       radarr = {
         dependsOn = ["jackett"];
         quadlet.containerConfig = {
-          image = "lscr.io/linuxserver/radarr";
+          image = "lscr.io/linuxserver/radarr:latest";
           environments = {
             PUID = toString user.uid;
             PGID = toString user.gid;
@@ -55,7 +55,7 @@ in {
 
       bazarr = {
         quadlet.containerConfig = {
-          image = "lscr.io/linuxserver/bazarr";
+          image = "lscr.io/linuxserver/bazarr:latest";
           environments = {
             PUID = toString user.uid;
             PGID = toString user.gid;

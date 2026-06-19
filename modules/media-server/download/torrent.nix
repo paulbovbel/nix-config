@@ -141,7 +141,7 @@ in {
 
         unpackerr = {
           quadlet.containerConfig = {
-            image = "golift/unpackerr";
+            image = "docker.io/golift/unpackerr:latest";
             user = containerUser;
             environments.TZ = config.time.timeZone;
             volumes = [
