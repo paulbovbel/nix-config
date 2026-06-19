@@ -5,8 +5,15 @@
   ...
 }: let
   cfg = config.atticCache;
+  cacheDir = "/var/lib/attic/storage";
+  datasets = config.storage.datasets;
   domain = "${cfg.subdomain}.${config.caddy.publicDomain}";
   endpoint = "https://${domain}/";
+  bootstrapCache = pkgs.writeShellApplication {
+    name = "attic-cache-bootstrap";
+    runtimeInputs = [pkgs.attic-client pkgs.coreutils pkgs.curl];
+    text = builtins.readFile ./attic-cache-bootstrap.sh;
+  };
   watchStore = pkgs.writeShellApplication {
     name = "attic-watch-store";
     runtimeInputs = [pkgs.attic-client pkgs.coreutils];
@@ -17,7 +24,30 @@ in {
 
   config = lib.mkMerge [
     (lib.mkIf cfg.enable {
-      age.secrets.attic-server-env.file = ../../secrets/server/attic-server-env.age;
+      assertions = [
+        {
+          assertion = config.storage.enable;
+          message = "atticCache.enable requires storage.enable for atticd data storage.";
+        }
+      ];
+
+      age.secrets = {
+        attic-admin-token.file = ../../secrets/laptop/attic-admin-token.age;
+        attic-server-env.file = ../../secrets/server/attic-server-env.age;
+      };
+
+      atticCache.dataDir = lib.mkDefault datasets.app.children.attic.path;
+
+      storage.datasets.app.children.attic = {};
+
+      impermanenceRoot.datasets."root/attic" = {
+        type = "zfs_fs";
+        mountpoint = cacheDir;
+        options = {
+          "com.sun:auto-snapshot" = "false";
+          quota = "100G";
+        };
+      };
 
       services.atticd = {
         enable = true;
@@ -28,21 +58,46 @@ in {
           listen = "0.0.0.0:${toString cfg.port}";
           allowed-hosts = [domain];
           api-endpoint = endpoint;
-          database.url = "sqlite:${cfg.dataDir}/server.db?mode=rwc";
+          database.url = "sqlite://${cfg.dataDir}/server.db?mode=rwc";
           storage = {
             type = "local";
-            path = "${cfg.dataDir}/storage";
+            path = cacheDir;
           };
         };
       };
 
       systemd.services.atticd = {
         after = ["systemd-tmpfiles-setup.service"];
-        unitConfig.RequiresMountsFor = [cfg.dataDir];
+        unitConfig.RequiresMountsFor = [config.storage.dataPath cfg.dataDir cacheDir];
         serviceConfig = {
+          # Attic uses ZFS-backed paths outside systemd's StateDirectory lifecycle,
+          # so it needs the stable atticd user instead of transient UID mapping.
           DynamicUser = lib.mkForce false;
+          ExecStartPre = [
+            "+${pkgs.coreutils}/bin/install -d -o atticd -g atticd -m 0750 ${cfg.dataDir}"
+            "+${pkgs.coreutils}/bin/install -d -o atticd -g atticd -m 0750 ${cacheDir}"
+          ];
           PrivateUsers = lib.mkForce false;
-          ReadWritePaths = [cfg.dataDir];
+          ReadWritePaths = [cfg.dataDir cacheDir];
+        };
+      };
+
+      systemd.services.attic-cache-bootstrap = {
+        description = "Create and configure the Attic cache";
+        wantedBy = ["multi-user.target"];
+        wants = ["network-online.target" "atticd.service"] ++ lib.optional config.caddy.enable "caddy.service";
+        after = ["network-online.target" "atticd.service"] ++ lib.optional config.caddy.enable "caddy.service";
+        environment = {
+          ATTIC_ADMIN_TOKEN_FILE = config.age.secrets.attic-admin-token.path;
+          ATTIC_CACHE = "${cfg.serverName}:${cfg.cacheName}";
+          ATTIC_ENDPOINT = endpoint;
+          ATTIC_SERVER_NAME = cfg.serverName;
+          HOME = "/var/lib/attic-cache-bootstrap";
+        };
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "${bootstrapCache}/bin/attic-cache-bootstrap";
+          StateDirectory = "attic-cache-bootstrap";
         };
       };
 
@@ -59,23 +114,7 @@ in {
         inherit (cfg) port;
       };
 
-      systemd.tmpfiles.rules = [
-        "d ${cfg.dataDir} 0750 atticd atticd -"
-        "d ${cfg.dataDir}/storage 0750 atticd atticd -"
-        "z ${cfg.dataDir} 0750 atticd atticd -"
-        "z ${cfg.dataDir}/storage 0750 atticd atticd -"
-      ];
-
-      impermanenceRoot.datasets."root/attic" = {
-        type = "zfs_fs";
-        mountpoint = cfg.dataDir;
-        options = {
-          "com.sun:auto-snapshot" = "false";
-          quota = "100G";
-        };
-      };
-
-      networking.firewall.interfaces.podman1.allowedTCPPorts = [cfg.port];
+      networking.firewall.interfaces.${config.podmanServer.networkInterface}.allowedTCPPorts = [cfg.port];
     })
 
     (lib.mkIf cfg.client.enable {
