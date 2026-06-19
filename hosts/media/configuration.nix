@@ -84,13 +84,33 @@
   storage.enable = true;
 
   backup = {
-    enable = true;
-    account = "de4856@de4856.rsync.net";
+    targets = [
+      "de4856@de4856.rsync.net"
+      "pbovbel@offsite"
+    ];
     remoteRoot = "media";
     identityFile = config.age.secrets.pbovbel-ssh-private-key.path;
 
     paths =
-      lib.mapAttrs (name: dataset: {
+      {
+        backup = {
+          source = "/storage/backup";
+          destination = "backup";
+        };
+        audiobooks = {
+          source = config.storage.datasets.media.children.audiobooks.path;
+          destination = "media/audiobooks";
+        };
+        books = {
+          source = config.storage.datasets.media.children.books.path;
+          destination = "media/books";
+        };
+        comics = {
+          source = config.storage.datasets.media.children.comics.path;
+          destination = "media/comics";
+        };
+      }
+      // lib.mapAttrs (name: dataset: {
         source = dataset.path;
         destination = "app/${name}";
       })
