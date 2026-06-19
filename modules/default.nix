@@ -4,6 +4,7 @@ let
   lanNetworkCommand = ''iface=$(${lanInterfaceCommand}); ip -o -4 route show dev "$iface" proto kernel scope link | { read -r network _; printf '%s\n' "$network"; }'';
 in {
   imports = [
+    ./backup
     ./ddns
     ./attic-cache
     ./upnp
