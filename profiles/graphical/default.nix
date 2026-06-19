@@ -40,7 +40,7 @@
       authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
       authKeyParameters.ephemeral = false;
       extraUpFlags = [
-        "--advertise-tags=tag:laptop"
+        "--advertise-tags=tag:graphical"
         "--hostname=${config.networking.hostName}"
       ];
     };
