@@ -142,6 +142,6 @@ in {
       spoofBasic = true;
     };
 
-    networking.firewall.interfaces.podman1.allowedTCPPorts = [config.services.cockpit.port];
+    networking.firewall.interfaces.${config.podmanServer.networkInterface}.allowedTCPPorts = [config.services.cockpit.port];
   };
 }

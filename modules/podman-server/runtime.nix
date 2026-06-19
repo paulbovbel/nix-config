@@ -37,6 +37,11 @@
 
         containerConfig = {
           inherit name;
+          autoUpdate = lib.mkDefault (
+            if container.build != null
+            then "local"
+            else "registry"
+          );
           networks = lib.mkBefore [config.virtualisation.quadlet.networks.apps.ref];
           environmentFiles = lib.mkAfter (container.secretEnvironmentFiles ++ derivedEnvFilePaths);
           podmanArgs = lib.mkBefore ["--no-healthcheck"];
@@ -124,7 +129,10 @@ in {
     };
 
     virtualisation.quadlet = {
-      networks.apps.networkConfig.name = "apps";
+      networks.apps.networkConfig = {
+        name = "apps";
+        interfaceName = cfg.networkInterface;
+      };
       builds = mkQuadletBuilds cfg.containers;
       containers = lib.mapAttrs mkQuadletContainer cfg.containers;
     };
@@ -138,6 +146,14 @@ in {
       (lib.mapAttrs' (name: envFile: lib.nameValuePair "podman-server-${name}-env" (renderDerivedEnvFile name envFile)) cfg.derivedEnvFiles)
       (lib.mapAttrs mkContainerService cfg.containers)
     ];
+
+    systemd.timers."podman-auto-update" = {
+      wantedBy = ["timers.target"];
+      timerConfig = {
+        OnCalendar = "daily"; # Change to your preferred schedule
+        Persistent = true;
+      };
+    };
 
     system.activationScripts.podman-server-prune-containers = lib.stringAfter ["etc"] ''
       declared_names=(${lib.escapeShellArgs declaredContainerNames})

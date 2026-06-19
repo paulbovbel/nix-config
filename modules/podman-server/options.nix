@@ -134,6 +134,12 @@ in {
       description = "Shared Podman server filesystem paths.";
     };
 
+    networkInterface = lib.mkOption {
+      type = lib.types.str;
+      default = "podman-apps";
+      description = "Host bridge interface name for the shared Podman apps network.";
+    };
+
     containers = lib.mkOption {
       type = lib.types.attrsOf containerType;
       default = {};

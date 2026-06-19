@@ -20,7 +20,7 @@ in {
 
       containers.minecraft = {
         quadlet.containerConfig = {
-          image = "itzg/minecraft-server";
+          image = "ghcr.io/itzg/minecraft-server:latest";
           publishPorts = ["25565:25565"];
           volumes = ["${datasets.app.children.minecraft.path}:/data"];
           environments = {
