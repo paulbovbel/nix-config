@@ -1,4 +1,9 @@
-{pkgs, ...}: {
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
   imports = [
     ./hardware-configuration.nix
   ];
@@ -29,11 +34,11 @@
     enable = true;
   };
 
-  upnp.forwards.ssh = {
-    from = 22;
-    to = 22;
-    proto = "tcp";
-  };
+  # upnp.forwards.ssh = {
+  #   from = 22;
+  #   to = 22;
+  #   proto = "tcp";
+  # };
 
   caddy = {
     enable = true;
@@ -77,6 +82,20 @@
   };
 
   storage.enable = true;
+
+  backup = {
+    enable = true;
+    account = "de4856@de4856.rsync.net";
+    remoteRoot = "media";
+    identityFile = config.age.secrets.pbovbel-ssh-private-key.path;
+
+    paths =
+      lib.mapAttrs (name: dataset: {
+        source = dataset.path;
+        destination = "app/${name}";
+      })
+      config.storage.datasets.app.children;
+  };
 
   environment.systemPackages = [pkgs.intel-gpu-tools];
 
