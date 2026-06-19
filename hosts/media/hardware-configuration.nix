@@ -13,9 +13,6 @@
       availableKernelModules = ["nvme" "xhci_pci" "ahci" "usbhid" "sd_mod"];
       kernelModules = [];
       systemd.enable = true;
-      luks.devices."crypted" = {
-        crypttabExtraOpts = ["tpm2-device=auto"];
-      };
     };
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
@@ -27,7 +24,10 @@
     useDHCP = false;
     bonds.bond0 = {
       interfaces = ["eno1" "eno2"];
-      driverOptions.mode = "balance-rr";
+      driverOptions = {
+        mode = "active-backup";
+        miimon = "100";
+      };
     };
     interfaces = {
       eno1.useDHCP = false;
