@@ -103,7 +103,9 @@ in {
             set -euo pipefail
             install -d -m 0755 /etc/caddy
             install -m 0644 ${config.caddy.caddyfile} /etc/caddy/Caddyfile
-            ${pkgs.podman}/bin/podman exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile || true
+            if [ "$(${pkgs.podman}/bin/podman inspect -f '{{.State.Running}}' caddy 2>/dev/null || true)" = true ]; then
+              ${pkgs.podman}/bin/podman exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile || true
+            fi
           '';
         };
       };

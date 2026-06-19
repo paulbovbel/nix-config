@@ -46,6 +46,9 @@ in {
   nix = {
     settings = {
       experimental-features = ["nix-command" "flakes"];
+      connect-timeout = 2;
+      download-attempts = 1;
+      fallback = true;
       trusted-users = ["root" "pbovbel"];
       substituters = [
         "https://cache.nixos.org"
@@ -70,7 +73,7 @@ in {
     optimise.automatic = true;
   };
 
-  atticCache.client.enable = true;
+  atticCache.client.enable = lib.mkDefault true;
 
   age = {
     secrets = {

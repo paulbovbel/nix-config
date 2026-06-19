@@ -18,7 +18,7 @@ in {
     authKeyParameters.ephemeral = false;
     useRoutingFeatures = "server";
     extraUpFlags = [
-      "--advertise-tags=tag:server"
+      "--advertise-tags=tag:headless"
       "--advertise-exit-node"
     ];
   };
