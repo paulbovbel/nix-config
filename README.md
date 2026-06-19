@@ -112,15 +112,21 @@ chmod 600 "$tmpdir/persist/etc/agenix/host.agekey"
 sed -i "s|^  ${host_key_name} = \".*\";|  ${host_key_name} = \"$(age-keygen -y "$tmpdir/persist/etc/agenix/host.agekey")\";|" secrets.nix
 agenix -r
 
+# Handle nix-cache.bovbel.com potentially being down
+NIX_CONFIG=$'substituters = https://cache.nixos.org https://nix-community.cachix.org https://cuda-maintainers.cachix.org' \
 nix run github:numtide/nixos-anywhere -- \
+  --no-use-machine-substituters \
+  --debug -L --show-trace \
+  --option substituters "https://cache.nixos.org https://nix-community.cachix.org https://cuda-maintainers.cachix.org" \
   --flake .#"$host_name" \
+  --phases disko,install,reboot \
   --extra-files "$tmpdir" \
   "$target_host"
 
 rm -rf "$tmpdir"
 ```
 
-Post-install TPM2 auto-unlock enrollment (run on installed host after first boot):
+Post-install TPM2 auto-unlock enrollment for hosts with `impermanenceRoot.encrypted = true` (run on installed host after first boot):
 
 ```bash
 lsblk -f

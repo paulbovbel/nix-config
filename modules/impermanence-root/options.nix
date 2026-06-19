@@ -11,6 +11,12 @@
       description = "Disk id path for main system disk (e.g. /dev/disk/by-id/...)";
     };
 
+    encrypted = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Encrypt the root ZFS partition with LUKS.";
+    };
+
     swapSize = lib.mkOption {
       type = lib.types.str;
       default = "32G";

@@ -5,6 +5,10 @@
   ...
 }: let
   cfg = config.impermanenceRoot;
+  zfsContent = {
+    type = "zfs";
+    pool = "zroot";
+  };
   homeDatasets = lib.listToAttrs (map (user: {
       name = "root/home/${user.name}";
       value = {
@@ -23,39 +27,49 @@ in {
         device = cfg.diskId;
         content = {
           type = "gpt";
-          partitions = {
-            ESP = {
-              priority = 1;
-              size = "1G";
-              type = "EF00";
-              content = {
-                type = "filesystem";
-                format = "vfat";
-                mountpoint = "/boot";
-                mountOptions = ["umask=0077"];
-              };
-            };
-            swap = {
-              size = cfg.swapSize;
-              content = {
-                type = "swap";
-                # Ephemeral swap: fresh key every boot, no swap persistence.
-                randomEncryption = true;
-              };
-            };
-            encrypted = {
-              size = "100%";
-              content = {
-                type = "luks";
-                name = "crypted";
-                settings.allowDiscards = true;
+          partitions =
+            {
+              ESP = {
+                priority = 1;
+                size = "1G";
+                type = "EF00";
                 content = {
-                  type = "zfs";
-                  pool = "zroot";
+                  type = "filesystem";
+                  format = "vfat";
+                  mountpoint = "/boot";
+                  mountOptions = ["umask=0077"];
                 };
               };
-            };
-          };
+
+              swap = {
+                size = cfg.swapSize;
+                content = {
+                  type = "swap";
+                  # Ephemeral swap: fresh key every boot, no swap persistence.
+                  randomEncryption = true;
+                };
+              };
+            }
+            // (
+              if cfg.encrypted
+              then {
+                encrypted = {
+                  size = "100%";
+                  content = {
+                    type = "luks";
+                    name = "crypted";
+                    settings.allowDiscards = true;
+                    content = zfsContent;
+                  };
+                };
+              }
+              else {
+                root = {
+                  size = "100%";
+                  content = zfsContent;
+                };
+              }
+            );
         };
       };
 

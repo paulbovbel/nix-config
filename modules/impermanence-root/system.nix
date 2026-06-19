@@ -4,9 +4,14 @@
   ...
 }: let
   cfg = config.impermanenceRoot;
+  zrootMountpoints = lib.filter (mountpoint: lib.isString mountpoint && lib.hasPrefix "/" mountpoint) (
+    lib.mapAttrsToList (_: dataset: dataset.mountpoint or null) config.disko.devices.zpool.zroot.datasets
+  );
 in {
   config = lib.mkIf cfg.enable {
-    fileSystems.${cfg.persistPath}.neededForBoot = true;
+    fileSystems = lib.genAttrs zrootMountpoints (_: {
+      neededForBoot = true;
+    });
 
     environment.persistence.${cfg.persistPath} = {
       # Reduces mount clutter from persistence bind mounts.
@@ -22,7 +27,9 @@ in {
 
     services.zfs.autoScrub.enable = true;
 
-    systemd.timers.zfs-snapshot-frequent.wantedBy = lib.mkForce [];
+    boot.initrd.luks.devices."crypted" = lib.mkIf cfg.encrypted {
+      crypttabExtraOpts = ["tpm2-device=auto"];
+    };
 
     boot.initrd.systemd.services.zfs-rollback-root = {
       description = "Rollback zroot/root to @blank snapshot";

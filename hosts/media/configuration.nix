@@ -106,6 +106,7 @@
 
   impermanenceRoot = {
     enable = true;
+    encrypted = false;
     swapSize = "32G";
   };
 

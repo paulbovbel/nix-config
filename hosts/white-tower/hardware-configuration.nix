@@ -13,9 +13,6 @@
       availableKernelModules = ["nvme" "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod"];
       kernelModules = [];
       systemd.enable = true;
-      luks.devices."crypted" = {
-        crypttabExtraOpts = ["tpm2-device=auto"];
-      };
     };
     kernelModules = ["kvm-amd"];
     extraModulePackages = [];
