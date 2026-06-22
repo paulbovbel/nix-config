@@ -6,7 +6,6 @@ let
 in {
   "secrets/common/pbovbel-id_rsa.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
   "secrets/laptop/tailscale-oauth-authkey.age".publicKeys = [pbovbel white_tower pbovbel_dell];
-  "secrets/laptop/attic-admin-token.age".publicKeys = [pbovbel pbovbel_dell media];
   "secrets/server/tailscale-oauth-authkey.age".publicKeys = [pbovbel media];
   "secrets/common/gmail-password.age".publicKeys = [pbovbel white_tower pbovbel_dell media];
   "secrets/common/attic-watch-store-token.age".publicKeys = [pbovbel white_tower pbovbel_dell media];

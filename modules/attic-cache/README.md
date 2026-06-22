@@ -1,0 +1,57 @@
+# Attic Cache
+
+This module runs the Attic server and watch-store client, but cache creation and token generation are manual.
+
+## Initialize a New Cache
+
+1. Deploy the host with `atticCache.enable = true` and verify `atticd` is reachable at the public endpoint.
+
+2. On the cache host, load the server signing secret and find the active `atticd` config:
+
+   ```bash
+   set -a
+   . /run/agenix/attic-server-env
+   set +a
+
+   systemctl cat atticd
+   ```
+
+3. Copy the `--config` path from the `atticd` `ExecStart`, then generate a short-lived admin token:
+
+   ```bash
+   config_path=/nix/store/...-atticd.toml
+   admin_token="$(nix shell nixpkgs#attic-server -c atticadm -f "$config_path" make-token --sub admin --validity '1 hour' --pull '*' --push '*' --create-cache '*' --configure-cache '*')"
+   ```
+
+4. Log in to the server. These values match the module defaults:
+
+   ```bash
+   attic login --set-default bovbel https://nix-cache.bovbel.com/ "$admin_token"
+   ```
+
+5. Create the cache if it does not already exist:
+
+   ```bash
+   attic cache info bovbel:nixos >/dev/null || attic cache create --public --priority 41 bovbel:nixos
+   ```
+
+6. Confirm the cache is available:
+
+   ```bash
+   attic cache info bovbel:nixos
+   ```
+
+7. Generate the watch-store client token and rekey the agenix secret:
+
+   ```bash
+   client_token="$(nix shell nixpkgs#attic-server -c atticadm -f "$config_path" make-token --sub watch-store --validity '1 year' --pull nixos --push nixos)"
+   printf '%s\n' "$client_token"
+   agenix -e secrets/common/attic-watch-store-token.age
+   agenix -r
+   ```
+
+8. Unset tokens from the shell when finished:
+
+   ```bash
+   unset admin_token client_token ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64 ATTIC_SERVER_TOKEN_HS256_SECRET_BASE64
+   ```
