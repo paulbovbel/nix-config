@@ -112,6 +112,7 @@ in {
               VPN_CLIENT = "wireguard";
               VPN_REMOTE_SERVER = "ca-toronto.privacy.network";
             };
+            memory = "12g";
             podmanArgs = ["--privileged"];
           };
           derivedEnvironmentFiles = ["qbittorrent"];

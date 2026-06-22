@@ -19,13 +19,28 @@
       };
     };
   });
+
+  targetType = lib.types.submodule {
+    options = {
+      paths = lib.mkOption {
+        type = lib.types.attrsOf pathType;
+        default = {};
+        description = "Named local paths to push to this backup target.";
+      };
+    };
+  };
 in {
   options.backup = {
     targets = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [];
-      example = ["12345@usw-s001.rsync.net" "offsite"];
-      description = "SSH targets that receive the same backup paths.";
+      type = lib.types.attrsOf targetType;
+      default = {};
+      example = {
+        "12345@usw-s001.rsync.net".paths.documents = {
+          source = "/storage/backup/documents";
+          destination = "backup/documents";
+        };
+      };
+      description = "SSH targets and the backup paths each receives.";
     };
 
     remoteRoot = lib.mkOption {
@@ -44,12 +59,6 @@ in {
       type = lib.types.str;
       default = "daily";
       description = "systemd OnCalendar expression for backup runs.";
-    };
-
-    paths = lib.mkOption {
-      type = lib.types.attrsOf pathType;
-      default = {};
-      description = "Named local paths to push to backup targets.";
     };
   };
 }
