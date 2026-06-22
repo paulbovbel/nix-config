@@ -3,7 +3,47 @@
   lib,
   pkgs,
   ...
-}: {
+}: let
+  backupPath = config.storage.datasets.backup.path;
+  appBackupPaths =
+    lib.mapAttrs (name: dataset: {
+      source = dataset.path;
+      destination = "app/${name}";
+    })
+    config.storage.datasets.app.children;
+  fullBackupPaths =
+    {
+      backup = {
+        source = backupPath;
+        destination = "backup";
+      };
+      audiobooks = {
+        source = config.storage.datasets.media.children.audiobooks.path;
+        destination = "media/audiobooks";
+      };
+      books = {
+        source = config.storage.datasets.media.children.books.path;
+        destination = "media/books";
+      };
+      comics = {
+        source = config.storage.datasets.media.children.comics.path;
+        destination = "media/comics";
+      };
+    }
+    // appBackupPaths;
+  limitedBackupPaths =
+    {
+      backupDocuments = {
+        source = "${backupPath}/documents";
+        destination = "backup/documents";
+      };
+      backupPhotos = {
+        source = "${backupPath}/photos";
+        destination = "backup/photos";
+      };
+    }
+    // appBackupPaths;
+in {
   imports = [
     ./hardware-configuration.nix
   ];
@@ -84,37 +124,12 @@
   storage.enable = true;
 
   backup = {
-    targets = [
-      "de4856@de4856.rsync.net"
-      "pbovbel@offsite"
-    ];
+    targets = {
+      "de4856@de4856.rsync.net".paths = limitedBackupPaths;
+      "pbovbel@offsite".paths = fullBackupPaths;
+    };
     remoteRoot = "media";
     identityFile = config.age.secrets.pbovbel-ssh-private-key.path;
-
-    paths =
-      {
-        backup = {
-          source = "/storage/backup";
-          destination = "backup";
-        };
-        audiobooks = {
-          source = config.storage.datasets.media.children.audiobooks.path;
-          destination = "media/audiobooks";
-        };
-        books = {
-          source = config.storage.datasets.media.children.books.path;
-          destination = "media/books";
-        };
-        comics = {
-          source = config.storage.datasets.media.children.comics.path;
-          destination = "media/comics";
-        };
-      }
-      // lib.mapAttrs (name: dataset: {
-        source = dataset.path;
-        destination = "app/${name}";
-      })
-      config.storage.datasets.app.children;
   };
 
   environment.systemPackages = [pkgs.intel-gpu-tools];

@@ -27,6 +27,28 @@ export RSYNC_RSH
 
 echo "[backup] backup to $target started"
 backup_start=$(date +%s)
+total_size=0
+
+while IFS= read -r path; do
+  name=$(jq --raw-output '.name' <<<"$path")
+  source=$(jq --raw-output '.source' <<<"$path")
+
+  test -e "$source"
+
+  du_args=(--summarize --block-size=1)
+  while IFS= read -r pattern; do
+    du_args+=(--exclude "$pattern")
+  done < <(jq --raw-output '.excludes[]' <<<"$path")
+
+  size=$(du "${du_args[@]}" -- "$source" | cut -f1)
+  total_size=$((total_size + size))
+  human_size=$(numfmt --to=iec-i --suffix=B "$size")
+
+  echo "[backup] size $name: $human_size ($size bytes) $source"
+done < <(jq --compact-output '.[]' "$paths_json")
+
+human_total_size=$(numfmt --to=iec-i --suffix=B "$total_size")
+echo "[backup] total size: $human_total_size ($total_size bytes)"
 
 while IFS= read -r path; do
   name=$(jq --raw-output '.name' <<<"$path")
