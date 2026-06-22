@@ -9,11 +9,6 @@
   datasets = config.storage.datasets;
   domain = "${cfg.subdomain}.${config.caddy.publicDomain}";
   endpoint = "https://${domain}/";
-  bootstrapCache = pkgs.writeShellApplication {
-    name = "attic-cache-bootstrap";
-    runtimeInputs = [pkgs.attic-client pkgs.coreutils pkgs.curl];
-    text = builtins.readFile ./attic-cache-bootstrap.sh;
-  };
   watchStore = pkgs.writeShellApplication {
     name = "attic-watch-store";
     runtimeInputs = [pkgs.attic-client pkgs.coreutils];
@@ -32,7 +27,6 @@ in {
       ];
 
       age.secrets = {
-        attic-admin-token.file = ../../secrets/laptop/attic-admin-token.age;
         attic-server-env.file = ../../secrets/server/attic-server-env.age;
       };
 
@@ -79,25 +73,6 @@ in {
           ];
           PrivateUsers = lib.mkForce false;
           ReadWritePaths = [cfg.dataDir cacheDir];
-        };
-      };
-
-      systemd.services.attic-cache-bootstrap = {
-        description = "Create and configure the Attic cache";
-        wantedBy = ["multi-user.target"];
-        wants = ["network-online.target" "atticd.service"] ++ lib.optional config.caddy.enable "caddy.service";
-        after = ["network-online.target" "atticd.service"] ++ lib.optional config.caddy.enable "caddy.service";
-        environment = {
-          ATTIC_ADMIN_TOKEN_FILE = config.age.secrets.attic-admin-token.path;
-          ATTIC_CACHE = "${cfg.serverName}:${cfg.cacheName}";
-          ATTIC_ENDPOINT = endpoint;
-          ATTIC_SERVER_NAME = cfg.serverName;
-          HOME = "/var/lib/attic-cache-bootstrap";
-        };
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = "${bootstrapCache}/bin/attic-cache-bootstrap";
-          StateDirectory = "attic-cache-bootstrap";
         };
       };
 

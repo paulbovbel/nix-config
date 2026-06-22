@@ -18,7 +18,6 @@
 
 - Harden `ddns-update`.
 - Harden `upnp-update`.
-- Harden `attic-cache-bootstrap`.
 - Harden `attic-watch-store`.
 - Harden Podman server derived environment file renderers.
 - Review whether `atticd` can take additional sandboxing beyond its current `ReadWritePaths`.
