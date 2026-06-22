@@ -48,6 +48,7 @@
       "ctrl+home" = "resize_window reset";
     };
     settings = {
+      allow_remote_control = "yes";
       enabled_layouts = "splits";
       scrollback_lines = -1;
       wheel_scroll_multiplier = 5;

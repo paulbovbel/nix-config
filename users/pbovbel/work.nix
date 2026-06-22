@@ -4,6 +4,22 @@
   ...
 }: let
   cliPackages = import ../../profiles/common/cli-packages.nix {inherit pkgs;};
+  pythonWithPsutil = pkgs.python3.withPackages (pythonPackages: [
+    pythonPackages.psutil
+  ]);
+  kittyDistroboxSplit = pkgs.writeShellApplication {
+    name = "kitty-distrobox-split";
+    runtimeInputs = [
+      pkgs.bashInteractive
+      pkgs.distrobox
+      pkgs.kitty
+      pythonWithPsutil
+    ];
+    text = ''
+      exec python3 ${./kitty-distrobox-split.py} "$@"
+    '';
+  };
+  kittyDistroboxSplitBinding = location: "launch --type=background --allow-remote-control ${lib.getExe kittyDistroboxSplit} ${location}";
   mkAutostart = import ../common/autostart.nix;
   mkHostWrapper = command: ''
     sudo install -Dm755 /dev/stdin /usr/local/bin/${command} <<'EOF'
@@ -20,6 +36,11 @@ in {
     "us.zoom.Zoom.desktop"
     "com.slack.Slack.desktop"
   ];
+
+  programs.kitty.keybindings = {
+    "ctrl+shift+e" = lib.mkForce (kittyDistroboxSplitBinding "vsplit");
+    "ctrl+shift+o" = lib.mkForce (kittyDistroboxSplitBinding "hsplit");
+  };
 
   systemd.user.services = let
     mkDistrobox = name: image: {
