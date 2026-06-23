@@ -28,19 +28,28 @@ export RSYNC_RSH
 echo "[backup] backup to $target started"
 backup_start=$(date +%s)
 total_size=0
+failed=0
 
 while IFS= read -r path; do
   name=$(jq --raw-output '.name' <<<"$path")
   source=$(jq --raw-output '.source' <<<"$path")
 
-  test -e "$source"
+  if [[ ! -e $source ]]; then
+    echo "[backup] missing $name: $source" >&2
+    failed=1
+    continue
+  fi
 
   du_args=(--summarize --block-size=1)
   while IFS= read -r pattern; do
     du_args+=(--exclude "$pattern")
   done < <(jq --raw-output '.excludes[]' <<<"$path")
 
-  size=$(du "${du_args[@]}" -- "$source" | cut -f1)
+  if ! size=$(du "${du_args[@]}" -- "$source" | cut -f1); then
+    echo "[backup] failed to size $name: $source" >&2
+    failed=1
+    continue
+  fi
   total_size=$((total_size + size))
   human_size=$(numfmt --to=iec-i --suffix=B "$size")
 
@@ -57,7 +66,11 @@ while IFS= read -r path; do
   remote="$target:$remote_root/$destination/"
   remote_dir="$remote_root/$destination"
 
-  test -e "$source"
+  if [[ ! -e $source ]]; then
+    echo "[backup] missing $name: $source" >&2
+    failed=1
+    continue
+  fi
 
   sync_source=$source
   if [[ -d $sync_source ]]; then
@@ -80,11 +93,15 @@ while IFS= read -r path; do
   echo "[backup] starting $name: $source -> $remote"
   path_start=$(date +%s)
 
-  "${ssh_command[@]}" -n "$target" mkdir -p -- "$remote_dir"
+  if ! "${ssh_command[@]}" -n "$target" mkdir -p -- "$remote_dir"; then
+    echo "[backup] failed $name: could not create $remote_dir" >&2
+    failed=1
+    continue
+  fi
 
   if ! rsync "${rsync_args[@]}" "$sync_source" "$remote"; then
     echo "[backup] failed $name: $remote" >&2
-    exit 1
+    failed=1
   fi
 
   path_end=$(date +%s)
@@ -93,3 +110,4 @@ done < <(jq --compact-output '.[]' "$paths_json")
 
 backup_end=$(date +%s)
 echo "[backup] backup to $target finished in $((backup_end - backup_start))s"
+exit "$failed"
