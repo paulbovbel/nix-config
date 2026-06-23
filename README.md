@@ -45,6 +45,7 @@ modules/
 ├── attic-cache        atticd server and watch-store client
 ├── caddy              public ingress, auth, Caddyfile, fail2ban, share
 ├── ddns               Route53 dynamic DNS
+├── firefox-syncserver Firefox Sync storage server
 ├── game-server        game services
 │   ├── abiotic        Abiotic Factor container
 │   └── minecraft      Minecraft container

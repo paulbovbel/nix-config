@@ -11,6 +11,7 @@ in {
     ./caddy
     ./storage
     ./monitor
+    ./firefox-syncserver
     ./syncthing
     ./podman-server
     ./root-zfs

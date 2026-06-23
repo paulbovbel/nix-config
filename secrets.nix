@@ -23,4 +23,5 @@ in {
   "secrets/server/abiotic-env.age".publicKeys = [pbovbel media];
   "secrets/server/attic-server-env.age".publicKeys = [pbovbel media];
   "secrets/server/youtube-api-key.age".publicKeys = [pbovbel media];
+  "secrets/server/firefox-syncserver-env.age".publicKeys = [pbovbel media];
 }

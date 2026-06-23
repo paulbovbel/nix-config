@@ -2,7 +2,9 @@
   config,
   pkgs,
   ...
-}: {
+}: let
+  firefoxSyncTokenserverUri = "https://firefox-sync.bovbel.com/token/1.0/sync/1.5";
+in {
   imports = [
     ../common
   ];
@@ -117,6 +119,13 @@
   ];
 
   environment = {
+    etc."firefox/policies/policies.json".text = builtins.toJSON {
+      policies.Preferences."identity.sync.tokenserver.uri" = {
+        Value = firefoxSyncTokenserverUri;
+        Status = "locked";
+      };
+    };
+
     systemPackages = [
       pkgs.gnome-tweaks
       pkgs.gnomeExtensions.dash-to-dock

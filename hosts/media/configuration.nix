@@ -76,11 +76,16 @@ in {
     records = [
       "media.bovbel.com"
       "nix-cache.bovbel.com"
+      "firefox-sync.bovbel.com"
     ];
   };
 
   atticCache = {
     enable = true;
+  };
+
+  firefoxSyncServer = {
+    enable = false;
   };
 
   # upnp.forwards.ssh = {

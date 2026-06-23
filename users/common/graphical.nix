@@ -2,7 +2,9 @@
   lib,
   pkgs,
   ...
-}: {
+}: let
+  firefoxSyncTokenserverUri = "https://firefox-sync.bovbel.com/token/1.0/sync/1.5";
+in {
   imports = [
     ./base.nix
   ];
@@ -135,4 +137,8 @@
       "x-scheme-handler/unknown" = "org.mozilla.firefox.desktop";
     };
   };
+
+  home.activation.configureFirefoxSync = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    FIREFOX_SYNC_TOKENSERVER_URI=${lib.escapeShellArg firefoxSyncTokenserverUri} ${pkgs.bash}/bin/bash ${./firefox-sync-profiles.sh}
+  '';
 }
