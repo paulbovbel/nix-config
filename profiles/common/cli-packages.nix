@@ -19,6 +19,7 @@
     ["jc" pkgs.jc]
     ["jq" pkgs.jq]
     ["kitty-terminfo" pkgs.kitty.terminfo]
+    ["libsecret-tools" pkgs.libsecret]
     ["lsof" pkgs.lsof]
     ["mtr-tiny" pkgs.mtr]
     ["nano" pkgs.nano]
