@@ -37,6 +37,10 @@ in {
     "com.slack.Slack.desktop"
   ];
 
+  home.packages = [
+    pkgs.chromium
+  ];
+
   programs.kitty.keybindings = {
     "ctrl+shift+e" = lib.mkForce (kittyDistroboxSplitBinding "vsplit");
     "ctrl+shift+o" = lib.mkForce (kittyDistroboxSplitBinding "hsplit");
