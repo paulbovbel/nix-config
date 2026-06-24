@@ -59,7 +59,10 @@ in {
     blacklistedKernelModules = ["ast"];
   };
 
-  netboot.installLegacyImage = true;
+  netboot = {
+    enable = true;
+    installLegacyImage = true;
+  };
 
   networking = {
     hostName = "media";
