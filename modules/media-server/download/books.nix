@@ -7,8 +7,8 @@
   cfg = config.mediaServer;
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
-  mamCalendar = "hourly";
   mamIpUpdate = ./mam-ip-update.sh;
+  mamIpUpdateContainer = ./mam-ip-update-container.sh;
 in {
   config = lib.mkIf cfg.downloads.enable {
     age.secrets.mam-id-env.file = ../../../secrets/server/mam-id-env.age;
@@ -36,7 +36,7 @@ in {
           serviceConfig = {
             Type = "oneshot";
             EnvironmentFile = config.age.secrets.mam-id-env.path;
-            ExecStart = "${pkgs.bash}/bin/bash ${mamIpUpdate} ${user.name} ${user.group} ${container} ${iface} ${mamIdVariable}";
+            ExecStart = "${pkgs.bash}/bin/bash ${mamIpUpdate} ${user.name} ${container} ${iface} ${mamIdVariable} ${mamIpUpdateContainer}";
           };
         };
       in {
@@ -57,7 +57,7 @@ in {
         mkMamTimer = service: {
           wantedBy = ["timers.target"];
           timerConfig = {
-            OnCalendar = mamCalendar;
+            OnCalendar = "hourly";
             Persistent = true;
             Unit = service;
           };
