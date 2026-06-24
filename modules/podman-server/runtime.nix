@@ -60,6 +60,7 @@
     lib.mapAttrs (_: mkQuadletBuild) (lib.filterAttrs (_: build: build != null) (lib.mapAttrs (_: container: container.build) containers));
 
   mkContainerService = name: container: {
+    description = "Run ${name} Podman container";
     restartTriggers = [
       (pkgs.writeText "podman-server-${name}-config" (builtins.toJSON container))
     ];
@@ -97,7 +98,7 @@
     derivedEnvFilePaths = derivedEnvFiles envFile.derivedEnvironmentFiles;
     renderedVariables = lib.concatStringsSep "\n" (lib.mapAttrsToList (key: value: "${key}=${value}") envFile.variables);
   in {
-    description = "Render Podman server ${name} environment";
+    description = "Render environment file for Podman server ${name}";
     wants = derivedEnvUnitNames ++ envFile.wants;
     after = derivedEnvUnitNames ++ envFile.after;
     path = [pkgs.coreutils] ++ envFile.packages;
@@ -148,6 +149,7 @@ in {
     ];
 
     systemd.timers."podman-auto-update" = {
+      description = "Schedule automatic updates for Podman containers";
       wantedBy = ["timers.target"];
       timerConfig = {
         OnCalendar = "daily"; # Change to your preferred schedule

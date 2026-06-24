@@ -61,6 +61,7 @@ in {
       };
 
       systemd.services.atticd = {
+        description = "Serve the Attic binary cache from shared storage";
         after = ["systemd-tmpfiles-setup.service"];
         unitConfig.RequiresMountsFor = [config.storage.dataPath cfg.dataDir cacheDir];
         serviceConfig = {
@@ -98,7 +99,7 @@ in {
       environment.systemPackages = [pkgs.attic-client];
 
       systemd.services.attic-watch-store = {
-        description = "Upload new Nix store paths to Attic";
+        description = "Continuously upload new local Nix store paths to Attic";
         wantedBy = ["multi-user.target"];
         wants = ["network-online.target"];
         after = ["network-online.target" "nix-daemon.service"];

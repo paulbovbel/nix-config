@@ -19,7 +19,7 @@ in {
     age.secrets.aws-access-env.file = ../../secrets/server/aws-access-env.age;
 
     systemd.services.ddns-update = {
-      description = "Update Route53 records";
+      description = "Point configured Route53 A records at this host's Tailscale IP";
       wants = ["network-online.target" "tailscaled.service"];
       after = ["network-online.target" "tailscaled.service"];
       path = [pkgs.awscli2 pkgs.coreutils pkgs.tailscale];
@@ -57,7 +57,7 @@ in {
     };
 
     systemd.timers.ddns-update = {
-      description = "Update Route53 records";
+      description = "Schedule Route53 updates for this host's Tailscale IP";
       wantedBy = ["timers.target"];
       timerConfig = {
         OnCalendar = "*:0/30";

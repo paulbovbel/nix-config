@@ -29,7 +29,7 @@ in {
     systemd = {
       services = {
         cleanup-downloads = {
-          description = "Cleanup old downloads from ${datasets.downloads.path}";
+          description = "Remove torrent downloads older than ${toString cleanupDownloadsAgeDays} days";
           serviceConfig.Type = "oneshot";
           path = [pkgs.findutils];
           script = ''
@@ -38,7 +38,7 @@ in {
         };
 
         qbittorrent-config = {
-          description = "Configure qBittorrent WebUI settings";
+          description = "Render qBittorrent WebUI configuration before container startup";
           wants = ["apps-network.service"];
           after = ["apps-network.service"];
           before = ["qbittorrent.service"];
@@ -55,6 +55,7 @@ in {
       };
 
       timers.cleanup-downloads = {
+        description = "Schedule removal of old torrent downloads";
         wantedBy = ["timers.target"];
         timerConfig = {
           OnCalendar = cleanupDownloadsCalendar;

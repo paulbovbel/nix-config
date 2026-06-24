@@ -26,7 +26,7 @@
     name = serviceName target;
   in
     lib.nameValuePair name {
-      description = "Push backups to ${target}";
+      description = "Rsync configured backup paths to ${target}";
       restartIfChanged = false;
       wants = ["network-online.target"];
       after = ["network-online.target"];
@@ -43,7 +43,7 @@
 
   targetTimer = target:
     lib.nameValuePair (serviceName target) {
-      description = "Push backups to ${target}";
+      description = "Schedule rsync backups to ${target}";
       wantedBy = ["timers.target"];
       timerConfig = {
         OnCalendar = cfg.timer;
