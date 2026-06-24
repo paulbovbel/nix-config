@@ -5,6 +5,8 @@
   ...
 }: let
   sshConfig = pkgs.writeText "pbovbel-ssh-config" ''
+    IgnoreUnknown WarnWeakCrypto
+
     # Send a WoL packet before connecting; the Match block is intentionally
     # empty because the exec predicate performs the knock as its side effect.
     Match host white-tower exec "ssh unifi 'BROADCAST=192.168.1.255 PORT=9 ./wol.sh 18:c0:4d:a9:3c:ae'"
