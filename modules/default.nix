@@ -15,6 +15,7 @@ in {
     ./podman-server
     ./impermanence-root
     ./nvidia
+    ./netboot
     ./llama-cpp
     ./media-server
     ./game-server
