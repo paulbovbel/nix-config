@@ -3,6 +3,7 @@
 
   catppuccin = {
     enable = lib.mkDefault false;
+    gemini-cli.enable = false;
   };
 
   programs.home-manager.enable = true;
