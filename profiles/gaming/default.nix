@@ -103,6 +103,12 @@
             "${pkgs.lutris}/bin/lutris"
           ];
         }
+        {
+          name = "PrismLauncher";
+          detached = [
+            "${pkgs.prismlauncher}/bin/prismlauncher"
+          ];
+        }
       ];
     };
   };
@@ -114,5 +120,6 @@
     heroic
     protonup-qt
     lutris
+    prismlauncher
   ];
 }
