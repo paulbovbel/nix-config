@@ -88,7 +88,7 @@ in {
         caddy.restartTriggers = [config.caddy.caddyfile];
 
         caddy-render = {
-          description = "Render containerized Caddy configuration";
+          description = "Install rendered Caddyfile and reload containerized Caddy";
           wantedBy = ["multi-user.target"];
           wants = ["network-online.target"];
           after = ["network-online.target"];

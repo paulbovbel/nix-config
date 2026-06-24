@@ -29,7 +29,7 @@ in {
           iface,
           mamIdVariable,
         }: {
-          description = "Update myanonamouse for ${container}";
+          description = "Register ${container}'s ${iface} egress IP with MyAnonamouse";
           wants = ["network-online.target" "${container}.service"];
           after = ["network-online.target" "${container}.service"];
           path = [pkgs.bash pkgs.coreutils pkgs.podman];
@@ -55,6 +55,7 @@ in {
 
       timers = let
         mkMamTimer = service: {
+          description = "Schedule MyAnonamouse IP registration for ${service}";
           wantedBy = ["timers.target"];
           timerConfig = {
             OnCalendar = "hourly";

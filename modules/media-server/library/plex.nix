@@ -86,7 +86,7 @@ in {
 
     systemd = {
       services.rip-to-audio = {
-        description = "Rip audio";
+        description = "Extract configured Plex TV shows to audiobook audio files";
         wants = ["apps-network.service" "plex.service"];
         after = ["apps-network.service" "plex.service"];
         path = [pkgs.ffmpeg];
@@ -106,6 +106,7 @@ in {
       };
 
       timers.rip-to-audio = {
+        description = "Schedule Plex TV show audio extraction";
         wantedBy = ["timers.target"];
         timerConfig = {
           OnCalendar = ripToAudioConfig.calendar;

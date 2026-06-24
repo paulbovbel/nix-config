@@ -25,7 +25,7 @@ in {
     environment.systemPackages = [pkgs.miniupnpc];
 
     systemd.services.upnp-update = {
-      description = "UPNP port forward update";
+      description = "Refresh configured UPnP port forwards to this host";
       wantedBy = ["multi-user.target"];
       wants = ["network-online.target"];
       after = ["network-online.target"];
@@ -65,7 +65,7 @@ in {
     networking.firewall.allowedUDPPorts = [1900];
 
     systemd.timers.upnp-update = {
-      description = "UPNP port forward update";
+      description = "Schedule refreshes for configured UPnP port forwards";
       wantedBy = ["timers.target"];
       timerConfig = {
         OnCalendar = "hourly";

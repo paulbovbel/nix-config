@@ -24,6 +24,7 @@ in {
   };
 
   systemd.services.tailscaled-autoconnect = {
+    description = "Authenticate Tailscale after network and DNS are online";
     wants = ["network-online.target" "systemd-resolved.service"];
     after = ["network-online.target" "systemd-resolved.service"];
   };

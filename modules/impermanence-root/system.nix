@@ -32,7 +32,7 @@ in {
     };
 
     boot.initrd.systemd.services.zfs-rollback-root = {
-      description = "Rollback zroot/root to @blank snapshot";
+      description = "Reset impermanent root ZFS dataset to the blank boot snapshot";
       wantedBy = ["initrd.target"];
       after = ["zfs-import-zroot.service"];
       # Must run before / is mounted so rollback applies to the live root.

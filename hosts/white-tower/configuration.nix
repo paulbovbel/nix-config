@@ -29,7 +29,7 @@
   '';
 
   systemd.services.disable-wake-sources = {
-    description = "Disable wake sources except power buttons";
+    description = "Disable ACPI wake sources except physical power buttons";
     # Apply at boot and before sleep to avoid flaky spontaneous wakeups.
     wantedBy = ["multi-user.target" "sleep.target"];
     before = ["sleep.target"];

@@ -83,7 +83,7 @@ in {
 
   systemd.services = {
     inhibit-sleep-while-ssh = {
-      description = "Inhibit sleep while SSH sessions are active";
+      description = "Prevent system sleep while interactive SSH sessions are active";
       wantedBy = ["multi-user.target"];
       after = ["network.target"];
       path = [pkgs.systemd pkgs.bash pkgs.procps pkgs.coreutils pkgs.gnugrep];
