@@ -54,6 +54,9 @@ in {
 
     # use LTS for appliance
     kernelPackages = pkgs.linuxPackages;
+
+    # The ASPEED BMC VGA adapter reports a corrupt EDID and floods the journal.
+    blacklistedKernelModules = ["ast"];
   };
 
   netboot.installLegacyImage = true;
