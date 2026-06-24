@@ -64,6 +64,7 @@ modules/
 ├── monitor            host monitoring
 │   ├── cockpit        Cockpit web UI and PCP metrics
 │   └── smokeping      Smokeping container and Caddy endpoint
+├── netboot            netboot.xyz ESP installation
 ├── nvidia             proprietary NVIDIA driver setup
 ├── podman-server      shared Quadlet/runtime plumbing
 ├── storage            shared storage paths and ZFS datasets

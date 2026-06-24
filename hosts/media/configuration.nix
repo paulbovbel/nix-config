@@ -56,6 +56,8 @@ in {
     kernelPackages = pkgs.linuxPackages;
   };
 
+  netboot.installLegacyImage = true;
+
   networking = {
     hostName = "media";
     hostId = "48ed2069";

@@ -32,14 +32,6 @@ in {
       # Disable MDS mitigations.
       "mds=off"
     ];
-
-    loader.systemd-boot = lib.mkIf config.boot.loader.systemd-boot.enable {
-      extraFiles."EFI/netboot/netboot.xyz.efi" = pkgs.netbootxyz-efi.outPath;
-      extraEntries."netboot-xyz.conf" = ''
-        title netboot.xyz
-        efi /EFI/netboot/netboot.xyz.efi
-      '';
-    };
   };
 
   nix = {
