@@ -25,7 +25,7 @@
     policy = ["magic"];
   };
 
-  impermanenceRoot.diskId = "/dev/disk/by-id/nvme-ADATA_SX8200PNP_2K4829A5C2U1";
+  rootZfs.diskId = "/dev/disk/by-id/nvme-ADATA_SX8200PNP_2K4829A5C2U1";
 
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
     version = "610.43.02";

@@ -55,7 +55,7 @@ in {
     };
   };
 
-  impermanenceRoot.persistDirectories = [
+  rootZfs.persistDirectories = [
     "/var/lib/fwupd"
   ];
 }

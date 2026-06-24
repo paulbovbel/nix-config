@@ -151,7 +151,7 @@
     };
   };
 
-  impermanenceRoot.persistDirectories = [
+  rootZfs.persistDirectories = [
     "/etc/NetworkManager/system-connections"
     "/var/lib/cups"
     "/var/lib/bluetooth"
