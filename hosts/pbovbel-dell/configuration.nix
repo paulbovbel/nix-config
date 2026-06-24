@@ -33,4 +33,8 @@
   };
 
   system.stateVersion = "26.05";
+
+  netboot = {
+    enable = true;
+  };
 }

@@ -54,5 +54,8 @@
 
   system.stateVersion = "26.05";
 
-  netboot.installLegacyImage = true;
+  netboot = {
+    enable = true;
+    installLegacyImage = true;
+  };
 }
