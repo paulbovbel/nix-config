@@ -43,7 +43,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     catppuccin = {
-      url = "github:catppuccin/nix";
+      url = "github:catppuccin/nix/release-26.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    stylix = {
+      url = "github:nix-community/stylix/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
@@ -66,6 +70,7 @@
     nix-vscode-extensions,
     vscode-workspace-populator,
     catppuccin,
+    stylix,
     quadlet-nix,
     pcp,
     ...
@@ -109,7 +114,10 @@
       profiles = userProfiles.${user.name};
     in
       map (profileName: profiles.${profileName}.module) user.profiles
-      ++ [catppuccin.homeModules.catppuccin];
+      ++ [
+        catppuccin.homeModules.catppuccin
+        stylix.homeModules.stylix
+      ];
 
     userSystemProfileNames = user: let
       profiles = userProfiles.${user.name};

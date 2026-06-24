@@ -10,7 +10,6 @@
 in {
   catppuccin = {
     enable = lib.mkDefault false;
-    autoEnable = lib.mkDefault false;
   };
 
   boot = {
