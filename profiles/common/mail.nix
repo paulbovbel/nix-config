@@ -1,4 +1,8 @@
-{config, ...}: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   age.secrets.gmail-password = {
     file = ../../secrets/common/gmail-password.age;
     owner = "root";
@@ -20,7 +24,7 @@
       host = "smtp.gmail.com";
       from = "paul@bovbel.com";
       user = "paul@bovbel.com";
-      passwordeval = "cat ${config.age.secrets.gmail-password.path}";
+      passwordeval = "${pkgs.coreutils}/bin/cat ${config.age.secrets.gmail-password.path}";
     };
   };
 
