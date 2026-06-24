@@ -52,7 +52,7 @@
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
     pcp = {
-      url = "github:performancecopilot/pcp";
+      url = "github:performancecopilot/pcp/7.1.5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
