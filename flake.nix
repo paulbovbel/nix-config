@@ -135,10 +135,13 @@
 
     userHomeModules = user: let
       profiles = userProfiles.${user.name};
+      hasGraphicalProfile = lib.any (profileName: profiles.${profileName}.systemProfile != "headless") user.profiles;
     in
       map (profileName: profiles.${profileName}.module) user.profiles
       ++ [
         catppuccin.homeModules.catppuccin
+      ]
+      ++ lib.optionals hasGraphicalProfile [
         stylix.homeModules.stylix
       ];
 
@@ -177,7 +180,10 @@
             {
               caddy.publicDomain = cfg.publicDomain;
 
-              nixpkgs.overlays = overlays;
+              nixpkgs = {
+                inherit overlays;
+                config.allowUnfree = true;
+              };
 
               home-manager = {
                 backupFileExtension = "backup";

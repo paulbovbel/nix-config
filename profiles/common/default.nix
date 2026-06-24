@@ -172,8 +172,6 @@ in {
     Defaults lecture=never
   '';
 
-  nixpkgs.config.allowUnfree = true;
-
   environment.systemPackages =
     [
       agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
