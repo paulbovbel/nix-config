@@ -484,15 +484,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1782264334,
-        "narHash": "sha256-81C/dgnjZFRO2Y6uwRRdegG7OE3SGIyTGfByE56/yl4=",
+        "lastModified": 1779758006,
+        "narHash": "sha256-M+19Xj6G84JTwMpopL+Y1Dztvqf9s+ZG3ZZbvbRwMe0=",
         "owner": "performancecopilot",
         "repo": "pcp",
-        "rev": "79dfe4be7ef2f4057dbb27050902c28239c547e0",
+        "rev": "b5233496cfe67894a426bab418a21f802374e095",
         "type": "github"
       },
       "original": {
         "owner": "performancecopilot",
+        "ref": "7.1.5",
         "repo": "pcp",
         "type": "github"
       }
