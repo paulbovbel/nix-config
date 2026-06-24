@@ -4,7 +4,7 @@
   hostUsers ? [],
   ...
 }: let
-  cfg = config.impermanenceRoot;
+  cfg = config.rootZfs;
   zfsContent = {
     type = "zfs";
     pool = "zroot";
@@ -93,20 +93,23 @@ in {
 
         datasets =
           {
-            root = {
-              type = "zfs_fs";
-              mountpoint = "/";
-              options."com.sun:auto-snapshot" = "false";
-              # Keep mountpoints in the blank root snapshot so rollback does not
-              # remove directories needed by later stage-2 mounts.
-              postMountHook = ''
-                mkdir -p ${config.disko.rootMountPoint}/boot ${config.disko.rootMountPoint}/nix ${config.disko.rootMountPoint}/home ${config.disko.rootMountPoint}${cfg.persistPath}
+            root =
+              {
+                type = "zfs_fs";
+                mountpoint = "/";
+                options."com.sun:auto-snapshot" = "false";
+              }
+              // lib.optionalAttrs cfg.impermanent {
+                # Keep mountpoints in the blank root snapshot so rollback does not
+                # remove directories needed by later stage-2 mounts.
+                postMountHook = ''
+                  mkdir -p ${config.disko.rootMountPoint}/boot ${config.disko.rootMountPoint}/nix ${config.disko.rootMountPoint}/home ${config.disko.rootMountPoint}${cfg.persistPath}
 
-                if ! zfs list -t snapshot -H -o name ${cfg.rootDataset}@${cfg.blankSnapshot} >/dev/null 2>&1; then
-                  zfs snapshot ${cfg.rootDataset}@${cfg.blankSnapshot}
-                fi
-              '';
-            };
+                  if ! zfs list -t snapshot -H -o name ${cfg.rootDataset}@${cfg.blankSnapshot} >/dev/null 2>&1; then
+                    zfs snapshot ${cfg.rootDataset}@${cfg.blankSnapshot}
+                  fi
+                '';
+              };
             "root/nix" = {
               type = "zfs_fs";
               mountpoint = "/nix";

@@ -15,8 +15,9 @@
     hostId = "3f0c8d5a";
   };
 
-  impermanenceRoot = {
+  rootZfs = {
     enable = true;
+    impermanent = true;
     swapSize = "32G";
   };
 

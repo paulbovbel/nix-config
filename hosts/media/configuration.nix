@@ -163,8 +163,9 @@ in {
   #   };
   # };
 
-  impermanenceRoot = {
+  rootZfs = {
     enable = true;
+    impermanent = true;
     encrypted = false;
     swapSize = "32G";
   };

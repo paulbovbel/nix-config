@@ -34,7 +34,7 @@ in {
 
       storage.datasets.app.children.attic = {};
 
-      impermanenceRoot.datasets."root/attic" = {
+      rootZfs.datasets."root/attic" = {
         type = "zfs_fs";
         mountpoint = cacheDir;
         options = {

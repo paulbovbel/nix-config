@@ -1,20 +1,26 @@
 {lib, ...}: {
-  options.impermanenceRoot = {
+  options.rootZfs = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable impermanent root filesystem layout and rollback.";
+      description = "Enable ZFS root filesystem layout.";
     };
 
-    diskId = lib.mkOption {
-      type = lib.types.str;
-      description = "Disk id path for main system disk (e.g. /dev/disk/by-id/...)";
+    impermanent = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Rollback the root dataset to a blank snapshot at boot and persist declared state.";
     };
 
     encrypted = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Encrypt the root ZFS partition with LUKS.";
+    };
+
+    diskId = lib.mkOption {
+      type = lib.types.str;
+      description = "Disk id path for main system disk (e.g. /dev/disk/by-id/...)";
     };
 
     swapSize = lib.mkOption {
@@ -32,7 +38,7 @@
     datasets = lib.mkOption {
       type = lib.types.lazyAttrsOf lib.types.anything;
       default = {};
-      description = "Additional zroot dataset fragments for the impermanent root layout.";
+      description = "Additional zroot dataset fragments for the root ZFS layout.";
     };
 
     rootDataset = lib.mkOption {
@@ -50,12 +56,13 @@
     persistDirectories = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [];
-      description = "Directories to persist when impermanence-root is enabled.";
+      description = "Directories to persist when rootZfs.impermanent is enabled.";
     };
+
     persistFiles = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [];
-      description = "Files to persist when impermanence-root is enabled.";
+      description = "Files to persist when rootZfs.impermanent is enabled.";
     };
   };
 }

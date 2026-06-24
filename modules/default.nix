@@ -13,7 +13,7 @@ in {
     ./monitor
     ./syncthing
     ./podman-server
-    ./impermanence-root
+    ./root-zfs
     ./nvidia
     ./netboot
     ./llama-cpp

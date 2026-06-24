@@ -21,8 +21,9 @@
 
   environment.systemPackages = [pkgs.intel-gpu-tools];
 
-  impermanenceRoot = {
+  rootZfs = {
     enable = true;
+    impermanent = true;
     swapSize = "32G";
   };
 

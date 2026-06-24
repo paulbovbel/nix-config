@@ -48,7 +48,7 @@ in {
         ];
       };
 
-      impermanenceRoot.persistDirectories = [
+      rootZfs.persistDirectories = [
         "/var/lib/podman-server"
         "/var/lib/containers"
       ];

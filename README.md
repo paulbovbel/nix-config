@@ -48,7 +48,7 @@ modules/
 ├── game-server        game services
 │   ├── abiotic        Abiotic Factor container
 │   └── minecraft      Minecraft container
-├── impermanence-root  persistent root layout and disk definition
+├── root-zfs           ZFS root layout, encryption, and optional impermanence
 │   ├── disk           disko/ZFS disk layout
 │   └── system         rollback, snapshots, persistence plumbing
 ├── llama-cpp          LLM server proxy
@@ -127,7 +127,7 @@ nix run github:numtide/nixos-anywhere -- \
 rm -rf "$tmpdir"
 ```
 
-Post-install TPM2 auto-unlock enrollment for hosts with `impermanenceRoot.encrypted = true` (run on installed host after first boot):
+Post-install TPM2 auto-unlock enrollment for hosts with `rootZfs.encrypted = true` (run on installed host after first boot):
 
 ```bash
 lsblk -f

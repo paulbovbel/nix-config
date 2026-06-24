@@ -27,7 +27,7 @@ Host-facing modules currently expose these top-level namespaces:
 - `caddy`
 - `ddns`
 - `gameServer`
-- `impermanenceRoot`
+- `rootZfs`
 - `llamaCpp`
 - `mediaServer`
 - `nvidia`
@@ -40,7 +40,7 @@ Host-facing modules currently expose these top-level namespaces:
 ## Repo Rules
 
 - Do not add plaintext secrets. Use `secrets/` and `secrets.nix` for agenix-managed secrets.
-- When adding stateful services on impermanent hosts, persist required state with `impermanenceRoot.persistDirectories` or `impermanenceRoot.persistFiles`.
+- When adding stateful services on impermanent hosts, persist required state with `rootZfs.persistDirectories` or `rootZfs.persistFiles`.
 - Server containers should generally use `podmanServer.containers`, `podmanServer.paths`, and `podmanServer.derivedEnvFiles` rather than bespoke Podman/systemd plumbing.
 - Public or authenticated HTTP exposure should generally declare `caddy.endpoints` or `caddy.domains` rather than editing generated Caddyfile internals directly.
 - Shared storage should use `storage.datasets` and generated storage paths instead of unmanaged hard-coded ZFS paths.

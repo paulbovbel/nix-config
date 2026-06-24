@@ -33,7 +33,7 @@ in {
     "TS_PERMIT_CERT_UID=${toString user.uid}"
   ];
 
-  impermanenceRoot.persistDirectories = [
+  rootZfs.persistDirectories = [
     "/var/lib/tailscale"
   ];
 }

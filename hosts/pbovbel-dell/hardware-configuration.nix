@@ -20,7 +20,7 @@
     zfs.forceImportRoot = false;
   };
 
-  impermanenceRoot.diskId = "/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_2TB_7A0F07181E3D00004779";
+  rootZfs.diskId = "/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_2TB_7A0F07181E3D00004779";
 
   nvidia.prime = {
     enable = true;

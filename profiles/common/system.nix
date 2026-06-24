@@ -69,14 +69,14 @@ in {
     "/persist/etc/agenix/host.agekey"
   ];
 
-  impermanenceRoot.persistDirectories = [
+  rootZfs.persistDirectories = [
     "/var/lib/nixos"
     "/var/lib/systemd"
     "/var/lib/systemd/coredump"
     "/var/log"
   ];
 
-  impermanenceRoot.persistFiles = [
+  rootZfs.persistFiles = [
     "/etc/machine-id"
   ];
 }
