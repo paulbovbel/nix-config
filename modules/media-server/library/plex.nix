@@ -7,12 +7,19 @@
   cfg = config.mediaServer;
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
-  ripToAudio = pkgs.writeScript "rip-to-audio" (builtins.readFile ./rip-to-audio.py);
+  ripToAudio = pkgs.writeTextFile {
+    name = "rip-to-audio";
+    destination = "/bin/rip-to-audio";
+    executable = true;
+    text = builtins.readFile ./rip-to-audio.py;
+  };
   python = pkgs.python3.withPackages (ps: [ps.plexapi]);
   ripToAudioConfig = {
     calendar = "daily";
-    source = "${datasets.media.children.tv.path}/Jeopardy!";
-    destination = "${datasets.media.children.audiobooks.path}/Jeopardy!";
+    shows = [
+      "Jeopardy!"
+      "Pop Culture Jeopardy!"
+    ];
   };
 in {
   config = lib.mkIf cfg.library.enable {
@@ -80,17 +87,22 @@ in {
     systemd = {
       services.rip-to-audio = {
         description = "Rip audio";
-        wants = ["network-online.target"];
-        after = ["network-online.target"];
-        path = [pkgs.ffmpeg python];
+        wants = ["apps-network.service" "plex.service"];
+        after = ["apps-network.service" "plex.service"];
+        path = [pkgs.ffmpeg];
         serviceConfig = {
           Type = "oneshot";
           User = user.name;
+          Group = user.group;
           EnvironmentFile = config.age.secrets.plex-token-env.path;
         };
-        script = ''
-          ${python}/bin/python ${ripToAudio} '${ripToAudioConfig.source}' '${ripToAudioConfig.destination}' "$PLEX_TOKEN"
-        '';
+        script =
+          lib.concatMapStringsSep "\n" (show: ''
+            ${python}/bin/python ${ripToAudio}/bin/rip-to-audio \
+              '${datasets.media.children.tv.path}/${show}' \
+              '${datasets.media.children.audiobooks.path}/${show}'
+          '')
+          ripToAudioConfig.shows;
       };
 
       timers.rip-to-audio = {
