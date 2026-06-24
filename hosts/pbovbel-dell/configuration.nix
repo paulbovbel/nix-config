@@ -24,6 +24,8 @@
   rootZfs = {
     enable = true;
     impermanent = true;
+    encrypted = true;
+    secureBoot = true;
     swapSize = "32G";
   };
 

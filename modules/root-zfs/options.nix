@@ -18,6 +18,18 @@
       description = "Encrypt the root ZFS partition with LUKS.";
     };
 
+    secureBoot = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Enable Secure Boot signing with lanzaboote.";
+    };
+
+    secureBootPkiBundle = lib.mkOption {
+      type = lib.types.str;
+      default = "/etc/secureboot";
+      description = "Path to the sbctl Secure Boot key bundle.";
+    };
+
     diskId = lib.mkOption {
       type = lib.types.str;
       description = "Disk id path for main system disk (e.g. /dev/disk/by-id/...)";

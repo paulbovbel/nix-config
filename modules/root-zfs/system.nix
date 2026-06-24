@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   cfg = config.rootZfs;
@@ -24,16 +25,27 @@ in {
         pools = ["zroot"];
       };
 
-      boot.initrd.luks.devices."crypted" = lib.mkIf cfg.encrypted {
-        crypttabExtraOpts = ["tpm2-device=auto"];
+      boot = {
+        initrd.luks.devices."crypted" = lib.mkIf cfg.encrypted {
+          crypttabExtraOpts = ["tpm2-device=auto"];
+        };
+
+        loader.systemd-boot.enable = lib.mkIf cfg.secureBoot (lib.mkForce false);
+
+        lanzaboote = lib.mkIf cfg.secureBoot {
+          enable = true;
+          pkiBundle = cfg.secureBootPkiBundle;
+        };
       };
+
+      environment.systemPackages = lib.mkIf cfg.secureBoot [pkgs.sbctl];
     }
 
     (lib.mkIf cfg.impermanent {
       environment.persistence.${cfg.persistPath} = {
         # Reduces mount clutter from persistence bind mounts.
         hideMounts = true;
-        directories = lib.unique cfg.persistDirectories;
+        directories = lib.unique (cfg.persistDirectories ++ lib.optional cfg.secureBoot cfg.secureBootPkiBundle);
         files = lib.unique cfg.persistFiles;
       };
 

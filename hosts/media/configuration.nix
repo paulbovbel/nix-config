@@ -170,6 +170,7 @@ in {
     enable = true;
     impermanent = true;
     encrypted = false;
+    secureBoot = false;
     swapSize = "32G";
   };
 

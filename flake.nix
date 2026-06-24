@@ -38,6 +38,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
+    lanzaboote = {
+      url = "github:nix-community/lanzaboote/v0.4.2";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -66,6 +70,7 @@
     disko-zfs,
     agenix,
     impermanence,
+    lanzaboote,
     locus-vpn-client,
     nix-vscode-extensions,
     vscode-workspace-populator,
@@ -173,6 +178,7 @@
             disko.nixosModules.disko
             disko-zfs.nixosModules.default
             impermanence.nixosModules.impermanence
+            lanzaboote.nixosModules.lanzaboote
             home-manager.nixosModules.home-manager
             catppuccin.nixosModules.catppuccin
             quadlet-nix.nixosModules.quadlet
