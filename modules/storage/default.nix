@@ -62,6 +62,12 @@ in {
 
     boot.zfs.extraPools = [cfg.pool];
 
+    services.zfs.autoScrub = {
+      enable = true;
+      interval = "monthly";
+      pools = [cfg.pool];
+    };
+
     disko.zfs.settings.datasets =
       {
         ${cfg.pool}.properties = {
