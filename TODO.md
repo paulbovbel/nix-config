@@ -14,15 +14,14 @@
 - Create dedicated users for different media-server services.
 - Unify path, ownership, and permission handling between units.
 
-## Service Hardening
-
-- Harden `ddns-update`.
-- Harden `upnp-update`.
-- Harden `attic-watch-store`.
-- Harden Podman server derived environment file renderers.
-- Review whether `atticd` can take additional sandboxing beyond its current `ReadWritePaths`.
-- Review whether `llama-cpp-proxy` can be hardened without breaking GPU, DBus, or systemd interactions.
-
 ## Containers
 
 - Keep global `--no-healthcheck` in Quadlet and add a `podman-server-healthcheck` timer/service that reports unhealthy containers without failing activation.
+
+## netboot
+
+- currently multiple netboot loaders maybe installed to EFI, and only non-legacy is ever registered with bootctl
+
+## root-zfs
+
+any way to assert against switching any rootZfs parameters post initial install?
