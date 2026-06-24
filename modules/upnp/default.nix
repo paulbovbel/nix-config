@@ -51,15 +51,14 @@ in {
             failures=$((failures + 1))
           fi
         '')
-        forwards;
-      # TODO re-enable when upnp succeeds
-      # + ''
+        forwards
+        + ''
 
-      #   if [ "$failures" -gt 0 ]; then
-      #     echo "Failed to update $failures UPnP forward(s)" >&2
-      #     exit 1
-      #   fi
-      # '';
+          if [ "$failures" -gt 0 ]; then
+            echo "Failed to update $failures UPnP forward(s)" >&2
+            exit 1
+          fi
+        '';
     };
 
     networking.firewall.allowedUDPPorts = [1900];
