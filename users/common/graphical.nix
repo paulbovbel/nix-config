@@ -11,7 +11,6 @@
 
   catppuccin = {
     enable = true;
-    autoEnable = true;
     flavor = "mocha";
     accent = "mauve";
     cursors = {
@@ -21,15 +20,13 @@
     };
   };
 
-  gtk = {
+  stylix = {
     enable = true;
-    theme = {
-      name = "catppuccin-mocha-mauve-standard";
-      package = pkgs.catppuccin-gtk.override {
-        variant = "mocha";
-        accents = ["mauve"];
-      };
-    };
+    autoEnable = false;
+    base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-mocha.yaml";
+    polarity = "dark";
+
+    targets.gtk.enable = true;
   };
 
   programs.kitty = {

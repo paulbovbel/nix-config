@@ -9,7 +9,6 @@
 
   catppuccin = {
     enable = true;
-    autoEnable = true;
     flavor = "mocha";
     accent = "mauve";
   };
@@ -54,14 +53,14 @@
       pulse.enable = true;
 
       # Conservative low-latency defaults for gaming/voice.
-      extraConfig.pipewire."10-low-latency" = {
-        "context.properties" = {
-          "default.clock.rate" = 48000;
-          "default.clock.quantum" = 128;
-          "default.clock.min-quantum" = 64;
-          "default.clock.max-quantum" = 256;
-        };
-      };
+      # extraConfig.pipewire."10-low-latency" = {
+      #   "context.properties" = {
+      #     "default.clock.rate" = 48000;
+      #     "default.clock.quantum" = 128;
+      #     "default.clock.min-quantum" = 64;
+      #     "default.clock.max-quantum" = 256;
+      #   };
+      # };
     };
 
     udev.packages = [pkgs.headsetcontrol];
@@ -138,6 +137,7 @@
       pkgs.yaru-theme
       pkgs.libva-utils
       pkgs.nvtopPackages.nvidia
+      pkgs.qpwgraph
       pkgs.remmina
       pkgs.vlc
       pkgs.wireshark

@@ -3,7 +3,6 @@
 
   catppuccin = {
     enable = lib.mkDefault false;
-    autoEnable = lib.mkDefault false;
   };
 
   programs.home-manager.enable = true;
