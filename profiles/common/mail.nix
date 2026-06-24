@@ -37,4 +37,15 @@
       recipient = "paul@bovbel.com";
     };
   };
+
+  services.zfs.zed = {
+    enableMail = true;
+    settings = {
+      ZED_EMAIL_ADDR = ["paul@bovbel.com"];
+      ZED_EMAIL_PROG = "${pkgs.mailutils}/bin/mail";
+      ZED_EMAIL_OPTS = "-s '@SUBJECT@' @ADDRESS@";
+      ZED_NOTIFY_INTERVAL_SECS = 3600;
+      ZED_NOTIFY_VERBOSE = true;
+    };
+  };
 }

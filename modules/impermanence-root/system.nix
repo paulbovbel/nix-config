@@ -25,7 +25,10 @@ in {
       frequent = 0;
     };
 
-    services.zfs.autoScrub.enable = true;
+    services.zfs.autoScrub = {
+      enable = true;
+      pools = ["zroot"];
+    };
 
     boot.initrd.luks.devices."crypted" = lib.mkIf cfg.encrypted {
       crypttabExtraOpts = ["tpm2-device=auto"];
