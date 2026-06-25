@@ -7,8 +7,24 @@
   cfg = config.mediaServer;
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
-  mamIpUpdate = ./mam-ip-update.sh;
-  mamIpUpdateContainer = ./mam-ip-update-container.sh;
+  containerUser = "${toString user.uid}:${toString user.gid}";
+  mamUpdateDeps = ["network-online.target" "qbittorrent.service" "jackett.service"];
+  mamUpdateRotateDeps = mamUpdateDeps ++ ["autobrr.service"];
+  mamUpdate = pkgs.writeTextFile {
+    name = "mam-update.py";
+    executable = true;
+    text = builtins.readFile ./mam-update.py;
+  };
+  mamUpdateCommand = lib.escapeShellArgs [
+    "${pkgs.python3}/bin/python3"
+    mamUpdate
+    "--container-user"
+    containerUser
+    "--qbittorrent-config-dir"
+    config.storage.datasets.app.children.qbittorrent.path
+    "--jackett-config-dir"
+    config.storage.datasets.app.children.jackett.path
+  ];
 in {
   config = lib.mkIf cfg.downloads.enable {
     age.secrets.mam-id-env.file = ../../../secrets/server/mam-id-env.age;
@@ -23,49 +39,43 @@ in {
         "d ${datasets.downloads.path}/bookdrop 0775 ${user.name} ${user.group} - -"
       ];
 
-      services = let
-        mkMamUpdate = {
-          container,
-          iface,
-          mamIdVariable,
-        }: {
-          description = "Register ${container}'s ${iface} egress IP with MyAnonamouse";
-          wants = ["network-online.target" "${container}.service"];
-          after = ["network-online.target" "${container}.service"];
-          path = [pkgs.bash pkgs.coreutils pkgs.podman];
+      services = {
+        myanonamouse-update = {
+          description = "Update MyAnonamouse egress IPs";
+          wants = mamUpdateDeps;
+          after = mamUpdateDeps;
+          path = [pkgs.podman];
           serviceConfig = {
             Type = "oneshot";
             EnvironmentFile = config.age.secrets.mam-id-env.path;
-            ExecStart = "${pkgs.bash}/bin/bash ${mamIpUpdate} ${user.name} ${container} ${iface} ${mamIdVariable} ${mamIpUpdateContainer}";
+            ExecStart = mamUpdateCommand;
           };
         };
-      in {
-        myanonamouse-torrent = mkMamUpdate {
-          container = "qbittorrent";
-          iface = "wg0";
-          mamIdVariable = "MAM_ID_TORRENT";
-        };
 
-        myanonamouse-indexer = mkMamUpdate {
-          container = "jackett";
-          iface = "eth0";
-          mamIdVariable = "MAM_ID_INDEXER";
+        myanonamouse-update-on-switch = {
+          description = "Update MyAnonamouse integrations after configuration changes";
+          wantedBy = ["multi-user.target"];
+          wants = mamUpdateRotateDeps;
+          after = mamUpdateRotateDeps;
+          path = [pkgs.podman];
+          restartTriggers = [config.age.secrets.mam-id-env.file mamUpdate];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            EnvironmentFile = config.age.secrets.mam-id-env.path;
+            ExecStart = "${mamUpdateCommand} --rotate-app-configs";
+          };
         };
       };
 
-      timers = let
-        mkMamTimer = service: {
-          description = "Schedule MyAnonamouse IP registration for ${service}";
-          wantedBy = ["timers.target"];
-          timerConfig = {
-            OnCalendar = "hourly";
-            Persistent = true;
-            Unit = service;
-          };
+      timers.myanonamouse-update = {
+        description = "Schedule MyAnonamouse egress IP updates";
+        wantedBy = ["timers.target"];
+        timerConfig = {
+          OnCalendar = "hourly";
+          Persistent = true;
+          Unit = "myanonamouse-update.service";
         };
-      in {
-        myanonamouse-torrent = mkMamTimer "myanonamouse-torrent.service";
-        myanonamouse-indexer = mkMamTimer "myanonamouse-indexer.service";
       };
     };
 
