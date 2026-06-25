@@ -127,6 +127,17 @@ nix run github:numtide/nixos-anywhere -- \
 rm -rf "$tmpdir"
 ```
 
+Post-install Secure Boot enrollment for hosts with `rootZfs.secureBoot = true` (run on installed host after first boot):
+
+```bash
+sudo nix shell nixpkgs#sbctl -c sbctl create-keys
+just switch
+sudo sbctl verify
+sudo sbctl enroll-keys --microsoft
+```
+
+Then reboot and enable Secure Boot in firmware. The Secure Boot key bundle lives in `/var/lib/sbctl` by default and is persisted automatically on impermanent `rootZfs` hosts.
+
 Post-install TPM2 auto-unlock enrollment for hosts with `rootZfs.encrypted = true` (run on installed host after first boot):
 
 ```bash

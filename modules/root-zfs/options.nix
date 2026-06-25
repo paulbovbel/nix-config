@@ -26,7 +26,7 @@
 
     secureBootPkiBundle = lib.mkOption {
       type = lib.types.str;
-      default = "/etc/secureboot";
+      default = "/var/lib/sbctl";
       description = "Path to the sbctl Secure Boot key bundle.";
     };
 
