@@ -37,12 +37,10 @@ def run(args, *, input_text=None):
     ).stdout
 
 
-def podman_exec(container, args, *, input_text=None, user=None, env=None):
+def podman_exec(container, args, *, input_text=None, user=None):
     command = ["podman", "exec"]
     if user:
         command.extend(["--user", user])
-    for key, value in (env or {}).items():
-        command.extend(["--env", f"{key}={value}"])
     if input_text is not None:
         command.append("--interactive")
     return run([*command, container, *args], input_text=input_text)
@@ -208,13 +206,6 @@ def update_mam_ip(target, mam_id):
     print(f"Updated MAM IP for {target.interface}: {old_ip} -> {new_ip}")
 
 
-def jackett_mam_config_path(config_dir):
-    config_path = config_dir / "Jackett" / "Indexers" / "myanonamouse.json"
-    if not config_path.exists():
-        raise RuntimeError(f"Jackett MyAnonamouse config not found: {config_path}")
-    return config_path
-
-
 def replace_jackett_mam_id(value, mam_id):
     if not isinstance(value, list):
         raise RuntimeError("expected Jackett MyAnonamouse config array")
@@ -239,7 +230,10 @@ def replace_jackett_mam_id(value, mam_id):
 
 
 def update_jackett(target, mam_id):
-    config_path = jackett_mam_config_path(target.config_dir)
+    config_path = target.config_dir / "Jackett" / "Indexers" / "myanonamouse.json"
+    if not config_path.exists():
+        raise RuntimeError(f"Jackett MyAnonamouse config not found: {config_path}")
+
     old_config = config_path.read_text()
     config = json.loads(old_config)
     if not replace_jackett_mam_id(config, mam_id):
@@ -338,11 +332,11 @@ def parse_args():
         interface="eth0",
         config_dir=Path(args.jackett_config_dir),
     )
-    return args, torrent, indexer
+    return args.rotate_app_configs, torrent, indexer
 
 
 def main():
-    args, torrent, indexer = parse_args()
+    rotate_app_configs, torrent, indexer = parse_args()
 
     try:
         torrent_mam_id = mam_id_from_env("MAM_ID_TORRENT")
@@ -350,7 +344,7 @@ def main():
 
         update_mam_ip(torrent, torrent_mam_id)
         update_mam_ip(indexer, indexer_mam_id)
-        if args.rotate_app_configs:
+        if rotate_app_configs:
             update_indexer_apps(indexer, indexer_mam_id)
     except (RuntimeError, subprocess.CalledProcessError) as error:
         if isinstance(error, subprocess.CalledProcessError):
