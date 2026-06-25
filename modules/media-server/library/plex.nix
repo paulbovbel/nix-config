@@ -13,6 +13,12 @@
     executable = true;
     text = builtins.readFile ./rip-to-audio.py;
   };
+  shufflePlexCollectionsScript = pkgs.writeTextFile {
+    name = "shuffle-plex-collections";
+    destination = "/bin/shuffle-plex-collections";
+    executable = true;
+    text = builtins.readFile ./shuffle-plex-collections.py;
+  };
   python = pkgs.python3.withPackages (ps: [ps.plexapi]);
   ripToAudioConfig = {
     calendar = "daily";
@@ -20,6 +26,10 @@
       "Jeopardy!"
       "Pop Culture Jeopardy!"
     ];
+  };
+  shufflePlexCollectionsConfig = {
+    calendar = "daily";
+    collections = ["Keepers"];
   };
 in {
   config = lib.mkIf cfg.library.enable {
@@ -105,11 +115,36 @@ in {
           ripToAudioConfig.shows;
       };
 
+      services.shuffle-plex-collections = {
+        description = "Shuffle Plex Watchlist collection order";
+        wants = ["apps-network.service" "plex.service"];
+        after = ["apps-network.service" "plex.service"];
+        serviceConfig = {
+          Type = "oneshot";
+          User = user.name;
+          Group = user.group;
+          EnvironmentFile = config.age.secrets.plex-token-env.path;
+        };
+        script = ''
+          ${python}/bin/python ${shufflePlexCollectionsScript}/bin/shuffle-plex-collections \
+            ${lib.escapeShellArgs shufflePlexCollectionsConfig.collections}
+        '';
+      };
+
       timers.rip-to-audio = {
         description = "Schedule Plex TV show audio extraction";
         wantedBy = ["timers.target"];
         timerConfig = {
           OnCalendar = ripToAudioConfig.calendar;
+          Persistent = true;
+        };
+      };
+
+      timers.shuffle-plex-collections = {
+        description = "Schedule Plex Watchlist collection shuffling";
+        wantedBy = ["timers.target"];
+        timerConfig = {
+          OnCalendar = shufflePlexCollectionsConfig.calendar;
           Persistent = true;
         };
       };
