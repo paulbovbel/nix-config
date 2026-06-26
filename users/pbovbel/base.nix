@@ -63,9 +63,11 @@ in {
       enable = true;
       package = unstablePkgs.opencode;
       settings = {
+        enabled_providers = ["openai" "llama.cpp"];
         model = "llama.cpp/qwen3.6";
         provider = {
-          llama-cpp = {
+          openai = {};
+          "llama.cpp" = {
             npm = "@ai-sdk/openai-compatible";
             name = "Local LLM";
             options = {

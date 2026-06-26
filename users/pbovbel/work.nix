@@ -39,6 +39,7 @@ in {
 
   home.packages = [
     pkgs.chromium
+    pkgs.github-copilot-cli
   ];
 
   programs.kitty.keybindings = {
