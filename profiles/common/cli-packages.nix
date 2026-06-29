@@ -1,6 +1,7 @@
 {pkgs}: let
   packagePairs = [
     ["age" pkgs.age]
+    ["awscli" pkgs.awscli]
     ["bat" pkgs.bat]
     ["bind9-dnsutils" pkgs.bind]
     ["ca-certificates" pkgs.cacert]
