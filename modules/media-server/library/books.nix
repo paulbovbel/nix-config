@@ -102,6 +102,11 @@ in {
             path = "/grimmory/api/kobo";
             host = "grimmory";
             port = 6060;
+            headerUp = [
+              "X-Forwarded-Proto https"
+              "X-Forwarded-Host ${config.networking.hostName}.${config.networking.domain}"
+              "X-Forwarded-Port 8443"
+            ];
           };
         };
 
