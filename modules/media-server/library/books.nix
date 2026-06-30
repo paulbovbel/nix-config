@@ -60,7 +60,7 @@ in {
         grimmory = {
           dependsOn = ["grimmory-db"];
           quadlet.containerConfig = {
-            image = "ghcr.io/paulbovbel/grimmory:preview-7815e6d";
+            image = "ghcr.io/paulbovbel/grimmory:preview-c2c4460";
             environments = {
               USER_ID = toString user.uid;
               GROUP_ID = toString user.gid;
@@ -87,23 +87,39 @@ in {
       };
     };
 
-    caddy.endpoints = {
-      grimmory-kobo = {
-        type = "proxy";
-        auth = null;
-        path = "/grimmory/api/kobo";
-        host = "grimmory";
-        port = 6060;
-      };
+    caddy = {
+      sites = {
+        kobo = {
+          domains = [
+            {
+              host = "${config.networking.hostName}.${config.networking.domain}";
+              listenPort = 8443;
+            }
+          ];
+          endpoints.grimmory-kobo = {
+            type = "proxy";
+            auth = null;
+            path = "/grimmory/api/kobo";
+            host = "grimmory";
+            port = 6060;
+          };
+        };
 
-      grimmory = {
-        type = "proxy";
-        auth = "oauth";
-        path = "/grimmory";
-        host = "grimmory";
-        port = 6060;
-        role = "admin";
+        media.endpoints.grimmory = {
+          type = "proxy";
+          auth = "oauth";
+          path = "/grimmory";
+          host = "grimmory";
+          port = 6060;
+          role = "admin";
+        };
       };
+    };
+
+    upnp.forwards.kobo = lib.mkIf cfg.upnp.enable {
+      from = 8443;
+      to = 8443;
+      proto = "tcp";
     };
   };
 }

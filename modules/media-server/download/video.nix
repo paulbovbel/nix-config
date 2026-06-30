@@ -83,7 +83,7 @@ in {
       };
     };
 
-    caddy.endpoints = {
+    caddy.sites.media.endpoints = {
       maintainerr = {
         type = "proxy";
         auth = "oauth";

@@ -162,7 +162,6 @@
         specialArgs = {
           hostUsers = cfg.users;
           inherit agenix locus-vpn-client unstablePkgs pcp;
-          inherit (cfg) tailscaleDomain;
         };
         modules =
           [
@@ -178,8 +177,6 @@
             quadlet-nix.nixosModules.quadlet
             "${pcp}/build/nix/nixos-module.nix"
             {
-              caddy.publicDomain = cfg.publicDomain;
-
               nixpkgs = {
                 inherit overlays;
                 config.allowUnfree = true;
@@ -190,7 +187,6 @@
                 useGlobalPkgs = true;
                 useUserPackages = true;
                 extraSpecialArgs = {
-                  inherit (cfg) tailscaleDomain;
                   inherit unstablePkgs;
                   inherit vscode-workspace-populator;
                 };

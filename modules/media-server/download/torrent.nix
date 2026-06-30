@@ -155,7 +155,7 @@ in {
       };
     };
 
-    caddy.endpoints = {
+    caddy.sites.media.endpoints = {
       autobrr = {
         type = "proxy";
         auth = "oauth";

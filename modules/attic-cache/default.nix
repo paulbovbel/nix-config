@@ -7,7 +7,7 @@
   cfg = config.atticCache;
   cacheDir = "/var/lib/attic/storage";
   datasets = config.storage.datasets;
-  domain = "${cfg.subdomain}.${config.caddy.publicDomain}";
+  domain = "${cfg.subdomain}.${config.networking.domain}";
   endpoint = "https://${domain}/";
   watchStore = pkgs.writeShellApplication {
     name = "attic-watch-store";
@@ -84,10 +84,20 @@ in {
 
       users.groups.atticd = {};
 
-      caddy.domains.${domain} = {
-        auth = null;
-        host = "host.containers.internal";
-        inherit (cfg) port;
+      caddy.sites.nix-cache = {
+        domains = [
+          {
+            host = domain;
+          }
+        ];
+        endpoints.attic = {
+          type = "proxy";
+          auth = null;
+          path = "/";
+          host = "host.containers.internal";
+          inherit (cfg) port;
+        };
+        notFound = false;
       };
 
       networking.firewall.interfaces.${config.podmanServer.networkInterface}.allowedTCPPorts = [cfg.port];

@@ -35,7 +35,7 @@ in {
 
     systemd.services.syncthing.unitConfig.RequiresMountsFor = [storagePath];
 
-    caddy.endpoints.syncthing = lib.mkIf config.syncthing.caddy.enable {
+    caddy.sites.media.endpoints.syncthing = lib.mkIf config.syncthing.caddy.enable {
       type = "proxy";
       auth = "oauth";
       path = "/syncthing";
