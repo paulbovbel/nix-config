@@ -27,7 +27,7 @@ in {
       };
     };
 
-    caddy.endpoints.jellyfin = {
+    caddy.sites.media.endpoints.jellyfin = {
       type = "proxy";
       auth = null;
       path = "/jellyfin";

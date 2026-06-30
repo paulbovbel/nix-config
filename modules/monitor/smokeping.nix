@@ -32,7 +32,7 @@ in {
       };
     };
 
-    caddy.endpoints.smokeping = {
+    caddy.sites.media.endpoints.smokeping = {
       type = "proxy";
       auth = "oauth";
       path = "/smokeping";

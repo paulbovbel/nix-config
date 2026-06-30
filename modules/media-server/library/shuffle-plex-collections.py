@@ -101,7 +101,7 @@ def main():
     parser.add_argument(
         "--plex-url",
         type=str,
-        default=os.environ.get("PLEX_URL", "http://localhost:50505"),
+        default=os.environ.get("PLEX_URL", "http://localhost:32400"),
         help="Plex server URL",
     )
     args = parser.parse_args()

@@ -44,14 +44,14 @@ in {
       derivedEnvFiles.plex = {
         derivedEnvironmentFiles = ["lan"];
         mode = "0644";
-        variables.ADVERTISE_IP = "http://$LAN_ADDRESS:50505/";
+        variables.ADVERTISE_IP = "http://$LAN_ADDRESS:32400/";
       };
 
       containers = {
         plex = {
           quadlet.containerConfig = {
             image = "docker.io/plexinc/pms-docker:plexpass";
-            publishPorts = ["50505:32400"];
+            publishPorts = ["32400:32400"];
             volumes = [
               "${datasets.app.children.plex.path}:/config"
               "${datasets.media.path}:/mnt/storage/share:ro"
@@ -85,7 +85,7 @@ in {
       };
     };
 
-    caddy.endpoints.tautulli = {
+    caddy.sites.media.endpoints.tautulli = {
       type = "proxy";
       auth = "oauth";
       path = "/tautulli";
@@ -151,8 +151,8 @@ in {
     };
 
     upnp.forwards.plex = lib.mkIf cfg.upnp.enable {
-      from = 50505;
-      to = 50505;
+      from = 32400;
+      to = 32400;
       proto = "tcp";
     };
   };

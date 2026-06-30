@@ -1,9 +1,5 @@
-let
-  publicDomain = "bovbel.com";
-  tailscaleDomain = "axolotl-vibe.ts.net";
-in {
+{
   white-tower = {
-    inherit publicDomain tailscaleDomain;
     # useUnstablePackages = true;
     users = [
       {
@@ -25,7 +21,6 @@ in {
   };
 
   pbovbel-dell = {
-    inherit publicDomain tailscaleDomain;
     users = [
       {
         name = "pbovbel";
@@ -36,7 +31,6 @@ in {
   };
 
   media = {
-    inherit publicDomain tailscaleDomain;
     users = [
       {
         name = "pbovbel";

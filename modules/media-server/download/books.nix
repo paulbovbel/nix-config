@@ -115,7 +115,7 @@ in {
       };
     };
 
-    caddy.endpoints = {
+    caddy.sites.media.endpoints = {
       readarr = {
         type = "proxy";
         auth = "oauth";

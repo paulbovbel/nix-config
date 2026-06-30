@@ -2,15 +2,9 @@
   config,
   lib,
   pkgs,
-  tailscaleDomain,
   pcp,
   ...
 }: let
-  primarySubdomain =
-    if config.caddy.primarySubdomain != null
-    then config.caddy.primarySubdomain
-    else config.networking.hostName;
-  primaryDomain = "${primarySubdomain}.${config.caddy.publicDomain}";
   cockpitPython = pkgs.cockpit.passthru.python3Packages.python;
   pcpPackage = import "${pcp}/build/nix/package.nix" {
     pkgs =
@@ -70,10 +64,10 @@ in {
       package = cockpitPackage;
       openFirewall = false;
       allowed-origins = [
-        "https://${primaryDomain}"
-        "wss://${primaryDomain}"
-        "https://${config.networking.hostName}.${tailscaleDomain}"
-        "wss://${config.networking.hostName}.${tailscaleDomain}"
+        "https://${config.networking.hostName}.${config.networking.domain}"
+        "wss://${config.networking.hostName}.${config.networking.domain}"
+        "https://${config.networking.hostName}.${config.tailscale.domain}"
+        "wss://${config.networking.hostName}.${config.tailscale.domain}"
       ];
       plugins = [pkgs.cockpit-files pkgs.cockpit-podman];
       settings.WebService = {
@@ -132,7 +126,7 @@ in {
 
     environment.variables = pcpEnvironment;
 
-    caddy.endpoints.cockpit = {
+    caddy.sites.media.endpoints.cockpit = {
       type = "proxy";
       auth = "oauth";
       path = "/cockpit";

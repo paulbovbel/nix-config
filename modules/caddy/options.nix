@@ -41,29 +41,42 @@
       };
     };
   };
+
   domainType = lib.types.submodule {
     options = {
-      auth = lib.mkOption {
-        type = lib.types.nullOr (lib.types.enum ["oauth" "basic"]);
-        default = "oauth";
-        description = "Authentication mode for this domain proxy.";
+      host = lib.mkOption {type = lib.types.str;};
+      listenPort = lib.mkOption {
+        type = lib.types.nullOr lib.types.port;
+        default = null;
       };
+      tls = lib.mkOption {
+        type = lib.types.enum ["public" "tailscale"];
+        default = "public";
+      };
+    };
+  };
 
-      role = lib.mkOption {
+  siteType = lib.types.submodule {
+    options = {
+      domains = lib.mkOption {
+        type = lib.types.listOf domainType;
+        default = [];
+      };
+      endpoints = lib.mkOption {
+        type = lib.types.attrsOf endpointType;
+        default = {};
+      };
+      redirect = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
-        description = "Authorization policy role required when auth is oauth.";
       };
-
-      host = lib.mkOption {
-        type = lib.types.str;
-        default = "127.0.0.1";
-        description = "Host to reverse proxy to for this domain.";
+      log = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
       };
-
-      port = lib.mkOption {
-        type = lib.types.port;
-        description = "Port to reverse proxy to for this domain.";
+      notFound = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
       };
     };
   };
@@ -73,22 +86,6 @@ in {
       type = lib.types.bool;
       default = false;
       description = "Enable containerized Caddy proxy and auth.";
-    };
-
-    redirect = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default = null;
-    };
-
-    publicDomain = lib.mkOption {
-      type = lib.types.str;
-      description = "Base public domain used for wildcard certificate selection.";
-    };
-
-    primarySubdomain = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default = null;
-      description = "Primary public subdomain for the Caddy media site.";
     };
 
     share.enable = lib.mkOption {
@@ -112,16 +109,10 @@ in {
       default = [];
     };
 
-    endpoints = lib.mkOption {
-      type = lib.types.attrsOf endpointType;
+    sites = lib.mkOption {
+      type = lib.types.attrsOf siteType;
       default = {};
-      description = "Caddy endpoints declared by service fragments.";
-    };
-
-    domains = lib.mkOption {
-      type = lib.types.attrsOf domainType;
-      default = {};
-      description = "Additional public domains proxied to local host ports.";
+      description = "Caddy sites keyed by logical service name.";
     };
 
     caddyfile = lib.mkOption {

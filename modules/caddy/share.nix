@@ -16,7 +16,7 @@ in {
       };
     };
 
-    caddy.endpoints = {
+    caddy.sites.media.endpoints = {
       share = {
         type = "share";
         auth = "oauth";

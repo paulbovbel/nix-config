@@ -45,6 +45,7 @@
     // appBackupPaths;
 in {
   imports = [
+    ../site.nix
     ./hardware-configuration.nix
   ];
 
@@ -90,7 +91,6 @@ in {
 
   caddy = {
     enable = true;
-    primarySubdomain = "media";
     share.enable = true;
 
     users = [
@@ -143,7 +143,7 @@ in {
   environment.systemPackages = [pkgs.intel-gpu-tools];
 
   cockpit.enable = true;
-  caddy.redirect = "/cockpit/";
+  caddy.sites.media.redirect = "/cockpit/";
   smokeping.enable = true;
 
   # syncthing = {

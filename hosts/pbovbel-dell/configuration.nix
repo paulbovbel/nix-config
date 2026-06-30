@@ -1,5 +1,6 @@
 {pkgs, ...}: {
   imports = [
+    ../site.nix
     ./hardware-configuration.nix
   ];
 
