@@ -204,7 +204,11 @@
           cfg.users;
       };
 
-    hosts = import ./hosts;
+    hosts = {
+      white-tower = import ./hosts/white-tower;
+      pbovbel-dell = import ./hosts/pbovbel-dell;
+      media = import ./hosts/media;
+    };
   in {
     nixosConfigurations = lib.mapAttrs mkHost hosts;
   };
