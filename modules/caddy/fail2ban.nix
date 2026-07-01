@@ -21,6 +21,21 @@
           journalmatch = "_SYSTEMD_UNIT=caddy.service";
         };
       };
+
+      jails.caddy-auth-portal = {
+        filter = ''
+          [Definition]
+          failregex = ^.*"remote_ip": "<HOST>".*"uri": "/auth/.*".*"status": (401|403).*$
+          ignoreregex =
+        '';
+        settings = {
+          enabled = true;
+          chain = "INPUT";
+          port = "http,https";
+          backend = "systemd";
+          journalmatch = "_SYSTEMD_UNIT=caddy.service";
+        };
+      };
     };
   };
 }
