@@ -5,12 +5,13 @@
   ...
 }: let
   cfg = config.caddy;
+  inherit (lib) concatLists concatMapStrings optional optionalString;
 
   indent = level: text: let
     prefix = lib.concatStrings (lib.genList (_: " ") (level * 2));
     body = lib.removeSuffix "\n" text;
   in
-    lib.optionalString (body != "") (
+    optionalString (body != "") (
       lib.concatStringsSep "\n" (map (line:
         if line == ""
         then ""
@@ -33,7 +34,7 @@
         match realm google
         match email ${user.email}
       ''
-      + lib.concatMapStrings (role: "action add role authp/${role}\n") user.roles);
+      + concatMapStrings (role: "action add role authp/${role}\n") user.roles);
 
   authBlock = route:
     if route.auth == "oauth"
@@ -48,11 +49,11 @@
     else throw "Unsupported Caddy route auth: ${route.auth}";
 
   proxyTransport = endpoint:
-    lib.optionalString (endpoint.scheme == "https") (renderBlock "transport http" "tls_insecure_skip_verify\n");
+    optionalString (endpoint.scheme == "https") (renderBlock "transport http" "tls_insecure_skip_verify\n");
 
   headerLines = endpoint:
-    lib.concatMapStrings (header: "header_up ${header}\n") endpoint.headerUp
-    + lib.optionalString endpoint.spoofBasic "header_up +Authorization \"Basic {$BASIC_AUTH_HEADER}\"\n";
+    concatMapStrings (header: "header_up ${header}\n") endpoint.headerUp
+    + optionalString endpoint.spoofBasic "header_up +Authorization \"Basic {$BASIC_AUTH_HEADER}\"\n";
 
   reverseProxy = endpoint:
     renderBlock "reverse_proxy * ${endpoint.scheme}://${endpoint.host}:${toString endpoint.port}" (proxyTransport endpoint + headerLines endpoint);
@@ -83,7 +84,7 @@
       redir ${endpoint.path} ${endpoint.path}/
 
       ${renderBlock "route ${endpoint.path}*" (authBlock endpoint
-        + lib.optionalString (endpoint.type == "share" || endpoint.stripPrefix) "uri strip_prefix ${endpoint.path}\n"
+        + optionalString (endpoint.type == "share" || endpoint.stripPrefix) "uri strip_prefix ${endpoint.path}\n"
         + (
           if endpoint.type == "proxy"
           then reverseProxy endpoint
@@ -102,6 +103,13 @@
     "level INFO\n"
     + renderBlock "format console" "time_format wall\n"
   );
+
+  renderSecurityHeaders = renderBlock "header" ''
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options nosniff
+    X-Frame-Options SAMEORIGIN
+    Referrer-Policy no-referrer-when-downgrade
+  '';
 
   renderRedirect = redirect:
     renderBlock "route /" "redir / ${redirect}\n";
@@ -124,17 +132,18 @@
       else "${domain.host}:${toString domain.listenPort}";
   in
     renderBlock siteAddress (
-      lib.optionalString site.log renderLog
-      + lib.optionalString (site.redirect != null) (renderRedirect site.redirect)
-      + lib.optionalString hasOauth renderAuthRoute
-      + lib.concatMapStrings renderEndpoint endpoints
-      + lib.optionalString site.notFound "import not-found\n"
+      optionalString site.log renderLog
+      + optionalString site.securityHeaders renderSecurityHeaders
+      + optionalString (site.redirect != null) (renderRedirect site.redirect)
+      + optionalString hasOauth renderAuthRoute
+      + concatMapStrings renderEndpoint endpoints
+      + optionalString site.notFound "import not-found\n"
       + "\n"
       + renderTls domain
     )
     + "\n";
 
-  renderSite = site: lib.concatMapStrings (renderDomain site) site.domains;
+  renderSite = site: concatMapStrings (renderDomain site) site.domains;
 
   renderSecurity = renderBlock "security" (
     renderBlock "oauth identity provider google" ''
@@ -146,15 +155,15 @@
     ''
     + "\n"
     + renderBlock "authentication portal defaultportal" (''
-        crypto default token lifetime 7884000
+        crypto default token lifetime ${toString cfg.tokenLifetime}
         crypto key sign-verify {$CADDY_TOKEN_SECRET}
         enable identity provider google
-        cookie lifetime 7884000
+        cookie lifetime ${toString cfg.cookieLifetime}
 
       ''
-      + lib.concatMapStrings renderUser cfg.users)
+      + concatMapStrings renderUser cfg.users)
     + "\n"
-    + lib.concatMapStrings (role:
+    + concatMapStrings (role:
       renderBlock "authorization policy ${role}" ''
         set auth url /auth/oauth2/google
         crypto key verify {$CADDY_TOKEN_SECRET}
@@ -194,7 +203,7 @@
 
   caddyfile = pkgs.writeText "Caddyfile.template" (
     renderGlobalBlock (''
-        email paul@bovbel.com
+        email ${cfg.email}
 
         order authenticate before respond
         order authorize before basicauth
@@ -208,23 +217,110 @@
     + "\n"
     + wildcardSite
     + "\n"
-    + lib.concatMapStrings renderSite (lib.attrValues cfg.sites)
+    + concatMapStrings renderSite (lib.attrValues cfg.sites)
   );
+
+  endpointRows = lib.flatten (lib.mapAttrsToList (siteName: site:
+    lib.mapAttrsToList (endpointName: endpoint: {
+      inherit endpoint endpointName siteName;
+    })
+    site.endpoints)
+  cfg.sites);
+
+  domainRows = lib.flatten (lib.mapAttrsToList (siteName: site:
+    map (domain: {
+      inherit domain siteName;
+    })
+    site.domains)
+  cfg.sites);
+
+  domainKey = row: "${row.domain.host}:${toString (
+    if row.domain.listenPort == null
+    then 443
+    else row.domain.listenPort
+  )}";
+
+  routeSummary = pkgs.writeText "caddy-routes.md" (''
+      # Caddy Routes
+
+      | Site | Endpoint | Path | Auth | Role | Upstream |
+      | --- | --- | --- | --- | --- | --- |
+    ''
+    + concatMapStrings (row: let
+      upstream =
+        if row.endpoint.host == null || row.endpoint.port == null
+        then "-"
+        else "${row.endpoint.scheme}://${row.endpoint.host}:${toString row.endpoint.port}";
+      role =
+        if row.endpoint.role == null
+        then "-"
+        else row.endpoint.role;
+      auth =
+        if row.endpoint.auth == null
+        then "none"
+        else row.endpoint.auth;
+    in "| ${row.siteName} | ${row.endpointName} | `${row.endpoint.path}` | ${auth} | ${role} | `${upstream}` |\n")
+    endpointRows);
+
+  routeAssertions = let
+    mkAssertion = assertion: message: {inherit assertion message;};
+    duplicatePaths = concatLists (lib.mapAttrsToList (siteName: site: let
+      paths = map (endpoint: endpoint.path) (lib.attrValues site.endpoints);
+    in
+      optional (lib.length paths != lib.length (lib.unique paths)) siteName)
+    cfg.sites);
+    duplicateDomains = let
+      keys = map domainKey domainRows;
+    in
+      lib.length keys != lib.length (lib.unique keys);
+  in
+    concatLists [
+      (map (role:
+        mkAssertion (lib.elem role cfg.roles) "Caddy user role '${role}' is not declared in caddy.roles.")
+      (lib.flatten (map (user: user.roles) cfg.users)))
+      (map (row:
+        mkAssertion (lib.hasPrefix "/" row.endpoint.path) "Caddy endpoint ${row.siteName}.${row.endpointName} path must start with '/'.")
+      endpointRows)
+      (map (row:
+        mkAssertion (row.endpoint.type != "proxy" || (row.endpoint.host != null && row.endpoint.port != null)) "Caddy proxy endpoint ${row.siteName}.${row.endpointName} must set host and port.")
+      endpointRows)
+      (map (row:
+        mkAssertion (row.endpoint.type != "share" || (row.endpoint.host == null && row.endpoint.port == null)) "Caddy share endpoint ${row.siteName}.${row.endpointName} must not set host or port.")
+      endpointRows)
+      (map (row:
+        mkAssertion (row.endpoint.auth != "oauth" || row.endpoint.role != null) "Caddy OAuth endpoint ${row.siteName}.${row.endpointName} must set role.")
+      endpointRows)
+      (map (row:
+        mkAssertion (row.endpoint.auth != "oauth" || lib.elem row.endpoint.role cfg.roles) "Caddy OAuth endpoint ${row.siteName}.${row.endpointName} uses undeclared role '${row.endpoint.role}'.")
+      endpointRows)
+      (map (siteName:
+        mkAssertion false "Caddy site '${siteName}' has duplicate endpoint paths.")
+      duplicatePaths)
+      [
+        (mkAssertion (! duplicateDomains) "Caddy sites contain duplicate domain/listen-port combinations.")
+      ]
+    ];
 in {
-  config = lib.mkIf config.caddy.enable {
-    caddy.sites.media = {
-      domains = [
-        {
-          host = "${config.networking.hostName}.${config.networking.domain}";
-        }
-        {
-          host = "${config.networking.hostName}.${config.tailscale.domain}";
-          tls = "tailscale";
-        }
-      ];
-      log = true;
+  config = lib.mkIf cfg.enable {
+    assertions = routeAssertions;
+
+    caddy = {
+      sites.media = {
+        domains = [
+          {
+            host = "${config.networking.hostName}.${config.networking.domain}";
+          }
+          {
+            host = "${config.networking.hostName}.${config.tailscale.domain}";
+            tls = "tailscale";
+          }
+        ];
+        log = true;
+      };
+
+      inherit caddyfile routeSummary;
     };
 
-    caddy.caddyfile = caddyfile;
+    environment.etc."caddy/routes.md".source = routeSummary;
   };
 }

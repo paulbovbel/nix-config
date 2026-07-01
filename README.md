@@ -72,6 +72,30 @@ modules/
 └── upnp               declarative port forwards
 ```
 
+### Caddy ingress
+
+Services expose HTTP routes by declaring `caddy.sites.<site>.endpoints.<name>` from their owning module. Host configs should generally only enable `caddy` and set users/roles; service modules own their own route declarations.
+
+Endpoint shape:
+
+```nix
+caddy.sites.media.endpoints.example = {
+  type = "proxy";
+  path = "/example";
+  host = "example";
+  port = 8080;
+  role = "admin";
+};
+```
+
+- Use `auth = null` for intentionally public endpoints.
+- Use `spoofBasic = true` when the upstream should receive the shared web basic-auth credentials.
+- Use `headerUp` for upstream request headers.
+- Use `stripPrefix` or `handlePath` for applications that need path-prefix handling.
+- Public or authenticated HTTP exposure should use `caddy.sites` rather than hand-written Caddyfile fragments.
+- The module asserts common mistakes during evaluation, including missing proxy `host`/`port`, missing OAuth roles, undeclared roles, duplicate paths within a site, and duplicate domain/listen-port pairs.
+- A route audit is generated at `/etc/caddy/routes.md` on Caddy hosts.
+
 ### Profiles
 
 System profiles in `profiles/` are selected indirectly from `hosts/default.nix` through user profile declarations. They are import-driven; `graphical` and `headless` import `common`, while `work` and `gaming` import `graphical`.
