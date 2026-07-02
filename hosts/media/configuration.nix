@@ -112,7 +112,7 @@ in {
       }
       {
         email = "dmitri@bovbel.com";
-        roles = ["share"];
+        roles = ["admin" "share"];
       }
       {
         email = "arthur@bovbel.com";
