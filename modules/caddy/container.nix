@@ -21,13 +21,12 @@
     "podman-server-caddy-token-secret-env.service"
     "podman-server-caddy-basic-auth-env.service"
   ];
-  caddyImage = "localhost/caddy";
   caddyVersion = "2.9.1";
   caddyPlugins = [
     "github.com/greenpau/caddy-security@v1.1.29"
     "github.com/caddy-dns/route53@v1.5.1"
   ];
-  caddyContainerfile = pkgs.writeText "Containerfile" ''
+  caddyContainerfileText = ''
     FROM caddy:${caddyVersion}-builder AS builder
 
     RUN xcaddy build ${lib.concatMapStringsSep " " (plugin: "\\\n      --with ${plugin}") caddyPlugins}
@@ -39,6 +38,8 @@
     # see https://github.com/caddyserver/caddy-docker/issues/58
     RUN apk add --no-cache tzdata
   '';
+  caddyImage = "localhost/caddy:${builtins.hashString "sha256" caddyContainerfileText}";
+  caddyContainerfile = pkgs.writeText "Containerfile" caddyContainerfileText;
 in {
   config = lib.mkIf cfg.enable {
     age.secrets = {
@@ -55,6 +56,7 @@ in {
           file = caddyContainerfile.outPath;
           tag = caddyImage;
         };
+        build.autoStart = false;
         quadlet.containerConfig = {
           publishPorts = ["80:80" "443:443"] ++ domainPublishPorts;
           volumes = [
@@ -105,8 +107,8 @@ in {
         caddy-render = {
           description = "Install rendered Caddyfile and reload containerized Caddy";
           wantedBy = ["multi-user.target"];
-          wants = ["network-online.target" "caddy-build.service"] ++ caddyEnvUnits;
-          after = ["network-online.target" "caddy-build.service"] ++ caddyEnvUnits;
+          wants = ["network-online.target"] ++ caddyEnvUnits;
+          after = ["network-online.target"] ++ caddyEnvUnits;
           before = ["caddy.service"];
           path = [pkgs.coreutils];
           restartTriggers = [config.caddy.caddyfile];
@@ -122,10 +124,14 @@ in {
             install -d -m 0755 /etc/caddy
             install -m 0644 ${config.caddy.caddyfile} "$candidate"
 
+            if ! ${pkgs.podman}/bin/podman image exists ${lib.escapeShellArg caddyImage}; then
+              ${pkgs.systemd}/bin/systemctl start caddy-build.service
+            fi
+
             ${pkgs.podman}/bin/podman run --rm --pull=never --network host \
               ${caddyEnvFileArgs} \
               --volume "$candidate:/etc/caddy/Caddyfile:ro" \
-              ${caddyImage} \
+              ${lib.escapeShellArg caddyImage} \
               caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
             install -m 0644 "$candidate" /etc/caddy/Caddyfile
