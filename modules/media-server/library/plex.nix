@@ -7,11 +7,11 @@
   cfg = config.mediaServer;
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
-  ripToAudio = pkgs.writeTextFile {
-    name = "rip-to-audio";
-    destination = "/bin/rip-to-audio";
+  devisualizeScript = pkgs.writeTextFile {
+    name = "devisualize";
+    destination = "/bin/devisualize";
     executable = true;
-    text = builtins.readFile ./rip-to-audio.py;
+    text = builtins.readFile ./devisualize.py;
   };
   shufflePlexCollectionsScript = pkgs.writeTextFile {
     name = "shuffle-plex-collections";
@@ -20,12 +20,8 @@
     text = builtins.readFile ./shuffle-plex-collections.py;
   };
   python = pkgs.python3.withPackages (ps: [ps.plexapi]);
-  ripToAudioConfig = {
+  devisualizeConfig = {
     calendar = "daily";
-    shows = [
-      "Jeopardy!"
-      "Pop Culture Jeopardy!"
-    ];
   };
   shufflePlexCollectionsConfig = {
     calendar = "daily";
@@ -95,8 +91,8 @@ in {
     };
 
     systemd = {
-      services.rip-to-audio = {
-        description = "Extract configured Plex TV shows to audiobook audio files";
+      services.devisualize = {
+        description = "Extract configured Plex collections to audio files";
         wants = ["apps-network.service" "plex.service"];
         after = ["apps-network.service" "plex.service"];
         path = [pkgs.ffmpeg];
@@ -106,13 +102,10 @@ in {
           Group = user.group;
           EnvironmentFile = config.age.secrets.plex-token-env.path;
         };
-        script =
-          lib.concatMapStringsSep "\n" (show: ''
-            ${python}/bin/python ${ripToAudio}/bin/rip-to-audio \
-              '${datasets.media.children.tv.path}/${show}' \
-              '${datasets.media.children.audiobooks.path}/${show}'
-          '')
-          ripToAudioConfig.shows;
+        script = ''
+          ${python}/bin/python ${devisualizeScript}/bin/devisualize \
+            --host-media-root ${lib.escapeShellArg datasets.media.path}
+        '';
       };
 
       services.shuffle-plex-collections = {
@@ -131,11 +124,11 @@ in {
         '';
       };
 
-      timers.rip-to-audio = {
-        description = "Schedule Plex TV show audio extraction";
+      timers.devisualize = {
+        description = "Schedule Plex collection audio extraction";
         wantedBy = ["timers.target"];
         timerConfig = {
-          OnCalendar = ripToAudioConfig.calendar;
+          OnCalendar = devisualizeConfig.calendar;
           Persistent = true;
         };
       };
