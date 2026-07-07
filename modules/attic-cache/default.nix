@@ -32,7 +32,11 @@ in {
 
       atticCache.dataDir = lib.mkDefault datasets.app.children.attic.path;
 
-      storage.datasets.app.children.attic = {};
+      storage.datasets.app.children.attic = {
+        owner = "atticd";
+        group = "atticd";
+        mode = "0750";
+      };
 
       rootZfs.datasets."root/attic" = {
         type = "zfs_fs";

@@ -53,6 +53,24 @@
           description = "Generated mount path for this dataset.";
         };
 
+        owner = lib.mkOption {
+          type = lib.types.str;
+          default = config.podmanServer.user.name;
+          description = "User that should own the dataset mountpoint.";
+        };
+
+        group = lib.mkOption {
+          type = lib.types.str;
+          default = config.podmanServer.user.group;
+          description = "Group that should own the dataset mountpoint.";
+        };
+
+        mode = lib.mkOption {
+          type = lib.types.str;
+          default = "0755";
+          description = "Mode for the dataset mountpoint.";
+        };
+
         options = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
           default = {};

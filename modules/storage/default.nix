@@ -32,6 +32,7 @@
       in
         {
           ${datasetName} = {
+            inherit (dataset) group mode owner path;
             mountpoint = dataset.path;
             options = renderAutoSnapshot dataset.autoSnapshot // dataset.options;
           };
@@ -47,6 +48,7 @@
       }
       // dataset.options;
   };
+  datasetOwnershipRules = lib.mapAttrsToList (_: dataset: "d ${dataset.path} ${dataset.mode} ${dataset.owner} ${dataset.group} - -") datasetAttrs;
 in {
   imports = [./options.nix];
 
@@ -67,6 +69,8 @@ in {
       interval = "monthly";
       pools = [cfg.pool];
     };
+
+    systemd.tmpfiles.rules = datasetOwnershipRules;
 
     disko.zfs.settings.datasets =
       {
