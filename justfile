@@ -8,6 +8,9 @@ check: nix-lint python-lint shell-lint nix-check
 dry-run host=`hostname`:
   nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel" --dry-run
 
+build host=`hostname`:
+  nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel"
+
 switch host=`hostname`:
   #!/usr/bin/env bash
   set -euo pipefail

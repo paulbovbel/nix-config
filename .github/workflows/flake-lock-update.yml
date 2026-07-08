@@ -13,27 +13,19 @@ jobs:
       issues: write
       pull-requests: write
     runs-on: ubuntu-latest
-    env:
-      NIX_CONFIG: |
-        extra-substituters = https://nix-cache.bovbel.com/nixos
-        extra-trusted-public-keys = nixos:pmAv4w1X/hCdM7rOjkK954hzdzEFiOgZshQmwWDpKNE=
     steps:
-      - uses: actions/checkout@v6
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
-      - name: Join Tailscale
-        uses: tailscale/github-action@v3
+      - name: Setup Nix runner
+        uses: ./.github/actions/setup-nix
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:github-action
-
-      - name: Install SSH Key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
+          tailscale-oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          tailscale-oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - uses: DeterminateSystems/update-flake-lock@main
+      - name: Update flake.lock
+        uses: DeterminateSystems/update-flake-lock@v28
         with:
           pr-title: "Update Nix flake inputs"
           pr-labels:

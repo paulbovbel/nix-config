@@ -1,0 +1,45 @@
+name: Setup Nix runner
+description: Configure Nix, network access, caches, and SSH.
+
+inputs:
+  tailscale-oauth-client-id:
+    description: Tailscale OAuth client ID.
+    required: true
+  tailscale-oauth-secret:
+    description: Tailscale OAuth secret.
+    required: true
+  ssh-private-key:
+    description: SSH private key for private flake inputs.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@v22
+      with:
+        extra-conf: |
+          extra-substituters = https://nix-cache.bovbel.com/nixos
+          extra-trusted-public-keys = nixos:pmAv4w1X/hCdM7rOjkK954hzdzEFiOgZshQmwWDpKNE=
+
+    - name: Join Tailscale
+      uses: tailscale/github-action@v4
+      with:
+        oauth-client-id: ${{ inputs.tailscale-oauth-client-id }}
+        oauth-secret: ${{ inputs.tailscale-oauth-secret }}
+        tags: tag:github-action
+
+    - name: Use nix-community Cachix
+      uses: cachix/cachix-action@v15
+      with:
+        name: nix-community
+
+    - name: Use cuda-maintainers Cachix
+      uses: cachix/cachix-action@v15
+      with:
+        name: cuda-maintainers
+
+    - name: Install SSH Key
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ inputs.ssh-private-key }}
