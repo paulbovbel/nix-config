@@ -203,17 +203,30 @@ async def write_normalized_audio(
         cmd += ["-metadata", f"track={metadata.track_number}"]
 
     cmd += [str(partial_file)]
-    process = await asyncio.create_subprocess_exec(
-        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-    )
-    _, stderr = await process.communicate()
+    process = None
+    completed = False
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        _, stderr = await process.communicate()
 
-    if process.returncode != 0:
-        if partial_file.exists():
+        if process.returncode != 0:
+            raise FFmpegError(stderr.decode("utf-8", errors="replace"))
+
+        os.replace(partial_file, outfile)
+        completed = True
+    finally:
+        if not completed and partial_file.exists():
             partial_file.unlink()
-        raise FFmpegError(stderr.decode("utf-8", errors="replace"))
 
-    partial_file.rename(outfile)
+        if process is not None and process.returncode is None:
+            process.terminate()
+            try:
+                await asyncio.wait_for(process.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
 
 
 # Plex Item And Metadata Helpers
