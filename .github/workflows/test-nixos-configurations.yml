@@ -11,40 +11,15 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    env:
-      NIX_CONFIG: |
-        extra-substituters = https://nix-cache.bovbel.com/nixos
-        extra-trusted-public-keys = nixos:pmAv4w1X/hCdM7rOjkK954hzdzEFiOgZshQmwWDpKNE=
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v16
-
-      - name: Join Tailscale
-        uses: tailscale/github-action@v3
+      - name: Setup Nix runner
+        uses: ./.github/actions/setup-nix
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:github-action
-
-      - name: Enable upstream binary caches
-        uses: DeterminateSystems/magic-nix-cache-action@v13
-
-      - name: Use nix-community Cachix
-        uses: cachix/cachix-action@v15
-        with:
-          name: nix-community
-
-      - name: Use cuda-maintainers Cachix
-        uses: cachix/cachix-action@v15
-        with:
-          name: cuda-maintainers
-
-      - name: Install SSH Key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
+          tailscale-oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          tailscale-oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Run check suite
@@ -55,10 +30,6 @@ jobs:
   build-hosts:
     runs-on: ubuntu-latest
     needs: check
-    env:
-      NIX_CONFIG: |
-        extra-substituters = https://nix-cache.bovbel.com/nixos
-        extra-trusted-public-keys = nixos:pmAv4w1X/hCdM7rOjkK954hzdzEFiOgZshQmwWDpKNE=
     strategy:
       fail-fast: false
       matrix:
@@ -68,37 +39,16 @@ jobs:
           - media
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v16
-
-      - name: Join Tailscale
-        uses: tailscale/github-action@v3
+      - name: Setup Nix runner
+        uses: ./.github/actions/setup-nix
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:github-action
-
-      - name: Enable upstream binary caches
-        uses: DeterminateSystems/magic-nix-cache-action@v13
-
-      - name: Use nix-community Cachix
-        uses: cachix/cachix-action@v15
-        with:
-          name: nix-community
-
-      - name: Use cuda-maintainers Cachix
-        uses: cachix/cachix-action@v15
-        with:
-          name: cuda-maintainers
-
-      - name: Install SSH Key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
+          tailscale-oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          tailscale-oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Dry-run host toplevel build
+      - name: Build host
         run: |
           set -euo pipefail
           nix run nixpkgs#just -- dry-run "${{ matrix.host }}"
