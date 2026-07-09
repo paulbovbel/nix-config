@@ -152,6 +152,28 @@ in {
 
   mediaServer = {
     downloads.enable = true;
+    downloads.popularVideos.channels = [
+      {
+        channel = "@natgeokids";
+        count = 25;
+        maxLength = 60;
+      }
+      {
+        channel = "@ScienceMax";
+        count = 25;
+        maxLength = 60;
+      }
+      {
+        channel = "@MarkRober";
+        count = 25;
+        maxLength = 60;
+      }
+      {
+        channel = "@SciShowKids";
+        count = 25;
+        maxLength = 60;
+      }
+    ];
     library.enable = true;
   };
 
