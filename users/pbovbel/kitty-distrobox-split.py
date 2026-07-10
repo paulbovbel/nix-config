@@ -127,16 +127,19 @@ def main() -> None:
         os.environ.get("KITTY_LISTEN_ON", "<unset>"),
         os.environ.get("KITTY_WINDOW_ID", "<unset>"),
     )
+    focused_windows = json.loads(kitty_rc("ls", "--match", "state:focused").stdout)
+    container_id = focused_podman_exec_container_id(focused_windows)
+    cwd = "last_reported" if container_id else "current"
+
     launch_args = [
         "launch",
         "--source-window",
         "state:focused",
         f"--location={location}",
-        "--cwd=current",
+        f"--cwd={cwd}",
     ]
 
-    focused_windows = json.loads(kitty_rc("ls", "--match", "state:focused").stdout)
-    if container_id := focused_podman_exec_container_id(focused_windows):
+    if container_id:
         logger.info("launching distrobox split container_id=%s", container_id)
         launch_args += [
             "bash",
