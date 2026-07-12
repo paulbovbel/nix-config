@@ -78,6 +78,29 @@ in {
             ];
           };
         };
+
+        plex-mcp = {
+          dependsOn = ["plex"];
+          secretEnvironmentFiles = [config.age.secrets.plex-token-env.path];
+          quadlet.containerConfig = {
+            image = "ghcr.io/astral-sh/uv:python3.13-bookworm";
+            publishPorts = ["3001:3001"];
+            environments = {
+              PLEX_URL = "http://plex:32400";
+              UV_LINK_MODE = "copy";
+            };
+            exec = [
+              "uvx"
+              "plex-mcp-server"
+              "--transport"
+              "sse"
+              "--host"
+              "0.0.0.0"
+              "--port"
+              "3001"
+            ];
+          };
+        };
       };
     };
 
