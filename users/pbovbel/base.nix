@@ -88,6 +88,10 @@ in {
           type = "local";
           command = ["${unstablePkgs.mcp-nixos}/bin/mcp-nixos"];
         };
+        mcp.plex = {
+          type = "remote";
+          url = "http://media:3001/sse";
+        };
       };
     };
 
