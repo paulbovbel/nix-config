@@ -92,6 +92,16 @@
           };
         });
 
+        prismlauncher-unwrapped = prev.prismlauncher-unwrapped.overrideAttrs (oldAttrs: {
+          postPatch =
+            (oldAttrs.postPatch or "")
+            + ''
+              substituteInPlace launcher/minecraft/auth/MinecraftAccount.h \
+                --replace-fail 'bool ownsMinecraft() const { return data.type != AccountType::Offline && data.minecraftEntitlement.ownsMinecraft; }' \
+                               'bool ownsMinecraft() const { return true; }'
+            '';
+        });
+
         netbootxyz-efi = prev.netbootxyz-efi.overrideAttrs (_: {
           version = "3.0.2";
           src = final.fetchurl {
