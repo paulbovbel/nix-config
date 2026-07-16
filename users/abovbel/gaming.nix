@@ -6,5 +6,6 @@ _: {
 
   dconf.settings."org/gnome/shell".favorite-apps = [
     "steam.desktop"
+    "org.prismlauncher.PrismLauncher.desktop"
   ];
 }
