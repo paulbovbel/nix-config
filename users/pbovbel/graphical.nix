@@ -22,6 +22,13 @@ in {
       picture-uri-dark = "file://${config.home.homeDirectory}/.local/share/backgrounds/pbovbel-tropicanair.jpg";
       picture-options = "zoom";
     };
+    "org/gnome/shell".favorite-apps = [
+      "org.mozilla.firefox.desktop"
+      "org.gnome.Nautilus.desktop"
+      "com.rtosta.zapzap.desktop"
+      "kitty.desktop"
+      "code.desktop"
+    ];
     "org/gnome/settings-daemon/plugins/power" = {
       sleep-inactive-ac-timeout = 900;
       sleep-inactive-battery-timeout = 900;

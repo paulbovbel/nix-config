@@ -1,5 +1,4 @@
 {
-  lib,
   unstablePkgs,
   vscode-workspace-populator,
   ...
@@ -64,10 +63,6 @@ in {
       extensions = vscodeExtensions;
     };
   };
-
-  dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [
-    "code.desktop"
-  ];
 
   xdg.mimeApps = {
     enable = true;

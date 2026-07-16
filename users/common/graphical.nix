@@ -87,12 +87,6 @@
         "appindicatorsupport@rgcjonas.gmail.com"
         "HeadsetControl@lauinger-clan.de"
       ];
-      favorite-apps = [
-        "org.mozilla.firefox.desktop"
-        "org.gnome.Nautilus.desktop"
-        "com.rtosta.zapzap.desktop"
-        "kitty.desktop"
-      ];
     };
     "org/gnome/shell/extensions/HeadsetControl" = {
       headsetcontrol-executable = lib.getExe pkgs.headsetcontrol;
