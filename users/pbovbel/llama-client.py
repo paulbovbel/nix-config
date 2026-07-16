@@ -1,22 +1,58 @@
 import argparse
 import asyncio
+import json
 import os
+import socket
 import sys
+from urllib.parse import urlparse
 
 from aiohttp import ClientSession
 
-PROXY_STATUS_URL = os.environ.get(
-    "LLAMA_PROXY_STATUS_URL", "http://white-tower:11434/_status"
-)
-PROXY_HEALTH_URL = os.environ.get(
-    "LLAMA_PROXY_HEALTH_URL", "http://white-tower:11434/health"
-)
+DEFAULT_REMOTE_PROXY_BASE_URL = "http://white-tower:11434"
+DEFAULT_LOCAL_PROXY_BASE_URL = "http://localhost:11434"
+LOCAL_HOSTNAMES = {"localhost", "127.0.0.1", "::1"}
+
+
+def default_proxy_base_url() -> str:
+    host_name = socket.gethostname().split(".", 1)[0]
+    if host_name == "white-tower":
+        return DEFAULT_LOCAL_PROXY_BASE_URL
+    return DEFAULT_REMOTE_PROXY_BASE_URL
+
+
+PROXY_BASE_URL = os.environ.get(
+    "LLAMA_PROXY_BASE_URL", default_proxy_base_url()
+).rstrip("/")
+PROXY_STATUS_URL = os.environ.get("LLAMA_PROXY_STATUS_URL", f"{PROXY_BASE_URL}/_status")
+PROXY_HEALTH_URL = os.environ.get("LLAMA_PROXY_HEALTH_URL", f"{PROXY_BASE_URL}/health")
 WAIT_TIMEOUT_SECONDS = float(os.environ.get("LLAMA_WAIT_TIMEOUT", "300"))
 WOL_SSH_HOST = os.environ.get("LLAMA_WOL_SSH_HOST", "root@unifi")
 WOL_SCRIPT = os.environ.get("LLAMA_WOL_SCRIPT", "./wol.sh")
 WOL_BROADCAST = os.environ.get("LLAMA_WOL_BROADCAST", "192.168.1.255")
 WOL_PORT = os.environ.get("LLAMA_WOL_PORT", "9")
 WOL_MAC = os.environ.get("LLAMA_WOL_MAC", "18:c0:4d:a9:3c:ae")
+
+
+def is_local_proxy() -> bool:
+    host = urlparse(PROXY_BASE_URL).hostname
+    return host in LOCAL_HOSTNAMES
+
+
+def opencode_env() -> dict[str, str]:
+    env = os.environ.copy()
+    if is_local_proxy() and "OPENCODE_CONFIG_CONTENT" not in env:
+        env["OPENCODE_CONFIG_CONTENT"] = json.dumps(
+            {
+                "provider": {
+                    "llama.cpp": {
+                        "options": {
+                            "baseURL": f"{PROXY_BASE_URL}/v1",
+                        },
+                    },
+                },
+            }
+        )
+    return env
 
 
 def log_stage(payload: dict[str, str] | None, verbose: bool) -> None:
@@ -97,7 +133,7 @@ async def poll_until_ready(verbose: bool) -> None:
 
 
 async def run_opencode(args: list[str]) -> int:
-    proc = await asyncio.create_subprocess_exec("opencode", *args)
+    proc = await asyncio.create_subprocess_exec("opencode", *args, env=opencode_env())
     return await proc.wait()
 
 
