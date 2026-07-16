@@ -206,6 +206,7 @@
 
     hosts = {
       white-tower = import ./hosts/white-tower;
+      rainbow-wave = import ./hosts/rainbow-wave;
       pbovbel-dell = import ./hosts/pbovbel-dell;
       media = import ./hosts/media;
     };

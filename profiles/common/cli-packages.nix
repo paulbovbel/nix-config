@@ -33,6 +33,7 @@
     ["pv" pkgs.pv]
     ["ripgrep" pkgs.ripgrep]
     ["socat" pkgs.socat]
+    ["speedtest-cli" pkgs.speedtest-cli]
     ["strace" pkgs.strace]
     ["tcpdump" pkgs.tcpdump]
     ["tmux" pkgs.tmux]

@@ -115,8 +115,9 @@ in {
       systemd.services.attic-watch-store = {
         description = "Continuously upload new local Nix store paths to Attic";
         wantedBy = ["multi-user.target"];
-        wants = ["network-online.target"];
-        after = ["network-online.target" "nix-daemon.service"];
+        wants = ["agenix-install-secrets.service" "network-online.target"];
+        after = ["agenix-install-secrets.service" "network-online.target" "nix-daemon.service"];
+        unitConfig.ConditionPathExists = config.age.secrets.attic-watch-store-token.path;
         environment = {
           ATTIC_CACHE = "${cfg.serverName}:${cfg.cacheName}";
           ATTIC_ENDPOINT = endpoint;
