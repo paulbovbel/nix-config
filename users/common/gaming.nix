@@ -5,11 +5,6 @@
 }: let
   mkAutostart = import ./autostart.nix;
 in {
-  dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [
-    "steam.desktop"
-    "com.discordapp.Discord.desktop"
-  ];
-
   xdg.configFile = mkAutostart {
     file = "steam";
     name = "Steam";
