@@ -3,6 +3,7 @@ import json
 import logging
 import time
 from enum import StrEnum
+from ipaddress import ip_address
 from typing import Self
 
 from aiohttp import ClientSession, web
@@ -130,12 +131,15 @@ class LlamaProcessManager:
     def is_running(self) -> bool:
         return self.proc is not None and self.proc.returncode is None
 
-    async def ensure_running(self) -> None:
+    async def ensure_running(self, allow_logout: bool) -> None:
         async with self.proc_lock:
             if self.is_running():
                 return
             self.stage.set(Stage.STARTING)
-            await self.logout_manager.logout_graphical_sessions()
+            if allow_logout:
+                await self.logout_manager.logout_graphical_sessions()
+            else:
+                logging.info("skipping graphical session logout for local request")
             self.starting = True
             self.proc = await asyncio.create_subprocess_exec(
                 *SYSTEMD_INHIBIT_CMD, *["llama-server"], *LlamaFlags.build()
@@ -303,11 +307,22 @@ class LlamaProxy:
                 f"model download failed with exit code {code}: {err or out}"
             )
 
-    async def ensure_llama_running(self) -> None:
+    def request_allows_logout(self, request: web.Request) -> bool:
+        peer_name = request.transport.get_extra_info("peername")
+        if not peer_name:
+            return True
+        host = peer_name[0]
+        try:
+            return not ip_address(host).is_loopback
+        except ValueError:
+            logging.warning("failed to parse request peer address: %r", host)
+            return True
+
+    async def ensure_llama_running(self, request: web.Request) -> None:
         await self.model_ready.wait()
         self.last_activity = time.time()
         assert self.llama_manager is not None
-        await self.llama_manager.ensure_running()
+        await self.llama_manager.ensure_running(self.request_allows_logout(request))
 
     async def stage_handler(self, _request: web.Request) -> web.Response:
         assert self.llama_manager is not None
@@ -320,7 +335,7 @@ class LlamaProxy:
         )
 
     async def proxy_handler(self, request: web.Request) -> web.StreamResponse:
-        await self.ensure_llama_running()
+        await self.ensure_llama_running(request)
         self.last_activity = time.time()
 
         upstream = f"http://{LLAMA_HOST}:{LLAMA_PORT}{request.rel_url}"
