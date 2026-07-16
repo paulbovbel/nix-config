@@ -36,6 +36,7 @@ jobs:
         host:
           - white-tower
           - pbovbel-dell
+          - rainbow-wave
           - media
     steps:
       - name: Checkout repository
