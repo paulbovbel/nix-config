@@ -30,15 +30,6 @@
     ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="3329", ATTR{idProduct}=="4b19", TEST=="power/control", ATTR{power/control}="on"
   '';
 
-  services.pipewire.extraConfig.pipewire."10-fix-crackling" = {
-    "context.properties" = {
-      "default.clock.rate" = 48000;
-      "default.clock.quantum" = 1024;
-      "default.clock.min-quantum" = 32;
-      "default.clock.max-quantum" = 4096;
-    };
-  };
-
   systemd.services.disable-wake-sources = {
     description = "Disable ACPI wake sources except physical power buttons";
     # Apply at boot and before sleep to avoid flaky spontaneous wakeups.
