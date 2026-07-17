@@ -50,6 +50,7 @@ def curl(
     container,
     url,
     *,
+    description,
     user=None,
     method=None,
     headers=(),
@@ -79,9 +80,20 @@ def curl(
         args.extend(["--cookie", cookie])
     if cookie_jar is not None:
         args.extend(["--cookie-jar", cookie_jar])
-    return podman_exec(
-        container, ["curl", *args, url], input_text=input_text, user=user
-    )
+    try:
+        return podman_exec(
+            container, ["curl", *args, url], input_text=input_text, user=user
+        )
+    except subprocess.CalledProcessError as error:
+        details = []
+        if error.stderr and error.stderr.strip():
+            details.append(f"stderr: {error.stderr.strip()}")
+        if error.stdout and error.stdout.strip():
+            details.append(f"response body: {error.stdout.strip()}")
+        detail = "; ".join(details) or str(error)
+        raise RuntimeError(
+            f"{description} failed in container {container}: {detail}"
+        ) from error
 
 
 def fingerprint(value):
@@ -165,6 +177,7 @@ def update_mam_ip(target, mam_id):
     new_ip = curl(
         target.container,
         IP_CHECK_URL,
+        description=f"checking egress IP for {target.interface}",
         user=target.container_user,
         interface=target.interface,
         max_time=10,
@@ -182,9 +195,11 @@ def update_mam_ip(target, mam_id):
         print(f"MAM IP unchanged for {target.interface}: {new_ip}")
         return
 
+    print(f"Updating MAM IP for {target.interface}: {old_ip or '<none>'} -> {new_ip}")
     response = curl(
         target.container,
         MAM_API,
+        description=f"updating MAM dynamic seedbox IP for {target.interface}",
         user=target.container_user,
         interface=target.interface,
         cookie=container_cookie_jar if cookie_jar.exists() else f"mam_id={mam_id}",
@@ -240,6 +255,7 @@ def update_jackett(target, mam_id):
         print("Jackett MyAnonamouse mam_id unchanged")
         return
 
+    print("Updating Jackett MyAnonamouse mam_id")
     backup_path = config_path.with_suffix(config_path.suffix + ".bak")
     backup_path.write_text(old_config)
     replace_json_preserving_metadata(config_path, config)
@@ -254,6 +270,7 @@ def autobrr_curl(token, url, *, method="GET", input_text=None):
     return curl(
         "autobrr",
         url,
+        description=f"calling autobrr API {method} {url}",
         method=None if method == "GET" else method,
         headers=headers,
         input_text=input_text,
@@ -262,6 +279,7 @@ def autobrr_curl(token, url, *, method="GET", input_text=None):
 
 def update_autobrr(mam_id):
     token = mam_id_from_env("AUTOBRR_API_TOKEN")
+    print("Fetching autobrr indexers")
     indexers = wait_for_json(
         lambda: autobrr_curl(token, AUTOBRR_API_URL), "autobrr API"
     )
@@ -283,6 +301,7 @@ def update_autobrr(mam_id):
     if indexer_id is None:
         raise RuntimeError("autobrr MyAnonamouse indexer not found")
 
+    print(f"Updating autobrr MyAnonamouse indexer {indexer_id}")
     indexer = json.loads(autobrr_curl(token, f"{AUTOBRR_API_URL}/{indexer_id}"))
     settings = indexer.get("settings")
     if not isinstance(settings, dict):
