@@ -22,7 +22,7 @@
     swapSize = "32G";
   };
 
-  llamaCpp.enable = true;
+  llamaCpp.enable = false;
   nvidia.enable = true;
 
   services.udev.extraRules = ''
