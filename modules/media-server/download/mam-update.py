@@ -17,6 +17,7 @@ CONTAINER_CONFIG_DIR = "/config"
 AUTOBRR_API_URL = "http://127.0.0.1:7474/autobrr/api/indexer"
 API_RETRY_COUNT = 5
 API_RETRY_DELAY_SECONDS = 2
+CACHED_IP_TTL_SECONDS = 7 * 24 * 60 * 60
 
 
 @dataclass(frozen=True)
@@ -129,6 +130,14 @@ def remove_file(path):
         pass
 
 
+def file_older_than(path, max_age_seconds):
+    try:
+        age_seconds = time.time() - path.stat().st_mtime
+    except FileNotFoundError:
+        return False
+    return age_seconds > max_age_seconds
+
+
 def mam_id_from_env(name):
     value = os.environ.get(name, "")
     if not value:
@@ -173,6 +182,8 @@ def update_mam_ip(target, mam_id):
     if read_text(cookie_fingerprint) != new_fingerprint:
         remove_file(cached_ip)
         remove_file(cookie_jar)
+    if file_older_than(cached_ip, CACHED_IP_TTL_SECONDS):
+        remove_file(cached_ip)
 
     new_ip = curl(
         target.container,
