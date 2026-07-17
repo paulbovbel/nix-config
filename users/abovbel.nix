@@ -1,4 +1,6 @@
-{config, ...}: {
+{config, ...}: let
+  keys = import ../keys.nix;
+in {
   age.secrets.abovbel-password-hash = {
     file = ../secrets/common/abovbel-password-hash.age;
   };
@@ -8,5 +10,8 @@
     hashedPasswordFile = config.age.secrets.abovbel-password-hash.path;
     description = "arthur@bovbel.com";
     extraGroups = ["networkmanager"];
+    openssh.authorizedKeys.keys = [
+      keys.pbovbel
+    ];
   };
 }
