@@ -177,16 +177,16 @@ in {
     library.enable = true;
   };
 
-  # gameServer = {
-  #   abiotic.enable = true;
-  #   minecraft.enable = true;
-  #   upnp.enable = true;
+  gameServer = {
+    # abiotic.enable = true;
+    minecraft.enable = true;
+    upnp.enable = true;
 
-  #   minecraft = {
-  #     ops = ["agent_x3r"];
-  #     users = ["agent_x3r" "arteed2" "babablinchiki" "Waddle_Dee_dee"];
-  #   };
-  # };
+    minecraft = {
+      ops = ["agent_x3r"];
+      users = ["agent_x3r" "arteed2" "babablinchiki" "Waddle_Dee_dee"];
+    };
+  };
 
   rootZfs = {
     enable = true;
