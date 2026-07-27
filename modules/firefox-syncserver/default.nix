@@ -5,7 +5,7 @@
 }: let
   cfg = config.firefoxSyncServer;
   datasets = config.storage.datasets;
-  domain = "${cfg.subdomain}.${config.caddy.publicDomain}";
+  domain = "${cfg.subdomain}.${config.networking.domain}";
   databaseUrl = "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@firefox-syncserver-postgres:5432/$POSTGRES_DB";
 in {
   imports = [./options.nix];
@@ -47,7 +47,7 @@ in {
             RestartSec = 10;
           };
           quadlet.containerConfig = {
-            image = "postgres:18";
+            image = "docker.io/library/postgres:18";
             volumes = [
               "${datasets.app.children.firefox-syncserver.path}/postgres:/var/lib/postgresql"
             ];
@@ -62,7 +62,7 @@ in {
             RestartSec = 10;
           };
           quadlet.containerConfig = {
-            image = "ghcr.io/mozilla-services/syncstorage-rs/syncserver-postgres:latest";
+            image = "ghcr.io/mozilla-services/syncstorage-rs/syncserver-postgres:de108fda99";
             environments = {
               RUST_LOG = "info";
               SYNC_HOST = "0.0.0.0";
@@ -72,6 +72,7 @@ in {
               SYNC_TOKENSERVER__FXA_EMAIL_DOMAIN = "api.accounts.firefox.com";
               SYNC_TOKENSERVER__FXA_OAUTH_SERVER_URL = "https://oauth.accounts.firefox.com";
               SYNC_TOKENSERVER__INIT_NODE_URL = "https://${domain}";
+              SYNC_TOKENSERVER__NODE_TYPE = "postgres";
               SYNC_TOKENSERVER__RUN_MIGRATIONS = "true";
             };
             podmanArgs = ["--platform=linux/amd64"];
@@ -81,10 +82,19 @@ in {
       };
     };
 
-    caddy.domains.${domain} = {
-      auth = null;
-      host = "firefox-syncserver";
-      inherit (cfg) port;
+    caddy.sites.firefox-syncserver = {
+      domains = [
+        {
+          host = domain;
+        }
+      ];
+      endpoints.syncserver = {
+        type = "proxy";
+        auth = null;
+        path = "/";
+        host = "firefox-syncserver";
+        inherit (cfg) port;
+      };
     };
   };
 }

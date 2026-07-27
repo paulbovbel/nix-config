@@ -3,7 +3,7 @@
   pkgs,
   ...
 }: let
-  firefoxSyncTokenserverUri = "https://firefox-sync.bovbel.com/token/1.0/sync/1.5";
+  firefoxSyncTokenserverUri = "https://firefox-sync.bovbel.com/1.0/sync/1.5";
 in {
   imports = [
     ../common
