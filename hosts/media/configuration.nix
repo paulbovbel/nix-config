@@ -159,11 +159,6 @@ in {
         maxLength = 60;
       }
       {
-        channel = "@ScienceMax";
-        count = 25;
-        maxLength = 60;
-      }
-      {
         channel = "@MarkRober";
         count = 25;
         maxLength = 60;
