@@ -24,6 +24,7 @@ in {
       qbittorrent = {};
       unpackerr = {};
       jackett = {};
+      prowlarr = {};
     };
 
     systemd = {
@@ -85,6 +86,18 @@ in {
               TZ = config.time.timeZone;
             };
             volumes = ["${datasets.app.children.jackett.path}:/config"];
+          };
+        };
+        prowlarr = {
+          quadlet.containerConfig = {
+            image = "lscr.io/linuxserver/prowlarr";
+            environments = {
+              PUID = toString user.uid;
+              PGID = toString user.gid;
+              TZ = config.time.timeZone;
+              PROWLARR__SERVER__URLBASE = "/prowlarr";
+            };
+            volumes = ["${datasets.app.children.prowlarr.path}:/config"];
           };
         };
 
@@ -171,6 +184,15 @@ in {
         path = "/jackett";
         host = "jackett";
         port = 9117;
+        role = "admin";
+      };
+
+      prowlarr = {
+        type = "proxy";
+        auth = "oauth";
+        path = "/prowlarr";
+        host = "prowlarr";
+        port = 9696;
         role = "admin";
       };
 
