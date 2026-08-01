@@ -79,6 +79,7 @@ in {
             volumes = [
               "${datasets.app.children.grimmory.path}:/app/data"
               "${datasets.media.children.books.path}:/books"
+              "${datasets.media.children.comics.path}:/comics"
               "${datasets.downloads.path}/bookdrop:/bookdrop"
             ];
           };
