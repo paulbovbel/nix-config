@@ -1,6 +1,6 @@
 _: {
   imports = [
-    ../common/base.nix
+    ../home.nix
   ];
 
   home.username = "abovbel";

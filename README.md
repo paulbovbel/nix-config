@@ -9,15 +9,15 @@ Inventory schema in `hosts/default.nix`:
 - host key: `<host>`
 - `tailscaleDomain`: tailnet MagicDNS domain used for generated hostnames
 - `useUnstablePackages`: use `nixpkgs-unstable` as the host-wide `pkgs` package set instead of release nixpkgs (optional, default `false`)
-- `users`: list of `{ name, systemModule, profiles }`
+- `users`: list of `{ name, profiles }`
 
-User profiles are mapped in `users/default.nix` to a Home Manager module and an implied system profile. `flake.nix` imports each selected user profile's Home Manager module and also imports the unique set of implied system profiles for the host.
+User profiles are mapped in `profiles/default.nix` to Home Manager and NixOS modules from the same profile slice. `flake.nix` imports both sides of each selected profile and deduplicates shared system modules.
 
 - `pbovbel`: `headless`, `graphical`, `work`, `gaming`
 - `rbovbel`: `graphical`
 - `abovbel`: `gaming`
-- Per-user Home Manager modules live under `users/<user>/<profile>.nix`.
-- Shared user Home Manager modules live under `users/common/{base,graphical,avatar,gaming,vscode}.nix`
+- Shared profile behavior lives in `profiles/<profile>/{system,home}.nix`.
+- Per-user Home Manager behavior lives beside it in `profiles/<profile>/home/<user>.nix`.
 
 Run the full local check suite before commit/PR:
 
@@ -30,8 +30,8 @@ just dry-run <host>
 
 - `hosts/` host inventory in `hosts/default.nix` plus machine-specific NixOS configs
 - `modules/` host-level NixOS modules (each module is a directory with `default.nix`)
-- `profiles/` user-implied system profiles such as graphical, gaming, work, and headless
-- `users/` user-level NixOS and Home Manager configs (`users/<user>.nix` plus per-profile modules under `users/<user>/`)
+- `profiles/` layered NixOS, shared Home Manager, and per-user profile behavior
+- `modules/accounts/` globally imported user account NixOS modules
 - `secrets/` agenix-encrypted secrets
 - `secrets.nix` agenix public key declarations
 - `assets/` static assets (wallpapers, etc.)
@@ -98,15 +98,21 @@ caddy.sites.media.endpoints.example = {
 
 ### Profiles
 
-System profiles in `profiles/` are selected indirectly from `hosts/default.nix` through user profile declarations. They are import-driven; `graphical` and `headless` import `common`, while `work` and `gaming` import `graphical`.
+Profiles are selected indirectly from the host's user declarations. Each slice keeps its NixOS module, shared Home Manager module, and per-user Home Manager modules together. Composition remains import-driven: `graphical` and `headless` import `common`, while `work` and `gaming` import `graphical`.
 
 ```text
 profiles/
-├── common
-├── graphical
-│   ├── gaming
-│   └── work
-└── headless
+├── common/
+│   ├── system.nix
+│   ├── home.nix
+│   └── home/
+├── graphical/
+│   ├── system.nix
+│   ├── home.nix
+│   └── home/
+├── gaming/
+├── work/
+└── headless/
 ```
 - `common` sets shared Nix settings, Cachix integration, agenix identity paths, base packages, SSH, sudo, locale, and persistent state defaults
 - `graphical` adds GNOME, GDM, Flatpak, PipeWire, NetworkManager, Tailscale laptop enrollment, theming, and graphical persistence

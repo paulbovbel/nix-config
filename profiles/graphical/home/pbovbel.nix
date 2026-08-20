@@ -3,18 +3,18 @@
   pkgs,
   ...
 }: let
-  mkAutostart = import ../common/autostart.nix;
+  mkAutostart = import ../autostart.nix;
 in {
   imports = [
-    ./base.nix
-    ../common/graphical.nix
-    ../common/vscode.nix
-    ../common/avatar.nix
+    ../../common/home/pbovbel.nix
+    ../home.nix
+    ../vscode.nix
+    ../avatar.nix
   ];
 
   home.file = {
     ".local/share/backgrounds/pbovbel-tropicanair.jpg".source =
-      ../../assets/wallpapers/pbovbel-tropicanair.jpg;
+      ../../../assets/wallpapers/pbovbel-tropicanair.jpg;
   };
   dconf.settings = {
     "org/gnome/desktop/background" = {
@@ -37,7 +37,7 @@ in {
 
   bovbel.avatar = {
     enable = true;
-    source = ../../assets/avatars/pbovbel.png;
+    source = ../../../assets/avatars/pbovbel.png;
     fileName = "pbovbel-avatar.png";
   };
 

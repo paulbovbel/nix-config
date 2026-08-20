@@ -1,13 +1,13 @@
 _: {
   imports = [
-    ./base.nix
-    ../common/graphical.nix
-    ../common/avatar.nix
+    ../../common/home/abovbel.nix
+    ../home.nix
+    ../avatar.nix
   ];
 
   bovbel.avatar = {
     enable = true;
-    source = ../../assets/avatars/abovbel.png;
+    source = ../../../assets/avatars/abovbel.png;
     fileName = "abovbel-avatar.png";
   };
 

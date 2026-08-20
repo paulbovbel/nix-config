@@ -4,7 +4,7 @@
   ...
 }: {
   imports = [
-    ./base.nix
+    ../common/home.nix
   ];
 
   dconf.enable = true;

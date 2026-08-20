@@ -4,7 +4,7 @@
   ...
 }: {
   imports = [
-    ../graphical
+    ../graphical/system.nix
   ];
 
   virtualisation.podman = {

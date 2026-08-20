@@ -1,6 +1,6 @@
 {pkgs, ...}: {
   imports = [
-    ../graphical
+    ../graphical/system.nix
   ];
 
   disko.devices.zpool.zroot.datasets."root/steam-library" = {

@@ -2,7 +2,7 @@
   inherit (config.podmanServer) user;
 in {
   imports = [
-    ../common
+    ../common/system.nix
   ];
 
   age.secrets.tailscale-oauth-authkey = {

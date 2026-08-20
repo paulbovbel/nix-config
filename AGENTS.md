@@ -15,7 +15,7 @@ For repository layout, module composition, and structure recommendations, see [R
 
 - Host-specific enablement and machine settings belong in `hosts/<host>/configuration.nix`.
 - Reusable NixOS behavior belongs in `modules/<name>/`, with options exposed from `options.nix` when appropriate.
-- User Home Manager changes belong under `users/`; update `users/default.nix` when adding or changing selectable user profiles.
+- User profile changes belong under `profiles/<profile>/`; update `profiles/default.nix` when adding or changing selectable profiles.
 - System profile behavior belongs under `profiles/`; profiles are selected indirectly from `hosts/default.nix` through user profile declarations.
 - Globally imported modules should generally be enabled from host configs through their option namespace, not imported ad hoc.
 
