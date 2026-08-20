@@ -1,34 +1,39 @@
 {
   abovbel = {
     gaming = {
-      module = ./abovbel/gaming.nix;
-      systemProfile = "gaming";
+      graphical = true;
+      homeModule = ./abovbel/gaming.nix;
+      systemModules = [../profiles/gaming];
     };
   };
 
   pbovbel = {
     headless = {
-      module = ./pbovbel/headless.nix;
-      systemProfile = "headless";
+      homeModule = ./pbovbel/headless.nix;
+      systemModules = [../profiles/headless];
     };
     graphical = {
-      module = ./pbovbel/graphical.nix;
-      systemProfile = "graphical";
+      graphical = true;
+      homeModule = ./pbovbel/graphical.nix;
+      systemModules = [../profiles/graphical];
     };
     work = {
-      module = ./pbovbel/work.nix;
-      systemProfile = "work";
+      graphical = true;
+      homeModule = ./pbovbel/work.nix;
+      systemModules = [../profiles/work];
     };
     gaming = {
-      module = ./pbovbel/gaming.nix;
-      systemProfile = "gaming";
+      graphical = true;
+      homeModule = ./pbovbel/gaming.nix;
+      systemModules = [../profiles/gaming];
     };
   };
 
   rbovbel = {
     graphical = {
-      module = ./rbovbel/graphical.nix;
-      systemProfile = "graphical";
+      graphical = true;
+      homeModule = ./rbovbel/graphical.nix;
+      systemModules = [../profiles/graphical];
     };
   };
 }
