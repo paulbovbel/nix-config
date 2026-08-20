@@ -22,7 +22,7 @@ User profiles are mapped in `profiles/default.nix` to Home Manager and NixOS mod
 Run the full local check suite before commit/PR:
 
 ```bash
-just check
+nix develop --command just check
 just dry-run <host>
 ```
 
