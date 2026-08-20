@@ -35,7 +35,13 @@ def kitty_rc(*args: str) -> subprocess.CompletedProcess[str]:
     command += args
 
     logger.info("running: %s ... %s", " ".join(command[:4]), " ".join(args))
-    result = subprocess.run(command, text=True, capture_output=True, pass_fds=pass_fds)
+    result = subprocess.run(
+        command,
+        text=True,
+        capture_output=True,
+        pass_fds=pass_fds,
+        check=False,
+    )
     if result.returncode != 0:
         logger.error(
             "command failed status=%s stderr=%r",

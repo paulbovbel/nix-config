@@ -6,7 +6,7 @@ from enum import StrEnum
 from ipaddress import ip_address
 from typing import Self
 
-from aiohttp import ClientSession, web
+from aiohttp import ClientError, ClientSession, web
 
 LLAMA_HOST = "127.0.0.1"
 LLAMA_PORT = 18080
@@ -14,6 +14,7 @@ INACTIVITY_SECONDS = 300
 LOGOUT_WARNING_SECONDS = 60
 MODEL_REPO = "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive"
 MODEL_FILENAME = "Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"
+LOGGER = logging.getLogger(__name__)
 
 SYSTEMD_INHIBIT_CMD = [
     "systemd-inhibit",
@@ -106,9 +107,9 @@ class StageTracker:
         self.stage = stage
         self.details = details
         if details:
-            logging.info("stage=%s details=%s", stage, details)
+            LOGGER.info("stage=%s details=%s", stage, details)
         else:
-            logging.info("stage=%s", stage)
+            LOGGER.info("stage=%s", stage)
 
     def snapshot(self) -> dict[str, str]:
         return {"stage": self.stage, "details": self.details}
@@ -139,7 +140,7 @@ class LlamaProcessManager:
             if allow_logout:
                 await self.logout_manager.logout_graphical_sessions()
             else:
-                logging.info("skipping graphical session logout for local request")
+                LOGGER.info("skipping graphical session logout for local request")
             self.starting = True
             self.proc = await asyncio.create_subprocess_exec(
                 *SYSTEMD_INHIBIT_CMD, *["llama-server"], *LlamaFlags.build()
@@ -156,8 +157,8 @@ class LlamaProcessManager:
                         self.stage.set(Stage.READY)
                         self.starting = False
                         return
-            except Exception:
-                pass
+            except ClientError:
+                LOGGER.debug("llama-server health check failed during startup")
             await asyncio.sleep(0.5)
         raise RuntimeError("llama-server startup timed out")
 
@@ -206,7 +207,7 @@ class SessionLogoutManager:
         ]
         code, out, err = await _run_command(*notify_cmd)
         if code != 0:
-            logging.warning(
+            LOGGER.warning(
                 "failed to send logout warning to %s (uid=%s): %s %s",
                 user_name,
                 uid,
@@ -217,35 +218,28 @@ class SessionLogoutManager:
         return True
 
     async def logout_graphical_sessions(self) -> None:
-        try:
-            graphical_sessions = await self._list_graphical_sessions()
-            warned_users: set[tuple[str, int]] = set()
-            users = {
-                (user_name, uid) for _session_id, uid, user_name in graphical_sessions
-            }
+        graphical_sessions = await self._list_graphical_sessions()
+        warned_users: set[tuple[str, int]] = set()
+        users = {(user_name, uid) for _session_id, uid, user_name in graphical_sessions}
 
-            for user_name, uid in users:
-                if await self._send_logout_warning(user_name, uid):
-                    warned_users.add((user_name, uid))
+        for user_name, uid in users:
+            if await self._send_logout_warning(user_name, uid):
+                warned_users.add((user_name, uid))
 
-            if graphical_sessions:
-                if not warned_users:
-                    logging.warning(
-                        "no logout warnings were delivered before terminating sessions"
-                    )
-                await asyncio.sleep(self.warning_seconds)
-
-            for session_id, _uid, _user_name in graphical_sessions:
-                logging.info("terminating session %s", session_id)
-                code, _out, err = await _run_command(
-                    "loginctl", "terminate-session", session_id
+        if graphical_sessions:
+            if not warned_users:
+                LOGGER.warning(
+                    "no logout warnings were delivered before terminating sessions"
                 )
-                if code != 0:
-                    logging.warning(
-                        "failed to terminate session %s: %s", session_id, err
-                    )
-        except Exception as exc:
-            logging.warning("failed to terminate graphical sessions: %s", exc)
+            await asyncio.sleep(self.warning_seconds)
+
+        for session_id, _uid, _user_name in graphical_sessions:
+            LOGGER.info("terminating session %s", session_id)
+            code, _out, err = await _run_command(
+                "loginctl", "terminate-session", session_id
+            )
+            if code != 0:
+                LOGGER.warning("failed to terminate session %s: %s", session_id, err)
 
     async def _list_graphical_sessions(self) -> list[tuple[str, int, str]]:
         code, out, err = await _run_command("loginctl", "list-sessions", "--json=short")
@@ -276,7 +270,7 @@ class SessionLogoutManager:
             try:
                 uid = int(uid_raw)
             except ValueError:
-                logging.info(
+                LOGGER.info(
                     "failed to parse uid for session %s: %r", session_id, uid_raw
                 )
                 continue
@@ -315,7 +309,7 @@ class LlamaProxy:
         try:
             return not ip_address(host).is_loopback
         except ValueError:
-            logging.warning("failed to parse request peer address: %r", host)
+            LOGGER.warning("failed to parse request peer address: %r", host)
             return True
 
     async def ensure_llama_running(self, request: web.Request) -> None:
@@ -379,7 +373,7 @@ class LlamaProxy:
             async with self.llama_manager.proc_lock:
                 if not self.llama_manager.is_running():
                     continue
-                logging.info("stopping llama-server after inactivity")
+                LOGGER.info("stopping llama-server after inactivity")
                 await self.llama_manager.stop()
 
     async def on_startup(self, _app: web.Application) -> None:
@@ -392,7 +386,7 @@ class LlamaProxy:
         self.model_ready.set()
         self.reaper_task = asyncio.create_task(self.idle_reaper())
         self.set_stage(Stage.READY)
-        logging.info("llama proxy started on 0.0.0.0:11434")
+        LOGGER.info("llama proxy started on 0.0.0.0:11434")
 
     async def on_cleanup(self, _app: web.Application) -> None:
         assert self.reaper_task is not None

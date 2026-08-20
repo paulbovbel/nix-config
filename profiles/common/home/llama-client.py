@@ -6,7 +6,7 @@ import socket
 import sys
 from urllib.parse import urlparse
 
-from aiohttp import ClientSession
+from aiohttp import ClientError, ClientSession
 
 DEFAULT_REMOTE_PROXY_BASE_URL = "http://white-tower:11434"
 DEFAULT_LOCAL_PROXY_BASE_URL = "http://localhost:11434"
@@ -80,7 +80,7 @@ async def trigger_start(session: ClientSession) -> bool:
         async with session.get(PROXY_HEALTH_URL) as resp:
             await resp.read()
             return resp.status == 200
-    except Exception:
+    except ClientError:
         return False
 
 
