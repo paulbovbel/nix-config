@@ -24,17 +24,17 @@ switch host=`hostname`:
   fi
 
 nix-lint:
-  nix run nixpkgs#statix -- check .
-  nix run nixpkgs#deadnix -- .
-  nix run nixpkgs#alejandra -- --check .
+  statix check .
+  deadnix .
+  alejandra --check .
 
 nix-check:
   nix flake check -L
 
 python-lint:
-  nix run nixpkgs#ruff -- check .
-  nix run nixpkgs#ruff -- format --check .
+  ruff check .
+  ruff format --check .
 
 shell-lint:
-  nix run nixpkgs#shellcheck -- $(nix run nixpkgs#fd -- -e sh .)
-  nix run nixpkgs#shfmt -- -i 2 -d $(nix run nixpkgs#fd -- -e sh .)
+  shellcheck $(fd -e sh .)
+  shfmt -i 2 -d $(fd -e sh .)

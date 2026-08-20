@@ -27,7 +27,7 @@ jobs:
       - name: Run check suite
         run: |
           set -euo pipefail
-          nix run nixpkgs#just -- check
+          nix develop --command just check
 
       - name: Read host inventory
         id: inventory

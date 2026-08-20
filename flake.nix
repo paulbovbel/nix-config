@@ -262,6 +262,7 @@
       media = import ./hosts/media;
     };
     nixosConfigurations = lib.mapAttrs mkHost hosts;
+    devPkgs = import nixpkgs {inherit system;};
     mkHostPackages = configurations:
       lib.mapAttrs' (name: host:
         lib.nameValuePair "nixos-${name}" host.config.system.build.toplevel)
@@ -280,5 +281,17 @@
     lib.hostNames = lib.attrNames hosts;
     packages.${system} = mkHostPackages nixosConfigurations;
     checks.${system} = mkHostChecks nixosConfigurations;
+    devShells.${system}.default = devPkgs.mkShell {
+      packages = with devPkgs; [
+        alejandra
+        deadnix
+        fd
+        just
+        ruff
+        shellcheck
+        shfmt
+        statix
+      ];
+    };
   };
 }
