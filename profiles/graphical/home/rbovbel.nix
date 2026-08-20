@@ -1,8 +1,8 @@
 {...}: {
   imports = [
-    ./base.nix
-    ../common/graphical.nix
-    ../common/avatar.nix
+    ../../common/home/rbovbel.nix
+    ../home.nix
+    ../avatar.nix
   ];
 
   dconf.settings."org/gnome/shell".favorite-apps = [
@@ -14,7 +14,7 @@
 
   bovbel.avatar = {
     enable = true;
-    source = ../../assets/avatars/rbovbel.png;
+    source = ../../../assets/avatars/rbovbel.png;
     fileName = "rbovbel-avatar.png";
   };
 }

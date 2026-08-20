@@ -1,7 +1,7 @@
 _: {
   imports = [
-    ./graphical.nix
-    ../common/gaming.nix
+    ../../graphical/home/abovbel.nix
+    ../home.nix
   ];
 
   dconf.settings."org/gnome/shell".favorite-apps = [

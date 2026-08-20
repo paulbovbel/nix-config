@@ -4,7 +4,7 @@
   unstablePkgs,
   ...
 }: let
-  keys = import ../../keys.nix;
+  keys = import ../../../keys.nix;
   sshConfig = pkgs.writeText "pbovbel-ssh-config" ''
     IgnoreUnknown WarnWeakCrypto
 
@@ -29,7 +29,7 @@
   '';
 in {
   imports = [
-    ../common/base.nix
+    ../home.nix
   ];
 
   home = {

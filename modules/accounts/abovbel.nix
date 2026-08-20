@@ -1,17 +1,22 @@
-{config, ...}: let
-  keys = import ../keys.nix;
+{
+  config,
+  lib,
+  ...
+}: let
+  cfg = config.accounts.abovbel;
+  keys = import ../../keys.nix;
 in {
-  age.secrets.abovbel-password-hash = {
-    file = ../secrets/common/abovbel-password-hash.age;
-  };
+  options.accounts.abovbel.enable = lib.mkEnableOption "the abovbel user account";
 
-  users.users.abovbel = {
-    isNormalUser = true;
-    hashedPasswordFile = config.age.secrets.abovbel-password-hash.path;
-    description = "arthur@bovbel.com";
-    extraGroups = ["networkmanager"];
-    openssh.authorizedKeys.keys = [
-      keys.pbovbel
-    ];
+  config = lib.mkIf cfg.enable {
+    age.secrets.abovbel-password-hash.file = ../../secrets/common/abovbel-password-hash.age;
+
+    users.users.abovbel = {
+      isNormalUser = true;
+      hashedPasswordFile = config.age.secrets.abovbel-password-hash.path;
+      description = "arthur@bovbel.com";
+      extraGroups = ["networkmanager"];
+      openssh.authorizedKeys.keys = [keys.pbovbel];
+    };
   };
 }

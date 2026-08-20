@@ -3,7 +3,7 @@
   lib,
   ...
 }: let
-  mkAutostart = import ./autostart.nix;
+  mkAutostart = import ../graphical/autostart.nix;
 in {
   xdg.configFile = mkAutostart {
     file = "steam";

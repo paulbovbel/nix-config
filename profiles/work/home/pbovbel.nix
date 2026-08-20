@@ -3,7 +3,7 @@
   pkgs,
   ...
 }: let
-  cliPackages = import ../../profiles/common/cli-packages.nix {inherit pkgs;};
+  cliPackages = import ../../common/cli-packages.nix {inherit pkgs;};
   pythonWithPsutil = pkgs.python3.withPackages (pythonPackages: [
     pythonPackages.psutil
   ]);
@@ -20,7 +20,7 @@
     '';
   };
   kittyDistroboxSplitBinding = location: "launch --type=background --allow-remote-control ${lib.getExe kittyDistroboxSplit} ${location}";
-  mkAutostart = import ../common/autostart.nix;
+  mkAutostart = import ../../graphical/autostart.nix;
   mkHostWrapper = command: ''
     sudo install -Dm755 /dev/stdin /usr/local/bin/${command} <<'EOF'
     #!/usr/bin/env sh
@@ -29,7 +29,7 @@
   '';
 in {
   imports = [
-    ./graphical.nix
+    ../../graphical/home/pbovbel.nix
   ];
 
   dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [

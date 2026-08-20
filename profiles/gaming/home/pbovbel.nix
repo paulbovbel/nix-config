@@ -1,9 +1,9 @@
 {lib, ...}: let
-  mkAutostart = import ../common/autostart.nix;
+  mkAutostart = import ../../graphical/autostart.nix;
 in {
   imports = [
-    ./graphical.nix
-    ../common/gaming.nix
+    ../../graphical/home/pbovbel.nix
+    ../home.nix
   ];
 
   dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [

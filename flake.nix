@@ -134,7 +134,22 @@
         config.allowUnfree = true;
       };
 
-    userProfiles = import ./users;
+    profiles = import ./profiles;
+    accountNames = ["abovbel" "pbovbel" "rbovbel"];
+    profileEntries = lib.concatMap (userName:
+      lib.mapAttrsToList (profileName: value: {
+        name = "${userName}.${profileName}";
+        inherit value;
+      })
+      profiles.${userName})
+    (lib.attrNames profiles);
+    invalidProfiles = map (profile: profile.name) (builtins.filter (profile:
+      !(profile.value ? homeModules)
+      || !builtins.isList profile.value.homeModules
+      || !(profile.value ? systemModules)
+      || !builtins.isList profile.value.systemModules
+      || (profile.value ? graphical && !builtins.isBool profile.value.graphical))
+    profileEntries);
 
     externalModules = [
       agenix.nixosModules.default
@@ -149,11 +164,11 @@
     ];
 
     userHomeModules = user: let
-      profiles = userProfiles.${user.name};
-      selectedProfiles = map (profileName: profiles.${profileName}) user.profiles;
+      userProfiles = profiles.${user.name};
+      selectedProfiles = map (profileName: userProfiles.${profileName}) user.profiles;
       hasGraphicalProfile = lib.any (profile: profile.graphical or false) selectedProfiles;
     in
-      map (profile: profile.homeModule) selectedProfiles
+      lib.concatMap (profile: profile.homeModules) selectedProfiles
       ++ [
         catppuccin.homeModules.catppuccin
       ]
@@ -162,21 +177,24 @@
       ];
 
     userSystemModules = user: let
-      profiles = userProfiles.${user.name};
+      userProfiles = profiles.${user.name};
     in
-      lib.concatMap (profileName: profiles.${profileName}.systemModules or []) user.profiles;
+      lib.concatMap (profileName: userProfiles.${profileName}.systemModules) user.profiles;
 
     validateHost = name: cfg: let
       configuredUserNames = map (user: user.name) cfg.users;
-      unknownUsers = lib.subtractLists (lib.attrNames userProfiles) configuredUserNames;
-      knownUsers = builtins.filter (user: builtins.hasAttr user.name userProfiles) cfg.users;
+      unknownAccounts = lib.subtractLists accountNames configuredUserNames;
+      unknownUsers = lib.subtractLists (lib.attrNames profiles) configuredUserNames;
+      knownUsers = builtins.filter (user: builtins.hasAttr user.name profiles) cfg.users;
       unknownProfiles = lib.concatMap (user:
         map (profileName: "${user.name}.${profileName}")
-        (lib.subtractLists (lib.attrNames userProfiles.${user.name}) user.profiles))
+        (lib.subtractLists (lib.attrNames profiles.${user.name}) user.profiles))
       knownUsers;
     in
+      assert lib.assertMsg (unknownAccounts == []) "Host ${name} selects unknown accounts: ${lib.concatStringsSep ", " unknownAccounts}";
       assert lib.assertMsg (unknownUsers == []) "Host ${name} selects unknown users: ${lib.concatStringsSep ", " unknownUsers}";
-      assert lib.assertMsg (unknownProfiles == []) "Host ${name} selects unknown profiles: ${lib.concatStringsSep ", " unknownProfiles}"; cfg;
+      assert lib.assertMsg (unknownProfiles == []) "Host ${name} selects unknown profiles: ${lib.concatStringsSep ", " unknownProfiles}";
+      assert lib.assertMsg (invalidProfiles == []) "Profiles must define list-valued homeModules and systemModules, with optional boolean graphical: ${lib.concatStringsSep ", " invalidProfiles}"; cfg;
 
     mkHostSettings = name: configuredUserNames: unstablePkgs: {config, ...}: {
       assertions = [
@@ -187,6 +205,8 @@
       ];
 
       rootZfs.homeUsers = configuredUserNames;
+
+      accounts = lib.genAttrs configuredUserNames (_: {enable = true;});
 
       nixpkgs = {
         inherit overlays;
@@ -205,8 +225,7 @@
     };
 
     mkUserModules = users:
-      map (user: user.systemModule) users
-      ++ map (user: {
+      map (user: {
         home-manager.users.${user.name}.imports = userHomeModules user;
       })
       users;

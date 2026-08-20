@@ -1,5 +1,5 @@
 {...}: {
   imports = [
-    ./base.nix
+    ../../common/home/pbovbel.nix
   ];
 }
