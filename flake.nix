@@ -220,8 +220,23 @@
       pbovbel-dell = import ./hosts/pbovbel-dell;
       media = import ./hosts/media;
     };
-  in {
     nixosConfigurations = lib.mapAttrs mkHost hosts;
+    hostPackages = lib.mapAttrs' (name: host:
+      lib.nameValuePair "nixos-${name}" host.config.system.build.toplevel)
+    nixosConfigurations;
+    hostChecks = lib.mapAttrs' (name: host:
+      lib.nameValuePair "nixos-${name}" (let
+        failedAssertions = builtins.filter (assertion: !assertion.assertion) host.config.assertions;
+        assertionMessage = lib.concatMapStringsSep "\n" (assertion: assertion.message) failedAssertions;
+      in
+        assert lib.assertMsg (failedAssertions == []) assertionMessage;
+        assert builtins.deepSeq host.config.system.build.toplevel.drvPath true;
+          host.config.system.build.toplevel))
+    nixosConfigurations;
+  in {
+    inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
+    packages.${system} = hostPackages;
+    checks.${system} = hostChecks;
   };
 }
