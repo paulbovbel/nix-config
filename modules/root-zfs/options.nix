@@ -29,6 +29,12 @@
       description = "Swap partition size for disko layout.";
     };
 
+    homeUsers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [];
+      description = "Users that receive dedicated home datasets.";
+    };
+
     persistPath = lib.mkOption {
       type = lib.types.str;
       default = "/persist";
