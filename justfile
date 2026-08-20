@@ -26,7 +26,7 @@ switch host=`hostname`:
 nix-lint:
   nix run nixpkgs#statix -- check .
   nix run nixpkgs#deadnix -- .
-  nix run nixpkgs#alejandra -- .
+  nix run nixpkgs#alejandra -- --check .
 
 nix-check:
   nix flake check -L

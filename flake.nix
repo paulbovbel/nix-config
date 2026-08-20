@@ -222,5 +222,6 @@
     };
   in {
     nixosConfigurations = lib.mapAttrs mkHost hosts;
+    lib.hostNames = lib.attrNames hosts;
   };
 }
