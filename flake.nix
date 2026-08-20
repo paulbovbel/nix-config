@@ -179,7 +179,6 @@
         nixpkgsForHost.lib.nixosSystem {
           inherit system;
           specialArgs = {
-            hostUsers = cfg.users;
             inherit agenix locus-vpn-client unstablePkgs pcp;
           };
           modules =
@@ -202,6 +201,8 @@
                     message = "Host ${name} configures networking.hostName as ${config.networking.hostName}";
                   }
                 ];
+
+                rootZfs.homeUsers = configuredUserNames;
 
                 nixpkgs = {
                   inherit overlays;

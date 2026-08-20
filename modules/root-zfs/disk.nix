@@ -1,7 +1,6 @@
 {
   lib,
   config,
-  hostUsers ? [],
   ...
 }: let
   cfg = config.rootZfs;
@@ -9,14 +8,14 @@
     type = "zfs";
     pool = "zroot";
   };
-  homeDatasets = lib.listToAttrs (map (user: {
-      name = "root/home/${user.name}";
+  homeDatasets = lib.listToAttrs (map (name: {
+      name = "root/home/${name}";
       value = {
         type = "zfs_fs";
-        mountpoint = "/home/${user.name}";
+        mountpoint = "/home/${name}";
       };
     })
-    hostUsers);
+    cfg.homeUsers);
 in {
   config = lib.mkIf cfg.enable {
     disko.zfs.enable = true;
