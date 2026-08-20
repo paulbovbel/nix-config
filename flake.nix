@@ -134,14 +134,6 @@
         config.allowUnfree = true;
       };
 
-    userSystemProfiles = {
-      common = ./profiles/common;
-      graphical = ./profiles/graphical;
-      work = ./profiles/work;
-      gaming = ./profiles/gaming;
-      headless = ./profiles/headless;
-    };
-
     userProfiles = import ./users;
 
     externalModules = [
@@ -158,15 +150,21 @@
 
     userHomeModules = user: let
       profiles = userProfiles.${user.name};
-      hasGraphicalProfile = lib.any (profileName: profiles.${profileName}.systemProfile != "headless") user.profiles;
+      selectedProfiles = map (profileName: profiles.${profileName}) user.profiles;
+      hasGraphicalProfile = lib.any (profile: profile.graphical or false) selectedProfiles;
     in
-      map (profileName: profiles.${profileName}.module) user.profiles
+      map (profile: profile.homeModule) selectedProfiles
       ++ [
         catppuccin.homeModules.catppuccin
       ]
       ++ lib.optionals hasGraphicalProfile [
         stylix.homeModules.stylix
       ];
+
+    userSystemModules = user: let
+      profiles = userProfiles.${user.name};
+    in
+      lib.concatMap (profileName: profiles.${profileName}.systemModules or []) user.profiles;
 
     validateHost = name: cfg: let
       configuredUserNames = map (user: user.name) cfg.users;
@@ -234,6 +232,7 @@
             (mkHostSettings name configuredUserNames unstablePkgs)
           ]
           ++ externalModules
+          ++ lib.unique (lib.concatMap userSystemModules cfg.users)
           ++ mkUserModules cfg.users;
       };
 
