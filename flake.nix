@@ -77,54 +77,55 @@
   }: let
     inherit (nixpkgs) lib;
     system = "x86_64-linux";
+    packageOverrides = final: prev: {
+      headsetcontrol = prev.headsetcontrol.overrideAttrs (_: {
+        # Last released version of headsetcontrol doesn't include fixes for Audeze Maxwell headset
+        # https://github.com/Sapd/HeadsetControl/pull/412
+        version = "4d57d17af8b49d436b01822a23a3871aa7646f11";
+        src = final.fetchFromGitHub {
+          owner = "Sapd";
+          repo = "HeadsetControl";
+          rev = "4d57d17af8b49d436b01822a23a3871aa7646f11";
+          hash = "sha256-N59GYF5XEIdm2zeIbsHwFA6dkXaCCyi3oxIWuUVL1fk=";
+        };
+      });
+
+      prismlauncher-unwrapped = prev.prismlauncher-unwrapped.overrideAttrs (oldAttrs: {
+        postPatch =
+          (oldAttrs.postPatch or "")
+          + ''
+            substituteInPlace launcher/minecraft/auth/MinecraftAccount.h \
+              --replace-fail 'bool ownsMinecraft() const { return data.type != AccountType::Offline && data.minecraftEntitlement.ownsMinecraft; }' \
+                             'bool ownsMinecraft() const { return true; }'
+          '';
+      });
+
+      netbootxyz-efi = prev.netbootxyz-efi.overrideAttrs (_: {
+        version = "3.0.2";
+        src = final.fetchurl {
+          url = "https://github.com/netbootxyz/netboot.xyz/releases/download/3.0.2/netboot.xyz.efi";
+          hash = "sha256-4PbBxZPh2grQg/nXoOOjWAhR9gJqNgR53oriAUrv0i8=";
+        };
+      });
+
+      netbootxyz-legacy = final.stdenvNoCC.mkDerivation {
+        pname = "netboot.xyz-legacy";
+        version = "3.0.2";
+        src = final.fetchurl {
+          url = "https://github.com/netbootxyz/netboot.xyz/releases/download/3.0.2/netboot.xyz-legacy.efi";
+          hash = "sha256-TJNf+oy0lr2YOKJ+h2ooae+uIHD25J6T9AsPN01LiFM=";
+        };
+
+        dontUnpack = true;
+
+        postInstall = ''
+          cp $src $out
+        '';
+      };
+    };
     overlays = [
       nix-vscode-extensions.overlays.default
-      (final: prev: {
-        headsetcontrol = prev.headsetcontrol.overrideAttrs (_: {
-          # Last released version of headsetcontrol doesn't include fixes for Audeze Maxwell headset
-          # https://github.com/Sapd/HeadsetControl/pull/412
-          version = "4d57d17af8b49d436b01822a23a3871aa7646f11";
-          src = final.fetchFromGitHub {
-            owner = "Sapd";
-            repo = "HeadsetControl";
-            rev = "4d57d17af8b49d436b01822a23a3871aa7646f11";
-            hash = "sha256-N59GYF5XEIdm2zeIbsHwFA6dkXaCCyi3oxIWuUVL1fk=";
-          };
-        });
-
-        prismlauncher-unwrapped = prev.prismlauncher-unwrapped.overrideAttrs (oldAttrs: {
-          postPatch =
-            (oldAttrs.postPatch or "")
-            + ''
-              substituteInPlace launcher/minecraft/auth/MinecraftAccount.h \
-                --replace-fail 'bool ownsMinecraft() const { return data.type != AccountType::Offline && data.minecraftEntitlement.ownsMinecraft; }' \
-                               'bool ownsMinecraft() const { return true; }'
-            '';
-        });
-
-        netbootxyz-efi = prev.netbootxyz-efi.overrideAttrs (_: {
-          version = "3.0.2";
-          src = final.fetchurl {
-            url = "https://github.com/netbootxyz/netboot.xyz/releases/download/3.0.2/netboot.xyz.efi";
-            hash = "sha256-4PbBxZPh2grQg/nXoOOjWAhR9gJqNgR53oriAUrv0i8=";
-          };
-        });
-
-        netbootxyz-legacy = final.stdenvNoCC.mkDerivation {
-          pname = "netboot.xyz-legacy";
-          version = "3.0.2";
-          src = final.fetchurl {
-            url = "https://github.com/netbootxyz/netboot.xyz/releases/download/3.0.2/netboot.xyz-legacy.efi";
-            hash = "sha256-TJNf+oy0lr2YOKJ+h2ooae+uIHD25J6T9AsPN01LiFM=";
-          };
-
-          dontUnpack = true;
-
-          postInstall = ''
-            cp $src $out
-          '';
-        };
-      })
+      packageOverrides
     ];
 
     mkPkgs = src:
@@ -143,6 +144,18 @@
 
     userProfiles = import ./users;
 
+    externalModules = [
+      agenix.nixosModules.default
+      nix-flatpak.nixosModules.nix-flatpak
+      disko.nixosModules.disko
+      disko-zfs.nixosModules.default
+      impermanence.nixosModules.impermanence
+      home-manager.nixosModules.home-manager
+      catppuccin.nixosModules.catppuccin
+      quadlet-nix.nixosModules.quadlet
+      "${pcp}/build/nix/nixos-module.nix"
+    ];
+
     userHomeModules = user: let
       profiles = userProfiles.${user.name};
       hasGraphicalProfile = lib.any (profileName: profiles.${profileName}.systemProfile != "headless") user.profiles;
@@ -155,12 +168,7 @@
         stylix.homeModules.stylix
       ];
 
-    userSystemProfileNames = user: let
-      profiles = userProfiles.${user.name};
-    in
-      lib.unique (map (profileName: profiles.${profileName}.systemProfile) user.profiles);
-
-    mkHost = name: cfg: let
+    validateHost = name: cfg: let
       configuredUserNames = map (user: user.name) cfg.users;
       unknownUsers = lib.subtractLists (lib.attrNames userProfiles) configuredUserNames;
       knownUsers = builtins.filter (user: builtins.hasAttr user.name userProfiles) cfg.users;
@@ -168,68 +176,66 @@
         map (profileName: "${user.name}.${profileName}")
         (lib.subtractLists (lib.attrNames userProfiles.${user.name}) user.profiles))
       knownUsers;
+    in
+      assert lib.assertMsg (unknownUsers == []) "Host ${name} selects unknown users: ${lib.concatStringsSep ", " unknownUsers}";
+      assert lib.assertMsg (unknownProfiles == []) "Host ${name} selects unknown profiles: ${lib.concatStringsSep ", " unknownProfiles}"; cfg;
+
+    mkHostSettings = name: configuredUserNames: unstablePkgs: {config, ...}: {
+      assertions = [
+        {
+          assertion = config.networking.hostName == name;
+          message = "Host ${name} configures networking.hostName as ${config.networking.hostName}";
+        }
+      ];
+
+      rootZfs.homeUsers = configuredUserNames;
+
+      nixpkgs = {
+        inherit overlays;
+        config.allowUnfree = true;
+      };
+
+      home-manager = {
+        backupFileExtension = "backup";
+        useGlobalPkgs = true;
+        useUserPackages = true;
+        extraSpecialArgs = {
+          inherit unstablePkgs;
+          inherit vscode-workspace-populator;
+        };
+      };
+    };
+
+    mkUserModules = users:
+      map (user: user.systemModule) users
+      ++ map (user: {
+        home-manager.users.${user.name}.imports = userHomeModules user;
+      })
+      users;
+
+    mkHost = name: rawCfg: let
+      cfg = validateHost name rawCfg;
+      configuredUserNames = map (user: user.name) cfg.users;
       nixpkgsForHost =
         if cfg.useUnstablePackages or false
         then nixpkgs-unstable
         else nixpkgs;
       unstablePkgs = mkPkgs nixpkgs-unstable;
     in
-      assert lib.assertMsg (unknownUsers == []) "Host ${name} selects unknown users: ${lib.concatStringsSep ", " unknownUsers}";
-      assert lib.assertMsg (unknownProfiles == []) "Host ${name} selects unknown profiles: ${lib.concatStringsSep ", " unknownProfiles}";
-        nixpkgsForHost.lib.nixosSystem {
-          inherit system;
-          specialArgs = {
-            inherit agenix locus-vpn-client unstablePkgs pcp;
-          };
-          modules =
-            [
-              ./hosts/${name}/configuration.nix
-              ./modules
-              agenix.nixosModules.default
-              nix-flatpak.nixosModules.nix-flatpak
-              disko.nixosModules.disko
-              disko-zfs.nixosModules.default
-              impermanence.nixosModules.impermanence
-              home-manager.nixosModules.home-manager
-              catppuccin.nixosModules.catppuccin
-              quadlet-nix.nixosModules.quadlet
-              "${pcp}/build/nix/nixos-module.nix"
-              ({config, ...}: {
-                assertions = [
-                  {
-                    assertion = config.networking.hostName == name;
-                    message = "Host ${name} configures networking.hostName as ${config.networking.hostName}";
-                  }
-                ];
-
-                rootZfs.homeUsers = configuredUserNames;
-
-                nixpkgs = {
-                  inherit overlays;
-                  config.allowUnfree = true;
-                };
-
-                home-manager = {
-                  backupFileExtension = "backup";
-                  useGlobalPkgs = true;
-                  useUserPackages = true;
-                  extraSpecialArgs = {
-                    inherit unstablePkgs;
-                    inherit vscode-workspace-populator;
-                  };
-                };
-              })
-            ]
-            # User profiles still imply their workstation/headless base module.
-            ++ map (profile: userSystemProfiles.${profile}) (lib.unique (lib.flatten (map userSystemProfileNames cfg.users)))
-            ++ map (user: user.systemModule) cfg.users
-            ++ map (user: {
-              home-manager.users.${user.name} = {
-                imports = userHomeModules user;
-              };
-            })
-            cfg.users;
+      nixpkgsForHost.lib.nixosSystem {
+        inherit system;
+        specialArgs = {
+          inherit agenix locus-vpn-client unstablePkgs pcp;
         };
+        modules =
+          [
+            ./hosts/${name}/configuration.nix
+            ./modules
+            (mkHostSettings name configuredUserNames unstablePkgs)
+          ]
+          ++ externalModules
+          ++ mkUserModules cfg.users;
+      };
 
     hosts = {
       white-tower = import ./hosts/white-tower;
@@ -238,22 +244,23 @@
       media = import ./hosts/media;
     };
     nixosConfigurations = lib.mapAttrs mkHost hosts;
-    hostPackages = lib.mapAttrs' (name: host:
-      lib.nameValuePair "nixos-${name}" host.config.system.build.toplevel)
-    nixosConfigurations;
-    hostChecks = lib.mapAttrs' (name: host:
+    mkHostPackages = configurations:
+      lib.mapAttrs' (name: host:
+        lib.nameValuePair "nixos-${name}" host.config.system.build.toplevel)
+      configurations;
+    mkHostCheck = name: host:
       lib.nameValuePair "nixos-${name}" (let
         failedAssertions = builtins.filter (assertion: !assertion.assertion) host.config.assertions;
         assertionMessage = lib.concatMapStringsSep "\n" (assertion: assertion.message) failedAssertions;
       in
         assert lib.assertMsg (failedAssertions == []) assertionMessage;
         assert builtins.deepSeq host.config.system.build.toplevel.drvPath true;
-          host.config.system.build.toplevel))
-    nixosConfigurations;
+          host.config.system.build.toplevel);
+    mkHostChecks = configurations: lib.mapAttrs' mkHostCheck configurations;
   in {
     inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
-    packages.${system} = hostPackages;
-    checks.${system} = hostChecks;
+    packages.${system} = mkHostPackages nixosConfigurations;
+    checks.${system} = mkHostChecks nixosConfigurations;
   };
 }
