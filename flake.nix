@@ -161,58 +161,74 @@
       lib.unique (map (profileName: profiles.${profileName}.systemProfile) user.profiles);
 
     mkHost = name: cfg: let
+      configuredUserNames = map (user: user.name) cfg.users;
+      unknownUsers = lib.subtractLists (lib.attrNames userProfiles) configuredUserNames;
+      knownUsers = builtins.filter (user: builtins.hasAttr user.name userProfiles) cfg.users;
+      unknownProfiles = lib.concatMap (user:
+        map (profileName: "${user.name}.${profileName}")
+        (lib.subtractLists (lib.attrNames userProfiles.${user.name}) user.profiles))
+      knownUsers;
       nixpkgsForHost =
         if cfg.useUnstablePackages or false
         then nixpkgs-unstable
         else nixpkgs;
       unstablePkgs = mkPkgs nixpkgs-unstable;
     in
-      nixpkgsForHost.lib.nixosSystem {
-        inherit system;
-        specialArgs = {
-          hostUsers = cfg.users;
-          inherit agenix locus-vpn-client unstablePkgs pcp;
-        };
-        modules =
-          [
-            ./hosts/${name}/configuration.nix
-            ./modules
-            agenix.nixosModules.default
-            nix-flatpak.nixosModules.nix-flatpak
-            disko.nixosModules.disko
-            disko-zfs.nixosModules.default
-            impermanence.nixosModules.impermanence
-            home-manager.nixosModules.home-manager
-            catppuccin.nixosModules.catppuccin
-            quadlet-nix.nixosModules.quadlet
-            "${pcp}/build/nix/nixos-module.nix"
-            {
-              nixpkgs = {
-                inherit overlays;
-                config.allowUnfree = true;
-              };
+      assert lib.assertMsg (unknownUsers == []) "Host ${name} selects unknown users: ${lib.concatStringsSep ", " unknownUsers}";
+      assert lib.assertMsg (unknownProfiles == []) "Host ${name} selects unknown profiles: ${lib.concatStringsSep ", " unknownProfiles}";
+        nixpkgsForHost.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            hostUsers = cfg.users;
+            inherit agenix locus-vpn-client unstablePkgs pcp;
+          };
+          modules =
+            [
+              ./hosts/${name}/configuration.nix
+              ./modules
+              agenix.nixosModules.default
+              nix-flatpak.nixosModules.nix-flatpak
+              disko.nixosModules.disko
+              disko-zfs.nixosModules.default
+              impermanence.nixosModules.impermanence
+              home-manager.nixosModules.home-manager
+              catppuccin.nixosModules.catppuccin
+              quadlet-nix.nixosModules.quadlet
+              "${pcp}/build/nix/nixos-module.nix"
+              ({config, ...}: {
+                assertions = [
+                  {
+                    assertion = config.networking.hostName == name;
+                    message = "Host ${name} configures networking.hostName as ${config.networking.hostName}";
+                  }
+                ];
 
-              home-manager = {
-                backupFileExtension = "backup";
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                extraSpecialArgs = {
-                  inherit unstablePkgs;
-                  inherit vscode-workspace-populator;
+                nixpkgs = {
+                  inherit overlays;
+                  config.allowUnfree = true;
                 };
+
+                home-manager = {
+                  backupFileExtension = "backup";
+                  useGlobalPkgs = true;
+                  useUserPackages = true;
+                  extraSpecialArgs = {
+                    inherit unstablePkgs;
+                    inherit vscode-workspace-populator;
+                  };
+                };
+              })
+            ]
+            # User profiles still imply their workstation/headless base module.
+            ++ map (profile: userSystemProfiles.${profile}) (lib.unique (lib.flatten (map userSystemProfileNames cfg.users)))
+            ++ map (user: user.systemModule) cfg.users
+            ++ map (user: {
+              home-manager.users.${user.name} = {
+                imports = userHomeModules user;
               };
-            }
-          ]
-          # User profiles still imply their workstation/headless base module.
-          ++ map (profile: userSystemProfiles.${profile}) (lib.unique (lib.flatten (map userSystemProfileNames cfg.users)))
-          ++ map (user: user.systemModule) cfg.users
-          ++ map (user: {
-            home-manager.users.${user.name} = {
-              imports = userHomeModules user;
-            };
-          })
-          cfg.users;
-      };
+            })
+            cfg.users;
+        };
 
     hosts = {
       white-tower = import ./hosts/white-tower;
