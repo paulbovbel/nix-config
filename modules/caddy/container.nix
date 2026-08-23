@@ -72,8 +72,7 @@ in {
         secretEnvironmentFiles = lib.take 3 caddyEnvFiles;
         derivedEnvironmentFiles = ["caddy-token-secret" "caddy-basic-auth"];
         quadlet.unitConfig = {
-          Requires = ["caddy-render.service"];
-          After = ["caddy-render.service"];
+          ConditionPathExists = ["/etc/caddy/Caddyfile"];
         };
       };
 
@@ -102,19 +101,14 @@ in {
       ];
 
       services = {
-        caddy.restartTriggers = [config.caddy.caddyfile];
-
         caddy-render = {
-          description = "Install rendered Caddyfile and reload containerized Caddy";
-          wantedBy = ["multi-user.target"];
+          description = "Validate and install rendered Caddyfile";
           wants = ["network-online.target"] ++ caddyEnvUnits;
-          after = ["network-online.target"] ++ caddyEnvUnits;
           before = ["caddy.service"];
+          after = ["network-online.target"] ++ caddyEnvUnits ++ ["caddy-build.service"];
           path = [pkgs.coreutils];
-          restartTriggers = [config.caddy.caddyfile];
           serviceConfig = {
             Type = "oneshot";
-            RemainAfterExit = true;
             RuntimeDirectory = "caddy-render";
           };
           script = ''
@@ -135,12 +129,16 @@ in {
               caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
             install -m 0644 "$candidate" /etc/caddy/Caddyfile
-            if [ "$(${pkgs.podman}/bin/podman inspect -f '{{.State.Running}}' caddy 2>/dev/null || true)" = true ]; then
-              ${pkgs.podman}/bin/podman exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
-            fi
           '';
         };
       };
     };
+
+    system.activationScripts.caddy-render = lib.stringAfter ["etc"] ''
+      ${pkgs.systemd}/bin/systemctl start caddy-render.service
+      ${pkgs.systemd}/bin/systemctl restart caddy.service
+    '';
+
+    rootZfs.persistFiles = ["/etc/caddy/Caddyfile"];
   };
 }
