@@ -40,17 +40,6 @@
     PWDCMND = "pwd";
   };
   switchTmpfilesUnit = "systemd-tmpfiles-resetup.service";
-  cockpitPackage = pkgs.cockpit.overrideAttrs (old: {
-    postFixup =
-      (old.postFixup or "")
-      + ''
-        wrapProgram $out/bin/cockpit-bridge \
-          --set PCP_CONF ${pcpConf} \
-          --set PCP_DIR ${pcpPackage}/share/pcp \
-          --prefix PYTHONPATH : ${pcpPythonPath} \
-          --prefix LD_LIBRARY_PATH : ${pcpLibraryPath}
-      '';
-  });
 in {
   options.cockpit.enable = lib.mkOption {
     type = lib.types.bool;
@@ -61,7 +50,6 @@ in {
   config = lib.mkIf config.cockpit.enable {
     services.cockpit = {
       enable = true;
-      package = cockpitPackage;
       openFirewall = false;
       allowed-origins = [
         "https://${config.networking.hostName}.${config.networking.domain}"
