@@ -68,6 +68,15 @@ in {
   networking = {
     hostName = "media";
     hostId = "48ed2069";
+    useDHCP = false;
+    interfaces = {
+      eno1.useDHCP = true;
+      eno2.useDHCP = true;
+    };
+    dhcpcd.extraConfig = ''
+      noarp
+      noipv4ll
+    '';
   };
 
   ddns = {
