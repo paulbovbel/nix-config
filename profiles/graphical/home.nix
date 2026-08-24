@@ -116,8 +116,12 @@ in {
       "org/gnome/desktop/wm/keybindings" = {
         move-to-workspace-down = [""];
         move-to-workspace-up = [""];
+        switch-applications = [""];
+        switch-applications-backward = [""];
         switch-to-workspace-down = [""];
         switch-to-workspace-up = [""];
+        switch-windows = ["<Alt>Tab"];
+        switch-windows-backward = ["<Shift><Alt>Tab"];
       };
       "org/gnome/nautilus/preferences" = {
         default-folder-viewer = "list-view";
