@@ -263,24 +263,9 @@
     };
     nixosConfigurations = lib.mapAttrs mkHost hosts;
     devPkgs = import nixpkgs {inherit system;};
-    mkHostPackages = configurations:
-      lib.mapAttrs' (name: host:
-        lib.nameValuePair "nixos-${name}" host.config.system.build.toplevel)
-      configurations;
-    mkHostCheck = name: host:
-      lib.nameValuePair "nixos-${name}" (let
-        failedAssertions = builtins.filter (assertion: !assertion.assertion) host.config.assertions;
-        assertionMessage = lib.concatMapStringsSep "\n" (assertion: assertion.message) failedAssertions;
-      in
-        assert lib.assertMsg (failedAssertions == []) assertionMessage;
-        assert builtins.deepSeq host.config.system.build.toplevel.drvPath true;
-          host.config.system.build.toplevel);
-    mkHostChecks = configurations: lib.mapAttrs' mkHostCheck configurations;
   in {
     inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
-    packages.${system} = mkHostPackages nixosConfigurations;
-    checks.${system} = mkHostChecks nixosConfigurations;
     devShells.${system}.default = devPkgs.mkShell {
       packages = with devPkgs; [
         alejandra
