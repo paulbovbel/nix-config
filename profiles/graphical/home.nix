@@ -45,6 +45,8 @@ in {
   config = {
     dconf.enable = true;
 
+    stylix.targets.qt.platform = "qtct";
+
     home.file = lib.mkIf cfg.enable (
       {
         ".local/share/backgrounds/${cfg.fileName}".source = cfg.source;
@@ -53,26 +55,6 @@ in {
         ".local/share/backgrounds/${lockscreenFileName}".source = lockscreenSource;
       }
     );
-
-    catppuccin = {
-      enable = true;
-      flavor = "mocha";
-      accent = "mauve";
-      cursors = {
-        enable = true;
-        flavor = "mocha";
-        accent = "mauve";
-      };
-    };
-
-    stylix = {
-      enable = true;
-      autoEnable = false;
-      base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-mocha.yaml";
-      polarity = "dark";
-
-      targets.gtk.enable = true;
-    };
 
     programs.kitty = {
       enable = true;
@@ -127,7 +109,6 @@ in {
         default-folder-viewer = "list-view";
       };
       "org/gnome/desktop/interface" = {
-        color-scheme = "prefer-dark";
         enable-hot-corners = false;
         show-battery-percentage = true;
       };

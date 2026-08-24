@@ -42,10 +42,6 @@
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    catppuccin = {
-      url = "github:catppuccin/nix/release-26.05";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     stylix = {
       url = "github:nix-community/stylix/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -69,7 +65,6 @@
     locus-vpn-client,
     nix-vscode-extensions,
     vscode-workspace-populator,
-    catppuccin,
     stylix,
     quadlet-nix,
     pcp,
@@ -158,7 +153,7 @@
       disko-zfs.nixosModules.default
       impermanence.nixosModules.impermanence
       home-manager.nixosModules.home-manager
-      catppuccin.nixosModules.catppuccin
+      stylix.nixosModules.stylix
       quadlet-nix.nixosModules.quadlet
       "${pcp}/build/nix/nixos-module.nix"
     ];
@@ -166,15 +161,8 @@
     userHomeModules = user: let
       userProfiles = profiles.${user.name};
       selectedProfiles = map (profileName: userProfiles.${profileName}) user.profiles;
-      hasGraphicalProfile = lib.any (profile: profile.graphical or false) selectedProfiles;
     in
-      lib.concatMap (profile: profile.homeModules) selectedProfiles
-      ++ [
-        catppuccin.homeModules.catppuccin
-      ]
-      ++ lib.optionals hasGraphicalProfile [
-        stylix.homeModules.stylix
-      ];
+      lib.concatMap (profile: profile.homeModules) selectedProfiles;
 
     userSystemModules = user: let
       userProfiles = profiles.${user.name};

@@ -7,10 +7,11 @@
     ../common/system.nix
   ];
 
-  catppuccin = {
+  stylix = {
     enable = true;
-    flavor = "mocha";
-    accent = "mauve";
+    autoEnable = true;
+    base16Scheme = "${pkgs.base16-schemes}/share/themes/catppuccin-mocha.yaml";
+    polarity = "dark";
   };
 
   boot = {
