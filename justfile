@@ -18,7 +18,7 @@ switch host=`hostname`:
   configured_host="$(nix eval --raw "${flake_path}#nixosConfigurations.{{ host }}.config.networking.hostName")"
   test "${configured_host}" = '{{ host }}'
   if [ '{{ host }}' = "$(hostname)" ]; then
-    sudo nixos-rebuild switch --flake "${flake_path}#{{ host }}" -L
+    nixos-rebuild switch --flake "${flake_path}#{{ host }}" --sudo --ask-sudo-password -L
   else
     nixos-rebuild switch --flake "${flake_path}#{{ host }}" --target-host '{{ host }}' --build-host '{{ host }}' --sudo --ask-sudo-password -L
   fi
