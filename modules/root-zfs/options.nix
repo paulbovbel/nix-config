@@ -29,6 +29,12 @@
       description = "Swap partition size for disko layout.";
     };
 
+    arcMaxPercent = lib.mkOption {
+      type = lib.types.ints.between 1 100;
+      default = 50;
+      description = "Maximum ZFS ARC size as a percentage of physical memory.";
+    };
+
     homeUsers = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [];

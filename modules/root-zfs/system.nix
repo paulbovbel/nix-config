@@ -24,6 +24,19 @@ in {
         pools = ["zroot"];
       };
 
+      boot.initrd.systemd.services.zfs-arc-limit = {
+        description = "Limit ZFS ARC to ${toString cfg.arcMaxPercent}% of system memory";
+        wantedBy = ["initrd.target"];
+        after = ["systemd-modules-load.service"];
+        before = ["zfs-import-zroot.service"];
+        unitConfig.DefaultDependencies = false;
+        serviceConfig.Type = "oneshot";
+        script = ''
+          read -r _ mem_kib _ </proc/meminfo
+          printf '%s\n' "$((mem_kib * 1024 * ${toString cfg.arcMaxPercent} / 100))" > /sys/module/zfs/parameters/zfs_arc_max
+        '';
+      };
+
       boot.initrd.luks.devices."crypted" = lib.mkIf cfg.encrypted {
         crypttabExtraOpts = ["tpm2-device=auto"];
       };
