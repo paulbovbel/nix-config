@@ -122,6 +122,7 @@
       pkgs.gnomeExtensions.dash-to-dock
       pkgs.gnomeExtensions.appindicator
       pkgs.gnomeExtensions.headsetcontrol
+      pkgs.gnomeExtensions.unlock-dialog-background
       pkgs.gnome-icon-theme
       pkgs.headsetcontrol
       pkgs.yaru-theme
