@@ -9,6 +9,7 @@
   tailscaleSocket = "/run/tailscale/tailscaled.sock";
   domainListenPorts = lib.unique (lib.filter (port: port != null) (lib.concatMap (site: map (domain: domain.listenPort) site.domains) (lib.attrValues cfg.sites)));
   domainPublishPorts = map (port: "${toString port}:${toString port}") domainListenPorts;
+  caddyfilePath = "${datasets.app.children.caddy.path}/Caddyfile";
   caddyEnvFiles = [
     config.age.secrets.google-oauth-env.path
     config.age.secrets.aws-access-env.path
@@ -60,7 +61,7 @@ in {
         quadlet.containerConfig = {
           publishPorts = ["80:80" "443:443"] ++ domainPublishPorts;
           volumes = [
-            "/etc/caddy/Caddyfile:/etc/caddy/Caddyfile:ro"
+            "${caddyfilePath}:/etc/caddy/Caddyfile:ro"
             "${datasets.app.children.caddy.path}/data:/data"
             "${datasets.app.children.caddy.path}/config:/config"
             "${tailscaleSocket}:${tailscaleSocket}"
@@ -72,7 +73,9 @@ in {
         secretEnvironmentFiles = lib.take 3 caddyEnvFiles;
         derivedEnvironmentFiles = ["caddy-token-secret" "caddy-basic-auth"];
         quadlet.unitConfig = {
-          ConditionPathExists = ["/etc/caddy/Caddyfile"];
+          ConditionPathExists = [caddyfilePath];
+          Wants = ["caddy-render.service"];
+          After = ["caddy-render.service"];
         };
       };
 
@@ -116,6 +119,7 @@ in {
 
             candidate="$RUNTIME_DIRECTORY/Caddyfile"
             install -d -m 0755 /etc/caddy
+            install -d -m 0755 ${lib.escapeShellArg datasets.app.children.caddy.path}
             install -m 0644 ${config.caddy.caddyfile} "$candidate"
 
             if ! ${pkgs.podman}/bin/podman image exists ${lib.escapeShellArg caddyImage}; then
@@ -128,17 +132,15 @@ in {
               ${lib.escapeShellArg caddyImage} \
               caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
-            install -m 0644 "$candidate" /etc/caddy/Caddyfile
+            install -m 0644 "$candidate" ${lib.escapeShellArg caddyfilePath}
           '';
         };
       };
     };
 
-    system.activationScripts.caddy-render = lib.stringAfter ["etc"] ''
+    system.activationScripts.caddy-render = lib.stringAfter ["persist-files"] ''
       ${pkgs.systemd}/bin/systemctl start caddy-render.service
       ${pkgs.systemd}/bin/systemctl restart caddy.service
     '';
-
-    rootZfs.persistFiles = ["/etc/caddy/Caddyfile"];
   };
 }
