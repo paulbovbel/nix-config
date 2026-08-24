@@ -129,6 +129,7 @@ in {
           fixup = "!git add -u && git commit --amend";
           pushb = "push -u origin";
           rb = "rebase";
+          squash-into = ''!f() { target=$(git rev-parse --verify "$1^{commit}") || return; git commit --fixup="$target" && GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash "$target^"; }; f'';
           st = "status";
         };
         core.editor = "nano";
