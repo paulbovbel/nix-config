@@ -18,10 +18,5 @@ in {
       name = "Discord";
       exec = "flatpak run com.discordapp.Discord";
     }
-    {
-      file = "whatsapp";
-      name = "ZapZap";
-      exec = "flatpak run com.rtosta.zapzap";
-    }
   ]);
 }

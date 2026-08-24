@@ -11,8 +11,9 @@ _: {
     fileName = "abovbel-avatar.png";
   };
 
-  dconf.settings."org/gnome/shell".favorite-apps = [
-    "org.mozilla.firefox.desktop"
-    "org.gnome.Nautilus.desktop"
-  ];
+  bovbel.background = {
+    enable = true;
+    source = ../../../assets/wallpapers/abovbel-hogwarts-harry.jpg;
+    fileName = "abovbel-hogwarts-harry.jpg";
+  };
 }

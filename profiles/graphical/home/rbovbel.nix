@@ -1,13 +1,19 @@
-{...}: {
+{lib, ...}: let
+  mkAutostart = import ../autostart.nix;
+in {
   imports = [
     ../../common/home/rbovbel.nix
     ../home.nix
     ../avatar.nix
   ];
 
-  dconf.settings."org/gnome/shell".favorite-apps = [
-    "org.mozilla.firefox.desktop"
-    "org.gnome.Nautilus.desktop"
+  bovbel.background = {
+    enable = true;
+    source = ../../../assets/wallpapers/pbovbel-tropicanair.jpg;
+    fileName = "rbovbel-tropicanair.jpg";
+  };
+
+  dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [
     "com.rtosta.zapzap.desktop"
     "kitty.desktop"
   ];
@@ -16,5 +22,11 @@
     enable = true;
     source = ../../../assets/avatars/rbovbel.png;
     fileName = "rbovbel-avatar.png";
+  };
+
+  xdg.configFile = mkAutostart {
+    file = "whatsapp";
+    name = "ZapZap";
+    exec = "flatpak run com.rtosta.zapzap";
   };
 }

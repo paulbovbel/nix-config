@@ -87,10 +87,5 @@ in {
       name = "Zoom";
       exec = "flatpak run us.zoom.Zoom";
     }
-    {
-      file = "whatsapp";
-      name = "ZapZap";
-      exec = "flatpak run com.rtosta.zapzap";
-    }
   ]);
 }
