@@ -15,12 +15,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - uses: wimpysworld/nothing-but-nix@main
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v22
       with:
         extra-conf: |
           extra-substituters = https://nix-cache.bovbel.com/nixos
-          extra-trusted-public-keys = nixos:pmAv4w1X/hCdM7rOjkK954hzdzEFiOgZshQmwWDpKNE=
+          extra-trusted-public-keys = nixos:T67Cn2hd5jvzNVWnCzmUeWIDElz/q1B/rmoOVyFPolM=
 
     - name: Join Tailscale
       uses: tailscale/github-action@v4

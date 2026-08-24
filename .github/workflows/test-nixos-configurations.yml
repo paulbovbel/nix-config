@@ -34,6 +34,7 @@ jobs:
         run: echo "hosts=$(nix eval --json .#lib.hostNames)" >> "$GITHUB_OUTPUT"
 
   build-hosts:
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: check
     strategy:
@@ -51,7 +52,15 @@ jobs:
           tailscale-oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Dry-run host
+      - name: Build host
         run: |
           set -euo pipefail
-          nix run nixpkgs#just -- dry-run "${{ matrix.host }}"
+          nix build ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel"
+
+      - name: Push host closure to Attic
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+        run: |
+          set -euo pipefail
+          nix run nixpkgs#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
+          nix run nixpkgs#attic-client -- push bovbel:nixos ./result

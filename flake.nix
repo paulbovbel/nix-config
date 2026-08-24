@@ -254,6 +254,7 @@
   in {
     inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
+    packages.${system}.attic-client = devPkgs.attic-client;
     devShells.${system}.default = devPkgs.mkShell {
       packages = with devPkgs; [
         alejandra
