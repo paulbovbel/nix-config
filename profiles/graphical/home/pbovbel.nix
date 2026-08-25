@@ -16,8 +16,6 @@ in {
     enable = true;
     source = ../../../assets/wallpapers/pbovbel-frehj36ltk101.png;
     fileName = "pbovbel-frehj36ltk101.png";
-    lockscreenSource = ../../../assets/wallpapers/pbovbel-tropicanair.jpg;
-    lockscreenFileName = "pbovbel-tropicanair.jpg";
   };
 
   dconf.settings = {

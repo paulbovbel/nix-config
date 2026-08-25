@@ -43,6 +43,11 @@ in {
   };
 
   config = {
+    bovbel.background = {
+      lockscreenSource = ../../assets/wallpapers/pbovbel-tropicanair.jpg;
+      lockscreenFileName = "pbovbel-tropicanair.jpg";
+    };
+
     dconf.enable = true;
 
     stylix.targets.qt.platform = "qtct";
