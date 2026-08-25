@@ -12,16 +12,7 @@ build host=`hostname`:
   nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel"
 
 switch host=`hostname`:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  flake_path='{{ justfile_directory() }}'
-  configured_host="$(nix eval --raw "${flake_path}#nixosConfigurations.{{ host }}.config.networking.hostName")"
-  test "${configured_host}" = '{{ host }}'
-  if [ '{{ host }}' = "$(hostname)" ]; then
-    nixos-rebuild switch --flake "${flake_path}#{{ host }}" --sudo --ask-sudo-password -L
-  else
-    nixos-rebuild switch --flake "${flake_path}#{{ host }}" --target-host '{{ host }}' --build-host '{{ host }}' --sudo --ask-sudo-password -L
-  fi
+  nixos-rebuild switch --flake .#{{ host }} --target-host '{{ host }}' --build-host '{{ host }}' --sudo --ask-sudo-password -L
 
 nix-lint:
   statix check .
