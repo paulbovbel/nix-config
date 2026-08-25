@@ -60,7 +60,8 @@ jobs:
       - name: Push host closure to Attic
         env:
           ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+        continue-on-error: true
         run: |
           set -euo pipefail
           nix run nixpkgs#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
-          nix run nixpkgs#attic-client -- push bovbel:nixos ./result
+          for i in {1..5}; do nix run nixpkgs#attic-client -- push bovbel:nixos ./result && break || sleep 2; done
