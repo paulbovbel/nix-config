@@ -1,7 +1,7 @@
 let
   keys = import ./keys.nix;
   inherit (keys) pbovbel;
-  white_tower = "age1wk8sq7rwy46a4rms25gwyvxjd0utt53l8nvwnuaujqmqj6ek5ujqjsgt8t";
+  white_tower = "age14japgv72dyz45u6fz892kkslqztuex43gg0pf048v3krtdft2aaqtnwra7";
   rainbow_wave = "age17vygkuef5n8yc5ruha3punredg4gudyhpd9fwpl7zkw8q9yjveks8r6ddn";
   pbovbel_dell = "age1epr0phq646m4suyfv74558lx25wv5da27jfjhe66cxj9hu9tkygqnvjy7u";
   media = "age19grruxtufcshcg7j0sveurtqq0tqg9zpjrsk7ghaq4800r8j4shsfv0hae";
