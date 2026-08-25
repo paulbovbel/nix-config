@@ -59,6 +59,7 @@ in {
   programs.vscode = {
     enable = true;
     package = unstablePkgs.vscode;
+    mutableExtensionsDir = false;
     profiles.default = {
       extensions = vscodeExtensions;
     };
