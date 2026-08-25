@@ -1,5 +1,5 @@
-name: Setup Nix runner
-description: Configure Nix, network access, caches, and SSH.
+name: Set up Nix
+description: Install Nix and configure network access, caches, and SSH.
 
 inputs:
   tailscale-oauth-client-id:
@@ -11,11 +11,16 @@ inputs:
   ssh-private-key:
     description: SSH private key for private flake inputs.
     required: true
+  attic-token:
+    description: Token used to push build closures to Attic.
+    required: false
 
 runs:
   using: composite
   steps:
-    - uses: wimpysworld/nothing-but-nix@main
+    - name: Free disk space
+      uses: wimpysworld/nothing-but-nix@main
+
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v22
       with:
@@ -23,24 +28,32 @@ runs:
           extra-substituters = https://nix-cache.bovbel.com/nixos
           extra-trusted-public-keys = nixos:T67Cn2hd5jvzNVWnCzmUeWIDElz/q1B/rmoOVyFPolM=
 
-    - name: Join Tailscale
+    - name: Connect to Tailscale
       uses: tailscale/github-action@v4
       with:
         oauth-client-id: ${{ inputs.tailscale-oauth-client-id }}
         oauth-secret: ${{ inputs.tailscale-oauth-secret }}
         tags: tag:github-action
 
-    - name: Use nix-community Cachix
+    - name: Configure nix-community cache
       uses: cachix/cachix-action@v15
       with:
         name: nix-community
 
-    - name: Use cuda-maintainers Cachix
+    - name: Configure CUDA cache
       uses: cachix/cachix-action@v15
       with:
         name: cuda-maintainers
 
-    - name: Install SSH Key
+    - name: Authenticate with Attic
+      if: inputs.attic-token != ''
+      shell: bash
+      env:
+        ATTIC_TOKEN: ${{ inputs.attic-token }}
+      continue-on-error: true
+      run: nix run nixpkgs#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
+
+    - name: Load SSH key
       uses: webfactory/ssh-agent@v0.9.0
       with:
         ssh-private-key: ${{ inputs.ssh-private-key }}

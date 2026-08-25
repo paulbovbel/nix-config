@@ -1,0 +1,24 @@
+name: Build and cache NixOS host
+description: Build a NixOS host configuration and push its closure to Attic.
+
+inputs:
+  host:
+    description: NixOS host name to build.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/update_flake_lock_action')
+      name: Build ${{ inputs.host }}
+      shell: bash
+      run: nix build ".#nixosConfigurations.${{ inputs.host }}.config.system.build.toplevel" --out-link "result-${{ inputs.host }}"
+
+    - if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/update_flake_lock_action')
+      name: Push ${{ inputs.host }} to Attic
+      shell: bash
+      continue-on-error: true
+      run: |
+        for i in {1..5}; do
+          nix run nixpkgs#attic-client -- push bovbel:nixos "result-${{ inputs.host }}" && break || sleep 2
+        done

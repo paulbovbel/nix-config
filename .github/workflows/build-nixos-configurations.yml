@@ -1,0 +1,50 @@
+name: Build NixOS configurations
+
+on:
+  pull_request:
+  push:
+
+concurrency:
+  group: build-nixos-configurations-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          tailscale-oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          tailscale-oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          attic-token: ${{ secrets.ATTIC_TOKEN }}
+
+      - name: Check repository
+        run: |
+          set -euo pipefail
+          nix develop --command just check
+
+      - parallel:
+          - name: Build white-tower
+            uses: ./.github/actions/build-host
+            with:
+              host: white-tower
+
+          - name: Build rainbow-wave
+            uses: ./.github/actions/build-host
+            with:
+              host: rainbow-wave
+
+          - name: Build pbovbel-dell
+            uses: ./.github/actions/build-host
+            with:
+              host: pbovbel-dell
+
+          - name: Build media
+            uses: ./.github/actions/build-host
+            with:
+              host: media

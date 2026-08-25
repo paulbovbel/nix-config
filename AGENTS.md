@@ -1,11 +1,6 @@
 # Agent Workflow
 
-After every configuration change, run the full check suite:
-
-1. `just check`
-2. `just dry-run <host>`
-
-Known hosts are `white-tower`, `pbovbel-dell`, and `media`.
+After every configuration change, run `nix develop --command just check`
 
 ## Repo Structure
 
@@ -18,24 +13,6 @@ For repository layout, module composition, and structure recommendations, see [R
 - User profile changes belong under `profiles/<profile>/`; update `profiles/default.nix` when adding or changing selectable profiles.
 - System profile behavior belongs under `profiles/`; profiles are selected indirectly from `hosts/default.nix` through user profile declarations.
 - Globally imported modules should generally be enabled from host configs through their option namespace, not imported ad hoc.
-
-## Available Module Namespaces
-
-Host-facing modules currently expose these top-level namespaces:
-
-- `atticCache`
-- `caddy`
-- `ddns`
-- `gameServer`
-- `rootZfs`
-- `llamaCpp`
-- `mediaServer`
-- `nvidia`
-- `podmanServer`
-- `storage`
-- `syncthing`
-- `upnp`
-- `cockpit.enable` and `smokeping.enable` from monitor modules
 
 ## Repo Rules
 
