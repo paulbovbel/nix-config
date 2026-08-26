@@ -74,7 +74,7 @@ in {
         derivedEnvironmentFiles = ["caddy-token-secret" "caddy-basic-auth"];
         quadlet.unitConfig = {
           ConditionPathExists = [caddyfilePath];
-          Wants = ["caddy-render.service"];
+          Requires = ["caddy-render.service"];
           After = ["caddy-render.service"];
         };
       };
@@ -104,6 +104,13 @@ in {
       ];
 
       services = {
+        caddy.restartTriggers = [
+          config.caddy.caddyfile
+          config.age.secrets.google-oauth-env.file
+          config.age.secrets.aws-access-env.file
+          config.age.secrets.web-credentials-env.file
+        ];
+
         caddy-render = {
           description = "Validate and install rendered Caddyfile";
           wants = ["network-online.target"] ++ caddyEnvUnits;
@@ -137,10 +144,5 @@ in {
         };
       };
     };
-
-    system.activationScripts.caddy-render = lib.stringAfter ["persist-files"] ''
-      ${pkgs.systemd}/bin/systemctl start caddy-render.service
-      ${pkgs.systemd}/bin/systemctl restart caddy.service
-    '';
   };
 }

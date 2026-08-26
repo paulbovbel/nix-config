@@ -372,10 +372,20 @@ def main():
         torrent_mam_id = mam_id_from_env("MAM_ID_TORRENT")
         indexer_mam_id = mam_id_from_env("MAM_ID_INDEXER")
 
+        switch_fingerprint = indexer.config_dir / "mam.switch-fingerprint"
+        new_switch_fingerprint = fingerprint(f"{torrent_mam_id}\0{indexer_mam_id}")
+        if (
+            rotate_app_configs
+            and read_text(switch_fingerprint) == new_switch_fingerprint
+        ):
+            print("MyAnonamouse mam_id secrets unchanged")
+            return
+
         update_mam_ip(torrent, torrent_mam_id)
         update_mam_ip(indexer, indexer_mam_id)
         if rotate_app_configs:
             update_indexer_apps(indexer, indexer_mam_id)
+            write_private(switch_fingerprint, new_switch_fingerprint)
     except (RuntimeError, subprocess.CalledProcessError) as error:
         if isinstance(error, subprocess.CalledProcessError):
             sys.stderr.write(error.stderr)

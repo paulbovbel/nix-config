@@ -54,13 +54,16 @@ in {
 
         myanonamouse-update-on-switch = {
           description = "Update MyAnonamouse integrations after configuration changes";
+          wantedBy = ["multi-user.target"];
           wants = mamUpdateRotateDeps;
           after = mamUpdateRotateDeps;
+          restartTriggers = [config.age.secrets.mam-id-env.file];
           path = [pkgs.podman];
           serviceConfig = {
             Type = "oneshot";
+            RemainAfterExit = true;
             EnvironmentFile = config.age.secrets.mam-id-env.path;
-            ExecStart = "${mamUpdateCommand} --rotate-app-configs";
+            ExecStart = "-${mamUpdateCommand} --rotate-app-configs";
           };
         };
       };
@@ -75,10 +78,6 @@ in {
         };
       };
     };
-
-    system.activationScripts.myanonamouse-update-on-switch = lib.stringAfter ["agenix" "etc"] ''
-      ${pkgs.systemd}/bin/systemctl start myanonamouse-update-on-switch.service
-    '';
 
     podmanServer.containers = {
       readarr = {

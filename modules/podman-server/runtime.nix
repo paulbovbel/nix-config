@@ -120,8 +120,6 @@
       chmod ${envFile.mode} ${lib.escapeShellArg envFile.path}
     '';
   };
-
-  declaredContainerNames = lib.attrNames cfg.containers;
 in {
   config = lib.mkIf active {
     virtualisation.podman = {
@@ -156,32 +154,5 @@ in {
         Persistent = true;
       };
     };
-
-    system.activationScripts.podman-server-prune-containers = lib.stringAfter ["etc"] ''
-      declared_names=(${lib.escapeShellArgs declaredContainerNames})
-
-      is_declared_container() {
-        local candidate="$1"
-        local declared
-        for declared in "''${declared_names[@]}"; do
-          if [ "$candidate" = "$declared" ]; then
-            return 0
-          fi
-        done
-        return 1
-      }
-
-      for container in $(${pkgs.podman}/bin/podman ps --all --format '{{.Names}}' 2>/dev/null); do
-        if is_declared_container "$container"; then
-          continue
-        fi
-
-        load_state="$(${pkgs.systemd}/bin/systemctl show --property=LoadState --value "$container.service" 2>/dev/null || true)"
-        if [ "$load_state" = not-found ]; then
-          ${pkgs.coreutils}/bin/timeout 20s ${pkgs.podman}/bin/podman rm --force --time 10 --ignore "$container" 2>/dev/null || true
-          ${pkgs.coreutils}/bin/timeout 5s ${pkgs.systemd}/bin/systemctl reset-failed "$container.service" 2>/dev/null || true
-        fi
-      done
-    '';
   };
 }
