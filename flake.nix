@@ -47,10 +47,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
-    pcp = {
-      url = "github:performancecopilot/pcp/7.1.5";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = {
@@ -67,7 +63,6 @@
     vscode-workspace-populator,
     stylix,
     quadlet-nix,
-    pcp,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -155,7 +150,6 @@
       home-manager.nixosModules.home-manager
       stylix.nixosModules.stylix
       quadlet-nix.nixosModules.quadlet
-      "${pcp}/build/nix/nixos-module.nix"
     ];
 
     userHomeModules = user: let
@@ -230,7 +224,7 @@
       nixpkgsForHost.lib.nixosSystem {
         inherit system;
         specialArgs = {
-          inherit agenix locus-vpn-client unstablePkgs pcp;
+          inherit agenix locus-vpn-client unstablePkgs;
         };
         modules =
           [
