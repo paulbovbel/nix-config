@@ -20,6 +20,7 @@ in {
     ./llama-cpp
     ./media-server
     ./game-server
+    ./github-runner
   ];
 
   config._module.args = {

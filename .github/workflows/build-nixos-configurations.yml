@@ -9,42 +9,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  check:
+    runs-on: [self-hosted, nix-media]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up Nix
-        uses: ./.github/actions/setup-nix
-        with:
-          tailscale-oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          tailscale-oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          attic-token: ${{ secrets.ATTIC_TOKEN }}
+      - name: Verify Nix
+        run: nix --version
 
       - name: Check repository
         run: |
           set -euo pipefail
           nix develop --command just check
 
-      - parallel:
-          - name: Build white-tower
-            uses: ./.github/actions/build-host
-            with:
-              host: white-tower
+  build:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/update_flake_lock_action')
+    needs: check
+    runs-on: [self-hosted, nix-media]
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        host: [white-tower, rainbow-wave, pbovbel-dell, media]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
 
-          - name: Build rainbow-wave
-            uses: ./.github/actions/build-host
-            with:
-              host: rainbow-wave
+      - name: Verify Nix
+        run: nix --version
 
-          - name: Build pbovbel-dell
-            uses: ./.github/actions/build-host
-            with:
-              host: pbovbel-dell
+      - name: Authenticate with Attic
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+        continue-on-error: true
+        run: nix run nixpkgs#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
 
-          - name: Build media
-            uses: ./.github/actions/build-host
-            with:
-              host: media
+      - name: Build ${{ matrix.host }}
+        run: nix build ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel" --out-link "result-${{ matrix.host }}"
+
+      - name: Push ${{ matrix.host }} to Attic
+        continue-on-error: true
+        run: |
+          nix run nixpkgs#attic-client -- push bovbel:nixos "result-${{ matrix.host }}"

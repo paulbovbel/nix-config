@@ -91,6 +91,12 @@ in {
     enable = true;
   };
 
+  githubRunner = {
+    enable = true;
+    url = "https://github.com/paulbovbel/nix-config";
+    extraLabels = ["nix-media"];
+  };
+
   # upnp.forwards.ssh = {
   #   from = 22;
   #   to = 22;
