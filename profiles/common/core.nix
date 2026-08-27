@@ -10,6 +10,8 @@ in {
   i18n.defaultLocale = "en_CA.UTF-8";
 
   nix = {
+    channel.enable = false;
+
     settings = {
       experimental-features = ["nix-command" "flakes"];
       connect-timeout = 2;
