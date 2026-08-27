@@ -12,18 +12,13 @@
     initrd = {
       availableKernelModules = ["nvme" "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod"];
       kernelModules = [];
-      systemd.enable = true;
     };
     kernelModules = ["kvm-amd"];
     extraModulePackages = [];
     supportedFilesystems = ["zfs"];
-    zfs.forceImportRoot = false;
   };
 
-  networking.interfaces.enp6s0.wakeOnLan = {
-    enable = true;
-    policy = ["magic"];
-  };
+  nvidia.enable = true;
 
   rootZfs.diskId = "/dev/disk/by-id/nvme-ADATA_SX8200PNP_2K4829A5C2U1";
 

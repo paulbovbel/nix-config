@@ -5,15 +5,21 @@
   ];
 
   boot = {
+    initrd.systemd.enable = true;
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
     # TODO try CachyOS kernel for gaming performance?
     kernelPackages = pkgs.linuxPackages;
+    zfs.forceImportRoot = false;
   };
 
   networking = {
     hostName = "white-tower";
     hostId = "3f0c8d5a";
+    interfaces.enp6s0.wakeOnLan = {
+      enable = true;
+      policy = ["magic"];
+    };
   };
 
   rootZfs = {
@@ -23,7 +29,6 @@
   };
 
   llamaCpp.enable = false;
-  nvidia.enable = true;
 
   services.udev.extraRules = ''
     # Prevent the Audeze Maxwell dongle from autosuspending mid-session.

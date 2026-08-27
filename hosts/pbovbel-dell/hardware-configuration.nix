@@ -12,20 +12,22 @@
     initrd = {
       availableKernelModules = ["nvme" "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod"];
       kernelModules = [];
-      systemd.enable = true;
     };
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
     supportedFilesystems = ["zfs"];
-    zfs.forceImportRoot = false;
   };
 
   rootZfs.diskId = "/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_2TB_7A0F07181E3D00004779";
 
-  nvidia.prime = {
+  nvidia = {
     enable = true;
-    intelBusId = "PCI:0:2:0";
-    nvidiaBusId = "PCI:1:0:0";
+    open = false;
+    prime = {
+      enable = true;
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:1:0:0";
+    };
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";

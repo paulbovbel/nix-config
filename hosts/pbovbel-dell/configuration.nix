@@ -5,9 +5,11 @@
   ];
 
   boot = {
+    initrd.systemd.enable = true;
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
     kernelPackages = pkgs.linuxPackages;
+    zfs.forceImportRoot = false;
   };
 
   networking = {
@@ -26,11 +28,6 @@
     enable = true;
     impermanent = true;
     swapSize = "32G";
-  };
-
-  nvidia = {
-    enable = true;
-    open = false;
   };
 
   system.stateVersion = "26.05";

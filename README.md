@@ -61,7 +61,8 @@ just dry-run <host>
 
 ## Where Changes Belong
 
-- Machine-specific hardware, settings, and module enablement: `hosts/<host>/configuration.nix`
+- Machine-specific policy, settings, and module enablement: `hosts/<host>/configuration.nix`
+- Physical hardware facts and enablement, including device modules, disk identities, GPU support, firmware, and host platform: `hosts/<host>/hardware-configuration.nix`
 - Host user and profile selection: `hosts/<host>/default.nix`
 - Shared site values: `hosts/site.nix`
 - Reusable NixOS behavior and public options: `modules/<name>/`
@@ -69,6 +70,8 @@ just dry-run <host>
 - Profile selection mapping: `profiles/default.nix`
 - Agenix-encrypted values: `secrets/`
 - Agenix recipient declarations: `secrets.nix`
+
+Keep intentional machine policy in `configuration.nix`, including bootloader and kernel selection, network identity and behavior, services, and `rootZfs` behavior. Keep generated or hardware-bound values in `hardware-configuration.nix`; these files may be maintained manually after their initial generation.
 
 Do not add plaintext secrets. Stateful services on impermanent hosts must declare their persistent files or directories through `rootZfs`. Server containers should use the `podmanServer` abstractions, HTTP exposure should use `caddy.sites`, and shared data should use `storage.datasets` rather than unmanaged paths.
 

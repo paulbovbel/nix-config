@@ -12,18 +12,13 @@
     initrd = {
       availableKernelModules = ["nvme" "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod"];
       kernelModules = [];
-      systemd.enable = true;
     };
     kernelModules = ["kvm-amd"];
     extraModulePackages = [];
     supportedFilesystems = ["zfs"];
-    zfs.forceImportRoot = false;
   };
 
-  networking.interfaces.enp6s0.wakeOnLan = {
-    enable = true;
-    policy = ["magic"];
-  };
+  nvidia.enable = true;
 
   rootZfs.diskId = "/dev/disk/by-id/nvme-PM9A1_NVMe_Samsung_512GB__S6H3NX0RC78893";
 

@@ -50,14 +50,13 @@ in {
   ];
 
   boot = {
+    initrd.systemd.enable = true;
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
 
     # use LTS for appliance
     kernelPackages = pkgs.linuxPackages;
-
-    # The ASPEED BMC VGA adapter reports a corrupt EDID and floods the journal.
-    blacklistedKernelModules = ["ast"];
+    zfs.forceImportRoot = false;
   };
 
   netboot = {

@@ -5,15 +5,21 @@
   ];
 
   boot = {
+    initrd.systemd.enable = true;
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
     # TODO try CachyOS kernel for gaming performance?
     kernelPackages = pkgs.linuxPackages;
+    zfs.forceImportRoot = false;
   };
 
   networking = {
     hostName = "rainbow-wave";
     hostId = "4619f943";
+    interfaces.enp6s0.wakeOnLan = {
+      enable = true;
+      policy = ["magic"];
+    };
   };
 
   rootZfs = {
@@ -21,8 +27,6 @@
     impermanent = true;
     swapSize = "8G";
   };
-
-  nvidia.enable = true;
 
   system.stateVersion = "26.05";
 
