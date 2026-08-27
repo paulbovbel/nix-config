@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }: {
@@ -74,15 +75,19 @@
           location = "https://flathub.org/repo/flathub.flatpakrepo";
         }
       ];
-      packages = [
-        "org.mozilla.firefox"
-        "com.spotify.Client"
-        "com.discordapp.Discord"
-        "org.gimp.GIMP"
-        "org.inkscape.Inkscape"
-        "org.signal.Signal"
-        "com.rtosta.zapzap"
-      ];
+      packages =
+        [
+          "org.mozilla.firefox"
+          "org.gimp.GIMP"
+          "org.inkscape.Inkscape"
+          "com.rtosta.zapzap"
+        ]
+        ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
+          "com.spotify.Client"
+          "com.discordapp.Discord"
+          "org.signal.Signal"
+          "tv.plex.PlexDesktop"
+        ];
     };
 
     xserver = {
@@ -138,7 +143,6 @@
       pkgs.headsetcontrol
       pkgs.yaru-theme
       pkgs.libva-utils
-      pkgs.nvtopPackages.nvidia
       pkgs.qpwgraph
       pkgs.remmina
       pkgs.vlc

@@ -33,6 +33,11 @@
         disko.follows = "disko";
       };
     };
+    nixos-apple-silicon = {
+      # OpenZFS 2.4 supports kernels through 7.0; newer Asahi releases use 7.1.
+      url = "github:nix-community/nixos-apple-silicon/3902c801519264191a7c3dfec8dd1f9faeb38fd5";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     impermanence = {
       url = "github:nix-community/impermanence";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -63,10 +68,11 @@
     vscode-workspace-populator,
     stylix,
     quadlet-nix,
+    nixos-apple-silicon,
     ...
   }: let
     inherit (nixpkgs) lib;
-    system = "x86_64-linux";
+    defaultSystem = "x86_64-linux";
     packageOverrides = final: prev: {
       headsetcontrol = prev.headsetcontrol.overrideAttrs (_: {
         # Last released version of headsetcontrol doesn't include fixes for Audeze Maxwell headset
@@ -118,7 +124,7 @@
       packageOverrides
     ];
 
-    mkPkgs = src:
+    mkPkgs = system: src:
       import src {
         inherit system overlays;
         config.allowUnfree = true;
@@ -214,17 +220,18 @@
 
     mkHost = name: rawCfg: let
       cfg = validateHost name rawCfg;
+      system = cfg.system or defaultSystem;
       configuredUserNames = map (user: user.name) cfg.users;
       nixpkgsForHost =
         if cfg.useUnstablePackages or false
         then nixpkgs-unstable
         else nixpkgs;
-      unstablePkgs = mkPkgs nixpkgs-unstable;
+      unstablePkgs = mkPkgs system nixpkgs-unstable;
     in
       nixpkgsForHost.lib.nixosSystem {
         inherit system;
         specialArgs = {
-          inherit agenix locus-vpn-client unstablePkgs;
+          inherit agenix locus-vpn-client nixos-apple-silicon unstablePkgs;
         };
         modules =
           [
@@ -241,15 +248,16 @@
       white-tower = import ./hosts/white-tower;
       rainbow-wave = import ./hosts/rainbow-wave;
       pbovbel-dell = import ./hosts/pbovbel-dell;
+      becmac-pro = import ./hosts/becmac-pro;
       media = import ./hosts/media;
     };
     nixosConfigurations = lib.mapAttrs mkHost hosts;
-    devPkgs = import nixpkgs {inherit system;};
+    devPkgs = import nixpkgs {system = defaultSystem;};
   in {
     inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
-    packages.${system}.attic-client = devPkgs.attic-client;
-    devShells.${system}.default = devPkgs.mkShell {
+    packages.${defaultSystem}.attic-client = devPkgs.attic-client;
+    devShells.${defaultSystem}.default = devPkgs.mkShell {
       packages = with devPkgs; [
         alejandra
         deadnix

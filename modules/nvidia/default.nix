@@ -30,6 +30,7 @@ in {
 
       hardware.graphics.extraPackages = [
         pkgs.nvidia-vaapi-driver
+        pkgs.nvtopPackages.nvidia
       ];
 
       environment.sessionVariables = {

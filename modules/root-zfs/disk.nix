@@ -8,6 +8,15 @@
     type = "zfs";
     pool = "zroot";
   };
+  rootContent =
+    if cfg.encrypted
+    then {
+      type = "luks";
+      name = "crypted";
+      settings.allowDiscards = true;
+      content = zfsContent;
+    }
+    else zfsContent;
   homeDatasets = lib.listToAttrs (map (name: {
       name = "root/home/${name}";
       value = {
@@ -18,59 +27,93 @@
     cfg.homeUsers);
 in {
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.diskId != null || cfg.existingPartitions != null;
+        message = "rootZfs requires either diskId or existingPartitions.";
+      }
+      {
+        assertion = cfg.diskId == null || cfg.existingPartitions == null;
+        message = "rootZfs.diskId and rootZfs.existingPartitions are mutually exclusive.";
+      }
+    ];
+
     disko.zfs.enable = true;
 
     disko.devices = {
-      disk.main = {
-        type = "disk";
-        device = cfg.diskId;
-        content = {
-          type = "gpt";
-          partitions =
-            {
-              ESP = {
-                priority = 1;
-                size = "1G";
-                type = "EF00";
-                content = {
-                  type = "filesystem";
-                  format = "vfat";
-                  mountpoint = "/boot";
-                  mountOptions = ["umask=0077"];
-                };
+      disk =
+        if cfg.existingPartitions != null
+        then
+          {
+            esp = {
+              type = "disk";
+              device = cfg.existingPartitions.efiDevice;
+              destroy = false;
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+                mountOptions = ["umask=0077"];
               };
+            };
+            root = {
+              type = "disk";
+              device = cfg.existingPartitions.zfsDevice;
+              content = rootContent;
+            };
+          }
+          // lib.optionalAttrs (cfg.existingPartitions.swapDevice != null) {
+            swap = {
+              type = "disk";
+              device = cfg.existingPartitions.swapDevice;
+              content = {
+                type = "swap";
+                randomEncryption = true;
+              };
+            };
+          }
+        else {
+          main = {
+            type = "disk";
+            device = cfg.diskId;
+            content = {
+              type = "gpt";
+              partitions =
+                {
+                  ESP = {
+                    priority = 1;
+                    size = "1G";
+                    type = "EF00";
+                    content = {
+                      type = "filesystem";
+                      format = "vfat";
+                      mountpoint = "/boot";
+                      mountOptions = ["umask=0077"];
+                    };
+                  };
 
-              swap = {
-                size = cfg.swapSize;
-                content = {
-                  type = "swap";
-                  # Ephemeral swap: fresh key every boot, no swap persistence.
-                  randomEncryption = true;
-                };
-              };
-            }
-            // (
-              if cfg.encrypted
-              then {
-                encrypted = {
-                  size = "100%";
-                  content = {
-                    type = "luks";
-                    name = "crypted";
-                    settings.allowDiscards = true;
-                    content = zfsContent;
+                  swap = {
+                    size = cfg.swapSize;
+                    content = {
+                      type = "swap";
+                      # Ephemeral swap: fresh key every boot, no swap persistence.
+                      randomEncryption = true;
+                    };
+                  };
+                }
+                // {
+                  ${
+                    if cfg.encrypted
+                    then "encrypted"
+                    else "root"
+                  } = {
+                    size = "100%";
+                    content = rootContent;
                   };
                 };
-              }
-              else {
-                root = {
-                  size = "100%";
-                  content = zfsContent;
-                };
-              }
-            );
+            };
+          };
         };
-      };
 
       zpool.zroot = {
         type = "zpool";

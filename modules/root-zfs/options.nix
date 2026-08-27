@@ -19,8 +19,31 @@
     };
 
     diskId = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.nullOr lib.types.str;
+      default = null;
       description = "Disk id path for main system disk (e.g. /dev/disk/by-id/...)";
+    };
+
+    existingPartitions = lib.mkOption {
+      type = lib.types.nullOr (lib.types.submodule {
+        options = {
+          efiDevice = lib.mkOption {
+            type = lib.types.str;
+            description = "Existing EFI system partition mounted at /boot.";
+          };
+          zfsDevice = lib.mkOption {
+            type = lib.types.str;
+            description = "Existing partition used as the zroot vdev.";
+          };
+          swapDevice = lib.mkOption {
+            type = lib.types.nullOr lib.types.str;
+            default = null;
+            description = "Optional existing partition used for randomly encrypted swap.";
+          };
+        };
+      });
+      default = null;
+      description = "Existing partitions to use without modifying their parent partition table.";
     };
 
     swapSize = lib.mkOption {
