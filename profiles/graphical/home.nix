@@ -50,8 +50,6 @@ in {
 
     dconf.enable = true;
 
-    stylix.targets.qt.platform = "qtct";
-
     home.file = lib.mkIf cfg.enable (
       {
         ".local/share/backgrounds/${cfg.fileName}".source = cfg.source;

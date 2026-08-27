@@ -51,6 +51,10 @@
       url = "github:nix-community/stylix/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    catppuccin = {
+      url = "github:catppuccin/nix/release-26.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
   };
 
@@ -67,6 +71,7 @@
     nix-vscode-extensions,
     vscode-workspace-populator,
     stylix,
+    catppuccin,
     quadlet-nix,
     nixos-apple-silicon,
     ...
@@ -159,6 +164,7 @@
       impermanence.nixosModules.impermanence
       home-manager.nixosModules.home-manager
       stylix.nixosModules.stylix
+      catppuccin.nixosModules.catppuccin
       quadlet-nix.nixosModules.quadlet
     ];
 
@@ -209,6 +215,7 @@
         backupFileExtension = "backup";
         useGlobalPkgs = true;
         useUserPackages = true;
+        sharedModules = [catppuccin.homeModules.catppuccin];
         extraSpecialArgs = {
           inherit unstablePkgs;
           inherit vscode-workspace-populator;

@@ -6,32 +6,8 @@
 }: {
   imports = [
     ../common/system.nix
+    ./visual.nix
   ];
-
-  stylix = {
-    enable = true;
-    autoEnable = true;
-    base16Scheme = "${pkgs.base16-schemes}/share/themes/tokyo-night-dark.yaml";
-    cursor = {
-      package = pkgs.catppuccin-cursors.mochaBlue;
-      name = "catppuccin-mocha-blue-cursors";
-      size = 24;
-    };
-    icons = {
-      enable = true;
-      package = pkgs.papirus-icon-theme;
-      dark = "Papirus-Dark";
-    };
-    polarity = "dark";
-  };
-
-  boot = {
-    kernelParams = [
-      "quiet"
-      "splash"
-    ];
-    plymouth.enable = true;
-  };
 
   age.secrets.tailscale-oauth-authkey = {
     file = ../../secrets/laptop/tailscale-oauth-authkey.age;
