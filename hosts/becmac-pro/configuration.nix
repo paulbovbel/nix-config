@@ -35,7 +35,7 @@
   hardware.asahi = {
     enable = true;
     extractPeripheralFirmware = true;
-    peripheralFirmwareDirectory = "/boot/vendorfw";
+    peripheralFirmwareDirectory = /boot/vendorfw;
   };
 
   hardware.apple.touchBar = {
