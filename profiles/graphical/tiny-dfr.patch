@@ -1,0 +1,68 @@
+diff --git a/src/main.rs b/src/main.rs
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -47,6 +47,10 @@ use display::DrmBackend;
+ use pixel_shift::{PixelShiftManager, PIXEL_SHIFT_WIDTH_PX};
+ const BUTTON_SPACING_PX: i32 = 16;
+-const BUTTON_COLOR_INACTIVE: f64 = 0.200;
+-const BUTTON_COLOR_ACTIVE: f64 = 0.400;
++const BACKGROUND_COLOR: (f64, f64, f64) = @backgroundColor@;
++const BUTTON_COLOR_INACTIVE: (f64, f64, f64) = @inactiveColor@;
++const BUTTON_COLOR_ACTIVE: (f64, f64, f64) = @activeColor@;
++const FOREGROUND_COLOR: (f64, f64, f64) = @foregroundColor@;
++const BATTERY_CHARGING_COLOR: (f64, f64, f64) = @chargingColor@;
++const BATTERY_LOW_COLOR: (f64, f64, f64) = @lowColor@;
+ const ICON_SIZE: i32 = 48;
+ const TIMEOUT_MS: i32 = 10 * 1000;
+@@ -364,16 +368,17 @@ impl Button {
+             toggle_keys(uinput, &self.action, active as i32);
+         }
+     }
+-    fn set_background_color(&self, c: &Context, color: f64) {
+-        if let ButtonImage::Battery(battery, _, _) = &self.image {
++    fn set_background_color(&self, c: &Context, color: (f64, f64, f64)) {
++        let color = if let ButtonImage::Battery(battery, _, _) = &self.image {
+             let (_, state) = get_battery_state(battery);
+             match state {
+-                BatteryState::NotCharging => c.set_source_rgb(color, color, color),
+-                BatteryState::Charging => c.set_source_rgb(0.0, color, 0.0),
+-                BatteryState::Low => c.set_source_rgb(color, 0.0, 0.0),
++                BatteryState::NotCharging => color,
++                BatteryState::Charging => BATTERY_CHARGING_COLOR,
++                BatteryState::Low => BATTERY_LOW_COLOR,
+             }
+         } else {
+-            c.set_source_rgb(color, color, color);
+-        }
++            color
++        };
++        c.set_source_rgb(color.0, color.1, color.2);
+     }
+ }
+@@ -427,6 +432,6 @@ impl FunctionLayer {
+         let (pixel_shift_x, pixel_shift_y) = pixel_shift;
+         if complete_redraw {
+-            c.set_source_rgb(0.0, 0.0, 0.0);
++            c.set_source_rgb(BACKGROUND_COLOR.0, BACKGROUND_COLOR.1, BACKGROUND_COLOR.2);
+             c.paint().unwrap();
+         }
+         c.set_font_face(&config.font_face);
+@@ -461,7 +466,7 @@ impl FunctionLayer {
+-                0.0
++                BACKGROUND_COLOR
+             };
+             if !complete_redraw {
+-                c.set_source_rgb(0.0, 0.0, 0.0);
++                c.set_source_rgb(BACKGROUND_COLOR.0, BACKGROUND_COLOR.1, BACKGROUND_COLOR.2);
+                 c.rectangle(
+                     left_edge,
+                     bot - radius,
+@@ -506,7 +511,7 @@ impl FunctionLayer {
+                 c.close_path();
+                 c.fill().unwrap();
+             }
+-            c.set_source_rgb(1.0, 1.0, 1.0);
++            c.set_source_rgb(FOREGROUND_COLOR.0, FOREGROUND_COLOR.1, FOREGROUND_COLOR.2);
+             button.render(
+                 &c,
+                 height,
