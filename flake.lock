@@ -503,6 +503,7 @@
         "nixpkgs-unstable": "nixpkgs-unstable",
         "quadlet-nix": "quadlet-nix",
         "stylix": "stylix",
+        "tiny-dfr-nyan": "tiny-dfr-nyan",
         "vscode-workspace-populator": "vscode-workspace-populator"
       }
     },
@@ -631,6 +632,26 @@
       "original": {
         "owner": "tinted-theming",
         "repo": "base16-zed",
+        "type": "github"
+      }
+    },
+    "tiny-dfr-nyan": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787870398,
+        "narHash": "sha256-TS/8NFUTffCVCf4GrRqmjJtup1adrI9Ajd1Xl3nZAoc=",
+        "owner": "paulbovbel",
+        "repo": "tiny-dfr-nyan",
+        "rev": "3f3c21501aac8458d3053226dc843f3ca3cb6124",
+        "type": "github"
+      },
+      "original": {
+        "owner": "paulbovbel",
+        "repo": "tiny-dfr-nyan",
         "type": "github"
       }
     },

@@ -4,6 +4,10 @@
   inputs = {
     nixpkgs.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1";
     nixpkgs-unstable.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1";
+    tiny-dfr-nyan = {
+      url = "github:paulbovbel/tiny-dfr-nyan";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     locus-vpn-client = {
       url = "git+ssh://git@github.com/locusrobotics/locus-vpn-client.git";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -74,6 +78,7 @@
     catppuccin,
     quadlet-nix,
     nixos-apple-silicon,
+    tiny-dfr-nyan,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -242,7 +247,7 @@
       nixpkgsForHost.lib.nixosSystem {
         inherit system;
         specialArgs = {
-          inherit agenix locus-vpn-client nixos-apple-silicon unstablePkgs;
+          inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan unstablePkgs;
         };
         modules =
           [

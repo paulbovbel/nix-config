@@ -1,7 +1,6 @@
 {
   lib,
   nixos-apple-silicon,
-  pkgs,
   ...
 }: {
   imports = [
@@ -18,7 +17,6 @@
 
   hardware.apple.touchBar = {
     enable = true;
-    package = pkgs.tiny-dfr;
   };
 
   rootZfs.existingPartitions = {
