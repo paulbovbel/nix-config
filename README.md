@@ -9,9 +9,10 @@ Personal NixOS fleet configuration for desktops, a laptop, and a media server. T
 | `white-tower` | Primary gaming desktop | `pbovbel: gaming`, `rbovbel: graphical`, `abovbel: gaming` |
 | `rainbow-wave` | Gaming desktop | `pbovbel: gaming`, `abovbel: gaming` |
 | `pbovbel-dell` | Work laptop | `pbovbel: work` |
+| `becmac-pro` | Apple silicon laptop | `pbovbel: graphical`, `rbovbel: graphical` |
 | `media` | Media, game, cache, ingress, and storage server | `pbovbel: headless` |
 
-Hosts are registered in `flake.nix`. Each `hosts/<host>/default.nix` selects users and their profiles, while `hosts/<host>/configuration.nix` contains machine settings and enables host-facing modules. Settings shared by the local site, including DNS domains, live in `hosts/site.nix`.
+Hosts are registered in `flake.nix`. Each `hosts/<host>/default.nix` declares its target system and selects users and their profiles, while `hosts/<host>/configuration.nix` contains machine settings and enables host-facing modules. Settings shared by the local site, including DNS domains, live in `hosts/site.nix`.
 
 ## Composition
 
@@ -49,7 +50,7 @@ just dry-run <host>
 just switch <host>
 ```
 
-`just switch` switches locally when `<host>` matches the current hostname; otherwise it builds and activates through SSH on that host. Valid hosts are `white-tower`, `rainbow-wave`, `pbovbel-dell`, and `media`.
+`just switch` switches locally when `<host>` matches the current hostname; otherwise it builds and activates through SSH on that host. Valid hosts are `white-tower`, `rainbow-wave`, `pbovbel-dell`, `becmac-pro`, and `media`.
 
 Run the full validation suite after every configuration change:
 
@@ -73,7 +74,7 @@ Do not add plaintext secrets. Stateful services on impermanent hosts must declar
 
 ## Adding A Host
 
-1. Create `hosts/<host>/default.nix` with its users and profile selections.
+1. Create `hosts/<host>/default.nix` with its target system, users, and profile selections.
 2. Create `hosts/<host>/configuration.nix` and hardware configuration.
 3. Register the host in the `hosts` attribute set in `flake.nix`.
 4. Add its agenix recipient key to `secrets.nix` and rekey secrets as needed.

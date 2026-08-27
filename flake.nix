@@ -72,7 +72,11 @@
     ...
   }: let
     inherit (nixpkgs) lib;
-    defaultSystem = "x86_64-linux";
+    systems = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
+    forAllSystems = lib.genAttrs systems;
     packageOverrides = final: prev: {
       headsetcontrol = prev.headsetcontrol.overrideAttrs (_: {
         # Last released version of headsetcontrol doesn't include fixes for Audeze Maxwell headset
@@ -220,7 +224,7 @@
 
     mkHost = name: rawCfg: let
       cfg = validateHost name rawCfg;
-      system = cfg.system or defaultSystem;
+      inherit (cfg) system;
       configuredUserNames = map (user: user.name) cfg.users;
       nixpkgsForHost =
         if cfg.useUnstablePackages or false
@@ -252,12 +256,15 @@
       media = import ./hosts/media;
     };
     nixosConfigurations = lib.mapAttrs mkHost hosts;
-    devPkgs = import nixpkgs {system = defaultSystem;};
   in {
     inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
-    packages.${defaultSystem}.attic-client = devPkgs.attic-client;
-    devShells = lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
+    packages = forAllSystems (system: let
+      pkgs = import nixpkgs {inherit system;};
+    in {
+      inherit (pkgs) attic-client;
+    });
+    devShells = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
     in {
       default = pkgs.mkShell {
