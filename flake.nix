@@ -257,17 +257,21 @@
     inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
     packages.${defaultSystem}.attic-client = devPkgs.attic-client;
-    devShells.${defaultSystem}.default = devPkgs.mkShell {
-      packages = with devPkgs; [
-        alejandra
-        deadnix
-        fd
-        just
-        ruff
-        shellcheck
-        shfmt
-        statix
-      ];
-    };
+    devShells = lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
+      pkgs = import nixpkgs {inherit system;};
+    in {
+      default = pkgs.mkShell {
+        packages = with pkgs; [
+          alejandra
+          deadnix
+          fd
+          just
+          ruff
+          shellcheck
+          shfmt
+          statix
+        ];
+      };
+    });
   };
 }
