@@ -26,6 +26,12 @@
     networkmanager.wifi.backend = "iwd";
   };
 
+  home-manager.sharedModules = [
+    {
+      dconf.settings."org/gnome/desktop/input-sources".xkb-options = ["altwin:swap_alt_win"];
+    }
+  ];
+
   hardware.asahi = {
     enable = true;
     extractPeripheralFirmware = true;
