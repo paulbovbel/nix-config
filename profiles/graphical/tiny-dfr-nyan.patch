@@ -6,37 +6,43 @@ diff --git a/src/main.rs b/src/main.rs
 +    io::Cursor,
      panic::{self, AssertUnwindSafe},
      path::{Path, PathBuf},
-+    time::Instant,
++    time::{Duration, Instant},
  };
  use udev::MonitorBuilder;
- 
-@@ -51,5 +53,7 @@ const BUTTON_COLOR_ACTIVE: f64 = 0.400;
+
+@@ -51,5 +53,12 @@ const BUTTON_COLOR_ACTIVE: f64 = 0.400;
  const ICON_SIZE: i32 = 48;
  const TIMEOUT_MS: i32 = 10 * 1000;
++const NYAN_CAT_CENTER_X: f64 = 185.0;
++const NYAN_EXPLOSION_FRAMES: u64 = 45;
++const NYAN_EXPLOSION_SPEED: f64 = 6.0;
++const NYAN_FLING_DRAG: f64 = 3.0;
 +const NYAN_FRAME_MS: i32 = 16;
-+const NYAN_TRAVEL_FRAMES: u64 = 425;
- 
++const NYAN_FRAME_COUNT: i32 = 4;
++const NYAN_TRAVEL_SECONDS: f64 = 7.0;
+
  #[derive(Clone, Copy, PartialEq, Eq)]
  enum BatteryState {
-@@ -243,6 +247,34 @@ fn get_battery_state(battery: &str) -> (u32, BatteryState) {
+@@ -243,6 +251,68 @@ fn get_battery_state(battery: &str) -> (u32, BatteryState) {
      (capacity, status)
  }
- 
+
 +fn load_nyan_sprite() -> ImageSurface {
 +    let mut data = Cursor::new(include_bytes!("@nyanSprite@"));
 +    ImageSurface::create_from_png(&mut data).unwrap()
 +}
 +
-+fn draw_nyan_cat(c: &Context, width: i32, height: i32, sprite: &ImageSurface, frame: u64) {
-+    const FRAME_COUNT: u64 = 4;
-+
-+    let frame_width = sprite.width() / FRAME_COUNT as i32;
-+    let frame_x = ((frame / 6) % FRAME_COUNT) as f64 * frame_width as f64;
-+    let travel_frame = frame % NYAN_TRAVEL_FRAMES;
++fn draw_nyan_cat(
++    c: &Context,
++    width: i32,
++    height: i32,
++    sprite: &ImageSurface,
++    x: f64,
++    frame: u64,
++) {
++    let frame_width = sprite.width() / NYAN_FRAME_COUNT;
++    let frame_x = ((frame / 6) % NYAN_FRAME_COUNT as u64) as f64 * frame_width as f64;
 +    let scale = height as f64 / sprite.height() as f64;
-+    let rendered_width = frame_width as f64 * scale;
-+    let x = (width as f64 + rendered_width) * travel_frame as f64 / NYAN_TRAVEL_FRAMES as f64
-+        - rendered_width;
 +
 +    c.save().unwrap();
 +    c.rectangle(0.0, 0.0, width as f64, height as f64);
@@ -50,82 +56,200 @@ diff --git a/src/main.rs b/src/main.rs
 +    c.restore().unwrap();
 +}
 +
++fn draw_nyan_explosion(c: &Context, x: f64, height: i32, frame: u64) {
++    let progress = frame as f64 / NYAN_EXPLOSION_FRAMES as f64;
++    let colors = [
++        (1.0, 0.2, 0.25),
++        (1.0, 0.6, 0.15),
++        (1.0, 0.9, 0.2),
++        (0.25, 0.85, 0.35),
++        (0.2, 0.55, 1.0),
++        (0.7, 0.35, 0.9),
++        (0.95, 0.45, 0.7),
++        (0.65, 0.65, 0.68),
++    ];
++    let directions = [
++        (-1.0, -0.2),
++        (-0.75, -0.75),
++        (-0.2, -1.0),
++        (0.55, -0.85),
++        (1.0, -0.25),
++        (0.8, 0.65),
++        (0.15, 1.0),
++        (-0.7, 0.75),
++    ];
++    let size = 2.0 + (1.0 - progress) * 7.0;
++    for (i, ((dx, dy), color)) in directions.iter().zip(colors.iter()).enumerate() {
++        let distance = progress * (55.0 + i as f64 * 7.0);
++        let px = x + dx * distance;
++        let py = height as f64 / 2.0 + dy * distance + progress * progress * 24.0;
++        c.set_source_rgb(color.0, color.1, color.2);
++        c.rectangle(px - size / 2.0, py - size / 2.0, size, size);
++        c.fill().unwrap();
++    }
++}
++
  impl Button {
      fn with_config(cfg: ButtonConfig) -> Button {
          if let Some(text) = cfg.text {
-@@ -420,6 +446,8 @@ impl FunctionLayer {
+@@ -420,6 +446,9 @@ impl FunctionLayer {
          surface: &Surface,
          pixel_shift: (f64, f64),
          complete_redraw: bool,
 +        nyan_sprite: &ImageSurface,
-+        animation_frame: Option<u64>,
++        animation: Option<(f64, u64)>,
++        explosion: Option<(f64, u64)>,
      ) -> Vec<ClipRect> {
          let c = Context::new(surface).unwrap();
          let mut modified_regions = if complete_redraw {
-@@ -537,6 +565,10 @@ impl FunctionLayer {
+@@ -537,6 +565,13 @@ impl FunctionLayer {
              }
          }
- 
-+        if let Some(frame) = animation_frame {
-+            draw_nyan_cat(&c, width, height, nyan_sprite, frame);
+
++        if let Some((x, frame)) = animation {
++            draw_nyan_cat(&c, width, height, nyan_sprite, x, frame);
++        }
++        if let Some((x, frame)) = explosion {
++            draw_nyan_explosion(&c, x, height, frame);
 +        }
 +
          modified_regions
      }
- 
-@@ -652,4 +682,5 @@ fn real_main(drm: &mut DrmBackend) {
+
+@@ -652,4 +682,9 @@ fn real_main(drm: &mut DrmBackend) {
      let mut surface =
          ImageSurface::create(Format::ARgb32, db_width as i32, db_height as i32).unwrap();
 +    let nyan_sprite = load_nyan_sprite();
++    let nyan_frame_width = nyan_sprite.width() / NYAN_FRAME_COUNT;
++    let nyan_width = nyan_frame_width as f64 * height as f64 / nyan_sprite.height() as f64;
++    let nyan_cat_center = NYAN_CAT_CENTER_X * height as f64 / nyan_sprite.height() as f64;
++    let nyan_speed = (width as f64 + nyan_width) / NYAN_TRAVEL_SECONDS;
      let mut active_layer = 0;
      let mut needs_complete_redraw = true;
-@@ -702,6 +733,8 @@ fn real_main(drm: &mut DrmBackend) {
+@@ -702,6 +736,15 @@ fn real_main(drm: &mut DrmBackend) {
      } else {
          Local::now().minute()
      };
-+    let mut animation_start = Some(Instant::now());
-+    let mut last_animation_frame = None;
++    let animation_epoch = Instant::now();
++    let mut animation_update = animation_epoch;
++    let mut animation_x = Some(-nyan_width);
++    let mut animation_held = false;
++    let mut animation_velocity = nyan_speed;
++    let mut last_touch_x = None;
++    let mut drag_energy = 0.0;
++    let mut explosion_start: Option<(Instant, f64)> = None;
++    let mut explosion_deadline = None;
      loop {
          if cfg_mgr.update_config(&mut cfg, &mut layers, width) {
              active_layer = 0;
-@@ -712,6 +745,21 @@ fn real_main(drm: &mut DrmBackend) {
+@@ -712,6 +750,53 @@ fn real_main(drm: &mut DrmBackend) {
          let ms_left = ((60 - now.second()) * 1000) as i32;
          let mut next_timeout_ms = min(ms_left, TIMEOUT_MS);
- 
-+        let animation_frame = animation_start
-+            .map(|start| {
-+                (start.elapsed().as_millis() / NYAN_FRAME_MS as u128) as u64
-+            })
-+            .filter(|frame| *frame < NYAN_TRAVEL_FRAMES);
-+        if animation_frame != last_animation_frame {
-+            needs_complete_redraw = true;
-+            last_animation_frame = animation_frame;
+
++        let animation_now = Instant::now();
++        let animation_elapsed = animation_now.duration_since(animation_update).as_secs_f64();
++        animation_update = animation_now;
++        let had_animation = animation_x.is_some();
++        if !animation_held {
++            animation_x = animation_x.map(|x| x + animation_velocity * animation_elapsed);
++            if explosion_deadline.is_some() {
++                animation_x = animation_x
++                    .map(|x| x.clamp(-nyan_cat_center, width as f64 - nyan_cat_center));
++            } else {
++                animation_x = animation_x
++                    .filter(|x| *x > -nyan_width && *x < width as f64);
++            }
++            if animation_velocity != 0.0 {
++                let target_velocity = animation_velocity.signum() * nyan_speed;
++                let blend = 1.0 - (-NYAN_FLING_DRAG * animation_elapsed).exp();
++                animation_velocity += (target_velocity - animation_velocity) * blend;
++            }
 +        }
-+        if animation_frame.is_some() {
++        if explosion_deadline.is_some_and(|deadline| animation_now >= deadline) {
++            explosion_start = animation_x
++                .map(|x| (animation_now, x + nyan_cat_center));
++            explosion_deadline = None;
++            animation_x = None;
++        }
++        let animation_frame =
++            (animation_epoch.elapsed().as_millis() / NYAN_FRAME_MS as u128) as u64;
++        let animation = animation_x.map(|x| (x, animation_frame));
++        if animation.is_some() {
++            needs_complete_redraw = true;
 +            next_timeout_ms = min(next_timeout_ms, NYAN_FRAME_MS);
-+        } else {
-+            animation_start = None;
++        } else if had_animation {
++            needs_complete_redraw = true;
++        }
++        let had_explosion = explosion_start.is_some();
++        let explosion = explosion_start.and_then(|(start, x)| {
++            let frame = (start.elapsed().as_millis() / NYAN_FRAME_MS as u128) as u64;
++            (frame < NYAN_EXPLOSION_FRAMES).then_some((x, frame))
++        });
++        if explosion.is_some() {
++            needs_complete_redraw = true;
++            next_timeout_ms = min(next_timeout_ms, NYAN_FRAME_MS);
++        } else if had_explosion {
++            explosion_start = None;
++            needs_complete_redraw = true;
 +        }
 +
          if cfg.enable_pixel_shift {
              let (pixel_shift_needs_redraw, pixel_shift_next_timeout_ms) = pixel_shift.update();
              if pixel_shift_needs_redraw {
-@@ -756,6 +797,8 @@ fn real_main(drm: &mut DrmBackend) {
+@@ -756,6 +797,9 @@ fn real_main(drm: &mut DrmBackend) {
                  &surface,
                  shift,
                  needs_complete_redraw,
 +                &nyan_sprite,
-+                animation_frame,
++                animation,
++                explosion,
              );
              let data = surface.data().unwrap();
              drm.map().unwrap().as_mut()[..data.len()].copy_from_slice(&data);
-@@ -810,6 +865,9 @@ fn real_main(drm: &mut DrmBackend) {
+@@ -810,6 +870,14 @@ fn real_main(drm: &mut DrmBackend) {
                              let x = dn.x_transformed(width as u32);
                              let y = dn.y_transformed(height as u32);
                              if let Some(btn) = layers[active_layer].hit(width, height, x, y, None) {
-+                                animation_start = Some(Instant::now());
-+                                last_animation_frame = None;
++                                animation_x = Some(x - nyan_cat_center);
++                                animation_held = true;
++                                animation_velocity = nyan_speed;
++                                last_touch_x = Some(x);
++                                drag_energy = 0.0;
++                                explosion_start = None;
++                                explosion_deadline = None;
 +                                needs_complete_redraw = true;
                                  touches.insert(dn.seat_slot(), (active_layer, btn));
                                  layers[active_layer].buttons[btn]
                                      .1
+@@ -826,5 +891,18 @@ fn real_main(drm: &mut DrmBackend) {
+                             let x = mtn.x_transformed(width as u32);
+                             let y = mtn.y_transformed(height as u32);
++                            if let Some(last_x) = last_touch_x {
++                                let delta = x - last_x;
++                                drag_energy += delta.abs() / width as f64;
++                                if delta.abs() >= 1.0 {
++                                    let speed_multiplier =
++                                        (1.0 + 128.0 * drag_energy).sqrt().min(8.0);
++                                    animation_velocity =
++                                        delta.signum() * nyan_speed * speed_multiplier;
++                                }
++                            }
++                            last_touch_x = Some(x);
++                            animation_x = Some(x - nyan_cat_center);
++                            needs_complete_redraw = true;
+                             let (layer, btn) = *touches.get(&mtn.seat_slot()).unwrap();
+                             let hit = layers[active_layer]
+                                 .hit(width, height, x, y, Some(btn))
+@@ -838,6 +915,13 @@ fn real_main(drm: &mut DrmBackend) {
+                             }
+                             let (layer, btn) = *touches.get(&up.seat_slot()).unwrap();
++                            animation_held = false;
++                            if animation_velocity.abs() < nyan_speed * 0.25 {
++                                animation_velocity = nyan_speed;
++                            } else if animation_velocity.abs() > nyan_speed * NYAN_EXPLOSION_SPEED {
++                                explosion_deadline = Some(Instant::now() + Duration::from_millis(200));
++                            }
++                            last_touch_x = None;
+                             layers[layer].buttons[btn].1.set_active(&mut uinput, false);
+                         }
+                         _ => {}
