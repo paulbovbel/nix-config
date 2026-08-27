@@ -1,0 +1,131 @@
+diff --git a/src/main.rs b/src/main.rs
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -37,6 +37,8 @@ use std::{
+     },
++    io::Cursor,
+     panic::{self, AssertUnwindSafe},
+     path::{Path, PathBuf},
++    time::Instant,
+ };
+ use udev::MonitorBuilder;
+ 
+@@ -51,5 +53,7 @@ const BUTTON_COLOR_ACTIVE: f64 = 0.400;
+ const ICON_SIZE: i32 = 48;
+ const TIMEOUT_MS: i32 = 10 * 1000;
++const NYAN_FRAME_MS: i32 = 16;
++const NYAN_TRAVEL_FRAMES: u64 = 425;
+ 
+ #[derive(Clone, Copy, PartialEq, Eq)]
+ enum BatteryState {
+@@ -243,6 +247,34 @@ fn get_battery_state(battery: &str) -> (u32, BatteryState) {
+     (capacity, status)
+ }
+ 
++fn load_nyan_sprite() -> ImageSurface {
++    let mut data = Cursor::new(include_bytes!("@nyanSprite@"));
++    ImageSurface::create_from_png(&mut data).unwrap()
++}
++
++fn draw_nyan_cat(c: &Context, width: i32, height: i32, sprite: &ImageSurface, frame: u64) {
++    const FRAME_COUNT: u64 = 4;
++
++    let frame_width = sprite.width() / FRAME_COUNT as i32;
++    let frame_x = ((frame / 6) % FRAME_COUNT) as f64 * frame_width as f64;
++    let travel_frame = frame % NYAN_TRAVEL_FRAMES;
++    let scale = height as f64 / sprite.height() as f64;
++    let rendered_width = frame_width as f64 * scale;
++    let x = (width as f64 + rendered_width) * travel_frame as f64 / NYAN_TRAVEL_FRAMES as f64
++        - rendered_width;
++
++    c.save().unwrap();
++    c.rectangle(0.0, 0.0, width as f64, height as f64);
++    c.clip();
++    c.translate(x, 0.0);
++    c.scale(scale, scale);
++    c.rectangle(0.0, 0.0, frame_width as f64, sprite.height() as f64);
++    c.clip();
++    c.set_source_surface(sprite, -frame_x, 0.0).unwrap();
++    c.paint().unwrap();
++    c.restore().unwrap();
++}
++
+ impl Button {
+     fn with_config(cfg: ButtonConfig) -> Button {
+         if let Some(text) = cfg.text {
+@@ -420,6 +446,8 @@ impl FunctionLayer {
+         surface: &Surface,
+         pixel_shift: (f64, f64),
+         complete_redraw: bool,
++        nyan_sprite: &ImageSurface,
++        animation_frame: Option<u64>,
+     ) -> Vec<ClipRect> {
+         let c = Context::new(surface).unwrap();
+         let mut modified_regions = if complete_redraw {
+@@ -537,6 +565,10 @@ impl FunctionLayer {
+             }
+         }
+ 
++        if let Some(frame) = animation_frame {
++            draw_nyan_cat(&c, width, height, nyan_sprite, frame);
++        }
++
+         modified_regions
+     }
+ 
+@@ -652,4 +682,5 @@ fn real_main(drm: &mut DrmBackend) {
+     let mut surface =
+         ImageSurface::create(Format::ARgb32, db_width as i32, db_height as i32).unwrap();
++    let nyan_sprite = load_nyan_sprite();
+     let mut active_layer = 0;
+     let mut needs_complete_redraw = true;
+@@ -702,6 +733,8 @@ fn real_main(drm: &mut DrmBackend) {
+     } else {
+         Local::now().minute()
+     };
++    let mut animation_start = Some(Instant::now());
++    let mut last_animation_frame = None;
+     loop {
+         if cfg_mgr.update_config(&mut cfg, &mut layers, width) {
+             active_layer = 0;
+@@ -712,6 +745,21 @@ fn real_main(drm: &mut DrmBackend) {
+         let ms_left = ((60 - now.second()) * 1000) as i32;
+         let mut next_timeout_ms = min(ms_left, TIMEOUT_MS);
+ 
++        let animation_frame = animation_start
++            .map(|start| {
++                (start.elapsed().as_millis() / NYAN_FRAME_MS as u128) as u64
++            })
++            .filter(|frame| *frame < NYAN_TRAVEL_FRAMES);
++        if animation_frame != last_animation_frame {
++            needs_complete_redraw = true;
++            last_animation_frame = animation_frame;
++        }
++        if animation_frame.is_some() {
++            next_timeout_ms = min(next_timeout_ms, NYAN_FRAME_MS);
++        } else {
++            animation_start = None;
++        }
++
+         if cfg.enable_pixel_shift {
+             let (pixel_shift_needs_redraw, pixel_shift_next_timeout_ms) = pixel_shift.update();
+             if pixel_shift_needs_redraw {
+@@ -756,6 +797,8 @@ fn real_main(drm: &mut DrmBackend) {
+                 &surface,
+                 shift,
+                 needs_complete_redraw,
++                &nyan_sprite,
++                animation_frame,
+             );
+             let data = surface.data().unwrap();
+             drm.map().unwrap().as_mut()[..data.len()].copy_from_slice(&data);
+@@ -810,6 +865,9 @@ fn real_main(drm: &mut DrmBackend) {
+                             let x = dn.x_transformed(width as u32);
+                             let y = dn.y_transformed(height as u32);
+                             if let Some(btn) = layers[active_layer].hit(width, height, x, y, None) {
++                                animation_start = Some(Instant::now());
++                                last_animation_frame = None;
++                                needs_complete_redraw = true;
+                                 touches.insert(dn.seat_slot(), (active_layer, btn));
+                                 layers[active_layer].buttons[btn]
+                                     .1

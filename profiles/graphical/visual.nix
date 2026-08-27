@@ -15,11 +15,27 @@
     chargingColor = rustColor colors.base0B;
     lowColor = rustColor colors.base08;
   };
+  nyanSprite =
+    pkgs.runCommand "tiny-dfr-nyan-sprite.png" {
+      nativeBuildInputs = [pkgs.imagemagick];
+      src = ../../assets/tiny-dfr/nyan-cat.gif;
+    } ''
+      magick "$src" -coalesce -crop 220x55+1280+0 +repage \
+        +append "PNG32:$out"
+    '';
+  tinyDfrNyanPatch = pkgs.replaceVars ./tiny-dfr-nyan.patch {
+    inherit nyanSprite;
+  };
 in {
   nixpkgs.overlays = [
     (_final: prev: {
       tiny-dfr = prev.tiny-dfr.overrideAttrs (old: {
-        patches = (old.patches or []) ++ [tinyDfrThemePatch];
+        patches =
+          (old.patches or [])
+          ++ [
+            tinyDfrThemePatch
+            tinyDfrNyanPatch
+          ];
         postPatch =
           (old.postPatch or "")
           + ''
