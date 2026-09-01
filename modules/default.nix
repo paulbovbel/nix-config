@@ -14,7 +14,7 @@ in {
     ./monitor
     ./syncthing
     ./podman-server
-    ./root-zfs
+    ./root-fs
     ./nvidia
     ./netboot
     ./llama-cpp

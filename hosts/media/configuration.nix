@@ -57,7 +57,6 @@ in {
 
     # use LTS for appliance
     kernelPackages = pkgs.linuxPackages;
-    zfs.forceImportRoot = false;
   };
 
   netboot = {
@@ -231,8 +230,9 @@ in {
     };
   };
 
-  rootZfs = {
+  rootFs = {
     enable = true;
+    backend = "zfs";
     impermanent = true;
     encrypted = false;
     swapSize = "32G";

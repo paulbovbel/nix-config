@@ -91,7 +91,7 @@ rm -rf "$tmpdir"
 
 ## TPM2 Enrollment
 
-For a host with `rootZfs.encrypted = true`, boot the installed system once and inspect the encrypted partition before enrolling TPM2 auto-unlock:
+For a host with `rootFs.encrypted = true`, boot the installed system once and inspect the encrypted partition before enrolling TPM2 auto-unlock:
 
 ```bash
 lsblk -f

@@ -25,7 +25,7 @@
     "d /etc/ipsec.d 0755 root root -"
   ];
 
-  rootZfs.persistDirectories = [
+  rootFs.persistDirectories = [
     "/etc/ipsec.d"
   ];
 

@@ -15,10 +15,9 @@
     };
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
-    supportedFilesystems = ["zfs"];
   };
 
-  rootZfs.diskId = "/dev/disk/by-id/nvme-KXG70PNV2T04_NVMe_KIOXIA_2048GB_12HFC06BFTW5";
+  rootFs.diskId = "/dev/disk/by-id/nvme-KXG70PNV2T04_NVMe_KIOXIA_2048GB_12HFC06BFTW5";
 
   nvidia = {
     enable = true;

@@ -1,6 +1,6 @@
 # nix-config
 
-Personal NixOS fleet configuration for desktops, a laptop, and a media server. The flake composes machine-specific settings, reusable NixOS modules, Home Manager profiles, encrypted secrets, and ZFS-backed persistent state into one configuration per host.
+Personal NixOS fleet configuration for desktops, a laptop, and a media server. The flake composes machine-specific settings, reusable NixOS modules, Home Manager profiles, encrypted secrets, and persistent state into one configuration per host.
 
 ## Hosts
 
@@ -30,7 +30,7 @@ Each profile entry in `profiles/default.nix` explicitly selects `homeModules` an
 
 Modules under `modules/` are imported globally and generally expose an option namespace that a host enables or configures. Their `options.nix` files are the authoritative API. Major abstractions include:
 
-- `rootZfs` for disk layout, encryption, impermanence, and persistent state
+- `rootFs` for ZFS or Btrfs root layouts, encryption, impermanence, snapshots, and persistent state
 - `podmanServer` for container, path, and derived environment-file declarations
 - `storage` for shared ZFS datasets and generated paths
 - `caddy` for public and authenticated HTTP ingress
@@ -71,9 +71,9 @@ just dry-run <host>
 - Agenix-encrypted values: `secrets/`
 - Agenix recipient declarations: `secrets.nix`
 
-Keep intentional machine policy in `configuration.nix`, including bootloader and kernel selection, network identity and behavior, services, and `rootZfs` behavior. Keep generated or hardware-bound values in `hardware-configuration.nix`; these files may be maintained manually after their initial generation.
+Keep intentional machine policy in `configuration.nix`, including bootloader and kernel selection, network identity and behavior, services, and `rootFs` behavior. Keep generated or hardware-bound values in `hardware-configuration.nix`; these files may be maintained manually after their initial generation.
 
-Do not add plaintext secrets. Stateful services on impermanent hosts must declare their persistent files or directories through `rootZfs`. Server containers should use the `podmanServer` abstractions, HTTP exposure should use `caddy.sites`, and shared data should use `storage.datasets` rather than unmanaged paths.
+Do not add plaintext secrets. Stateful services on impermanent hosts must declare their persistent files or directories through `rootFs`. Server containers should use the `podmanServer` abstractions, HTTP exposure should use `caddy.sites`, and shared data should use `storage.datasets` rather than unmanaged paths.
 
 ## Adding A Host
 

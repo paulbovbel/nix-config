@@ -15,12 +15,11 @@
     };
     kernelModules = ["kvm-amd"];
     extraModulePackages = [];
-    supportedFilesystems = ["zfs"];
   };
 
   nvidia.enable = true;
 
-  rootZfs.diskId = "/dev/disk/by-id/nvme-ADATA_SX8200PNP_2K4829A5C2U1";
+  rootFs.diskId = "/dev/disk/by-id/nvme-ADATA_SX8200PNP_2K4829A5C2U1";
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
