@@ -271,11 +271,44 @@
   in {
     inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
+    apps = forAllSystems (system: let
+      pkgs = import nixpkgs {inherit system;};
+      compatibleHosts = lib.filterAttrs (_: host: host.system == system) hosts;
+      createInstaller = pkgs.writeShellApplication {
+        name = "create-installer";
+        runtimeInputs = [
+          agenix.packages.${system}.default
+          pkgs.age
+          pkgs.coreutils
+          pkgs.dosfstools
+          pkgs.gnused
+          pkgs.nix
+          pkgs.openssh
+          pkgs.util-linux
+        ];
+        runtimeEnv.HOST_NAMES = lib.concatStringsSep " " (lib.attrNames compatibleHosts);
+        text = builtins.readFile ./installer/create-installer.sh;
+      };
+    in {
+      create-installer = {
+        type = "app";
+        program = lib.getExe createInstaller;
+        meta.description = "Build and flash a host installer with a newly generated age identity";
+      };
+    });
     packages = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
-    in {
-      inherit (pkgs) attic-client;
-    });
+      mkInstaller = import ./installer {inherit nixpkgs system;};
+      compatibleHosts = lib.filterAttrs (_: host: host.system == system) hosts;
+      installerPackages = lib.mapAttrs' (name: _:
+        lib.nameValuePair "installer-${name}"
+        (mkInstaller name nixosConfigurations.${name}).config.system.build.isoImage)
+      compatibleHosts;
+    in
+      installerPackages
+      // {
+        inherit (pkgs) attic-client;
+      });
     devShells = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
     in {

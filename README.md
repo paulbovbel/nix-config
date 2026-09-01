@@ -48,6 +48,7 @@ nix develop
 just check
 just dry-run <host>
 just switch <host>
+nix run .#create-installer -- <host> /dev/<usb-device>
 ```
 
 `just switch` switches locally when `<host>` matches the current hostname; otherwise it builds and activates through SSH on that host. Valid hosts are `white-tower`, `rainbow-wave`, `pbovbel-dell`, `becmac-pro`, and `media`.
@@ -83,7 +84,7 @@ Do not add plaintext secrets. Stateful services on impermanent hosts must declar
 4. Add its agenix recipient key to `secrets.nix` and rekey secrets as needed.
 5. Run `just check` and `just dry-run <host>`.
 
-For a clean installation, follow [`docs/install.md`](docs/install.md). The procedure repartitions the target disk and must be reviewed before use.
+For a clean installation, follow [`docs/install.md`](docs/install.md). The flake provides a flashable, host-specific USB installer for each registered host. The installation procedure repartitions the target disk and must be reviewed before use.
 
 ## Runbooks
 
