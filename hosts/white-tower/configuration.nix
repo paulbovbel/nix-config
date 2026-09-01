@@ -10,7 +10,6 @@
     loader.efi.canTouchEfiVariables = true;
     # TODO try CachyOS kernel for gaming performance?
     kernelPackages = pkgs.linuxPackages;
-    zfs.forceImportRoot = false;
   };
 
   networking = {
@@ -22,8 +21,9 @@
     };
   };
 
-  rootZfs = {
+  rootFs = {
     enable = true;
+    backend = "zfs";
     impermanent = true;
     swapSize = "32G";
   };

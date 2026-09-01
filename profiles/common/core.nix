@@ -1,5 +1,6 @@
 {
   agenix,
+  config,
   lib,
   pkgs,
   ...
@@ -64,17 +65,17 @@ in {
     ];
 
   age.identityPaths = [
-    "/persist/etc/agenix/host.agekey"
+    "${config.rootFs.persistPath}/etc/agenix/host.agekey"
   ];
 
-  rootZfs.persistDirectories = [
+  rootFs.persistDirectories = [
     "/var/lib/nixos"
     "/var/lib/systemd"
     "/var/lib/systemd/coredump"
     "/var/log"
   ];
 
-  rootZfs.persistFiles = [
+  rootFs.persistFiles = [
     "/etc/machine-id"
   ];
 }

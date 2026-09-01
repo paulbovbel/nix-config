@@ -15,12 +15,11 @@
     };
     kernelModules = ["kvm-amd"];
     extraModulePackages = [];
-    supportedFilesystems = ["zfs"];
   };
 
   nvidia.enable = true;
 
-  rootZfs.diskId = "/dev/disk/by-id/nvme-PM9A1_NVMe_Samsung_512GB__S6H3NX0RC78893";
+  rootFs.diskId = "/dev/disk/by-id/nvme-PM9A1_NVMe_Samsung_512GB__S6H3NX0RC78893";
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

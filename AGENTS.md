@@ -17,7 +17,7 @@ For repository layout, module composition, and structure recommendations, see [R
 ## Repo Rules
 
 - Do not add plaintext secrets. Use `secrets/` and `secrets.nix` for agenix-managed secrets.
-- When adding stateful services on impermanent hosts, persist required state with `rootZfs.persistDirectories` or `rootZfs.persistFiles`.
+- When adding stateful services on impermanent hosts, persist required state with `rootFs.persistDirectories` or `rootFs.persistFiles`.
 - Server containers should generally use `podmanServer.containers`, `podmanServer.paths`, and `podmanServer.derivedEnvFiles` rather than bespoke Podman/systemd plumbing.
 - Public or authenticated HTTP exposure should generally declare `caddy.endpoints` or `caddy.domains` rather than editing generated Caddyfile internals directly.
 - Shared storage should use `storage.datasets` and generated storage paths instead of unmanaged hard-coded ZFS paths.

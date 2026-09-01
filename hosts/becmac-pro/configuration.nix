@@ -18,7 +18,6 @@ in {
       systemd-boot.configurationLimit = 3;
       efi.canTouchEfiVariables = false;
     };
-    zfs.forceImportRoot = false;
   };
 
   networking = {
@@ -45,9 +44,10 @@ in {
     };
   };
 
-  rootZfs = {
+  rootFs = {
     enable = true;
-    arcMaxPercent = 25;
+    backend = "zfs";
+    zfs.arcMaxPercent = 25;
     encrypted = false;
     impermanent = true;
   };

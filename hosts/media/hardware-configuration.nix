@@ -17,10 +17,9 @@
     blacklistedKernelModules = ["ast"];
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
-    supportedFilesystems = ["zfs"];
   };
 
-  rootZfs.diskId = "/dev/disk/by-id/nvme-PC401_NVMe_SK_hynix_1TB_EJ86N780110506T42";
+  rootFs.diskId = "/dev/disk/by-id/nvme-PC401_NVMe_SK_hynix_1TB_EJ86N780110506T42";
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

@@ -28,13 +28,10 @@ in {
       mode = "0750";
     };
 
-    rootZfs.datasets."root/attic" = {
-      type = "zfs_fs";
+    rootFs.volumes.attic = {
       mountpoint = cacheDir;
-      options = {
-        "com.sun:auto-snapshot" = "false";
-        quota = "100G";
-      };
+      autoSnapshot = false;
+      quota = "100G";
     };
 
     services.atticd = {
@@ -65,7 +62,7 @@ in {
       after = ["systemd-tmpfiles-setup.service"];
       unitConfig.RequiresMountsFor = [config.storage.dataPath cfg.dataDir cacheDir];
       serviceConfig = {
-        # Attic uses ZFS-backed paths outside systemd's StateDirectory lifecycle,
+        # Attic uses filesystem-backed paths outside systemd's StateDirectory lifecycle,
         # so it needs the stable atticd user instead of transient UID mapping.
         DynamicUser = lib.mkForce false;
         ExecStartPre = [

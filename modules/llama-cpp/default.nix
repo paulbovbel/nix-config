@@ -60,7 +60,7 @@ in {
         WorkingDirectory = "/var/lib/llama-cpp";
       };
     };
-    rootZfs.persistDirectories = [
+    rootFs.persistDirectories = [
       "/var/lib/llama-cpp"
     ];
   };

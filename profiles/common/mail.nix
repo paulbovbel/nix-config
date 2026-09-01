@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }: {
@@ -38,7 +39,7 @@
     };
   };
 
-  services.zfs.zed = {
+  services.zfs.zed = lib.mkIf ((config.rootFs.enable && config.rootFs.backend == "zfs") || config.storage.enable) {
     enableMail = true;
     settings = {
       ZED_EMAIL_ADDR = ["paul@bovbel.com"];

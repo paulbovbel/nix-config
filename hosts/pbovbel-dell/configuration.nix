@@ -9,7 +9,6 @@
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
     kernelPackages = pkgs.linuxPackages;
-    zfs.forceImportRoot = false;
   };
 
   networking = {
@@ -24,8 +23,9 @@
 
   environment.systemPackages = [pkgs.intel-gpu-tools];
 
-  rootZfs = {
+  rootFs = {
     enable = true;
+    backend = "zfs";
     impermanent = true;
     swapSize = "32G";
   };

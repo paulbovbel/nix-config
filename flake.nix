@@ -207,7 +207,7 @@
         }
       ];
 
-      rootZfs.homeUsers = configuredUserNames;
+      rootFs.homeUsers = configuredUserNames;
 
       accounts = lib.genAttrs configuredUserNames (_: {enable = true;});
 

@@ -1,4 +1,8 @@
-{pkgs, ...}: let
+{
+  config,
+  pkgs,
+  ...
+}: let
   inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
 in {
   systemd.services = {
@@ -43,19 +47,19 @@ in {
       };
       hostKeys = [
         {
-          path = "/persist/etc/ssh/ssh_host_rsa_key";
+          path = "${config.rootFs.persistPath}/etc/ssh/ssh_host_rsa_key";
           type = "rsa";
           bits = 4096;
         }
         {
-          path = "/persist/etc/ssh/ssh_host_ed25519_key";
+          path = "${config.rootFs.persistPath}/etc/ssh/ssh_host_ed25519_key";
           type = "ed25519";
         }
       ];
     };
   };
 
-  rootZfs.persistDirectories = [
+  rootFs.persistDirectories = [
     "/var/lib/fwupd"
   ];
 }
