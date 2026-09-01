@@ -10,7 +10,7 @@
 
   boot = {
     initrd = {
-      availableKernelModules = ["nvme" "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod"];
+      availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "usbhid" "sd_mod" "rtsx_pci_sdmmc" ];
       kernelModules = [];
     };
     kernelModules = ["kvm-intel"];
@@ -18,11 +18,11 @@
     supportedFilesystems = ["zfs"];
   };
 
-  rootZfs.diskId = "/dev/disk/by-id/nvme-Sabrent_Rocket_4.0_2TB_7A0F07181E3D00004779";
+  rootZfs.diskId = "/dev/disk/by-id/nvme-KXG70PNV2T04_NVMe_KIOXIA_2048GB_12HFC06BFTW5";
 
   nvidia = {
     enable = true;
-    open = false;
+    open = true;
     prime = {
       enable = true;
       intelBusId = "PCI:0:2:0";
@@ -31,5 +31,6 @@
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  hardware.cpu.intel.npu.enable = true;
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 }
