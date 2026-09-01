@@ -11,7 +11,7 @@
   boot = {
     initrd = {
       availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "usbhid" "sd_mod" "rtsx_pci_sdmmc"];
-      kernelModules = [];
+      kernelModules = ["i915" "ucsi_acpi"];
     };
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];

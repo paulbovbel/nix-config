@@ -20,9 +20,9 @@ switch host=`hostname`:
   test "${configured_host}" = '{{ host }}'
   if [ '{{ host }}' = "$(hostname)" ]; then
     if [[ "${target_system}" = aarch64-* ]]; then
-      sudo nixos-rebuild switch --impure --flake "${flake_path}#{{ host }}" -L
+      sudo --preserve-env=SSH_AUTH_SOCK nixos-rebuild switch --impure --flake "${flake_path}#{{ host }}" -L
     else
-      sudo nixos-rebuild switch --flake "${flake_path}#{{ host }}" -L
+      sudo --preserve-env=SSH_AUTH_SOCK nixos-rebuild switch --flake "${flake_path}#{{ host }}" -L
     fi
   else
     if [[ "${target_system}" = aarch64-* ]]; then
