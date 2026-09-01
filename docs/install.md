@@ -58,7 +58,8 @@ Run the destructive installation. The explicit substituters allow installation w
 
 ```bash
 NIX_CONFIG=$'substituters = https://cache.nixos.org https://nix-community.cachix.org https://cuda-maintainers.cachix.org' \
-nix run github:numtide/nixos-anywhere -- \
+nix run github:nix-community/nixos-anywhere -- \
+  --build-on local \
   --no-use-machine-substituters \
   --debug -L --show-trace \
   --option substituters "https://cache.nixos.org https://nix-community.cachix.org https://cuda-maintainers.cachix.org" \
