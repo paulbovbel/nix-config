@@ -54,12 +54,26 @@ just check
 just dry-run "$host_name"
 ```
 
+Prepare the live installer's Nix daemon for a remote build. This temporarily allows generated, unsigned store paths such as Home Manager activation scripts to be imported; the installed system restores signature checking:
+
+```bash
+ssh "$target_host" '
+  cp --dereference /etc/nix/nix.conf /tmp/nix.conf
+  printf "\nrequire-sigs = false\n" >> /tmp/nix.conf
+  mount --bind /tmp/nix.conf /etc/nix/nix.conf
+  systemctl restart nix-daemon
+  nix --extra-experimental-features nix-command config show require-sigs
+'
+```
+
+Verify that the command prints `false`.
+
 Run the destructive installation. The explicit substituters allow installation when the private cache is unavailable:
 
 ```bash
 NIX_CONFIG=$'substituters = https://cache.nixos.org https://nix-community.cachix.org https://cuda-maintainers.cachix.org' \
 nix run github:nix-community/nixos-anywhere -- \
-  --build-on local \
+  --build-on remote \
   --no-use-machine-substituters \
   --debug -L --show-trace \
   --option substituters "https://cache.nixos.org https://nix-community.cachix.org https://cuda-maintainers.cachix.org" \
