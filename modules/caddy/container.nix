@@ -22,25 +22,31 @@
     "podman-server-caddy-token-secret-env.service"
     "podman-server-caddy-basic-auth-env.service"
   ];
-  caddyVersion = "2.9.1";
   caddyPlugins = [
-    "github.com/greenpau/caddy-security@v1.1.29"
-    "github.com/caddy-dns/route53@v1.5.1"
+    "github.com/greenpau/caddy-security@v1.1.64"
+    "github.com/caddy-dns/route53@v1.6.2"
   ];
-  caddyContainerfileText = ''
-    FROM caddy:${caddyVersion}-builder AS builder
-
-    RUN xcaddy build ${lib.concatMapStringsSep " " (plugin: "\\\n      --with ${plugin}") caddyPlugins}
-
-    FROM caddy:${caddyVersion}
-
-    COPY --from=builder /usr/bin/caddy /usr/bin/caddy
-
-    # see https://github.com/caddyserver/caddy-docker/issues/58
-    RUN apk add --no-cache tzdata
-  '';
-  caddyImage = "localhost/caddy:${builtins.hashString "sha256" caddyContainerfileText}";
-  caddyContainerfile = pkgs.writeText "Containerfile" caddyContainerfileText;
+  caddyPackage = pkgs.caddy.withPlugins {
+    plugins = caddyPlugins;
+    hash = "sha256-oBcXDJ1+xs80HHiz/MR0ncKCDWW2uRgv+LYr0guaK4w=";
+  };
+  caddyImageTag = builtins.hashString "sha256" (builtins.toJSON caddyPlugins);
+  caddyImage = pkgs.dockerTools.buildLayeredImage {
+    name = "localhost/caddy";
+    tag = caddyImageTag;
+    contents = [caddyPackage pkgs.tzdata pkgs.dockerTools.caCertificates];
+    config = {
+      Cmd = ["caddy" "run" "--config" "/etc/caddy/Caddyfile" "--adapter" "caddyfile"];
+      Env = [
+        "PATH=${caddyPackage}/bin"
+        "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
+        "XDG_CONFIG_HOME=/config"
+        "XDG_DATA_HOME=/data"
+        "ZONEINFO=${pkgs.tzdata}/share/zoneinfo"
+      ];
+    };
+  };
+  caddyImageRef = "docker-archive:${caddyImage}";
 in {
   config = lib.mkIf cfg.enable {
     age.secrets = {
@@ -53,12 +59,8 @@ in {
 
     podmanServer = {
       containers.caddy = {
-        build.buildConfig = {
-          file = caddyContainerfile.outPath;
-          tag = caddyImage;
-        };
-        build.autoStart = false;
         quadlet.containerConfig = {
+          image = caddyImageRef;
           publishPorts = ["80:80" "443:443"] ++ domainPublishPorts;
           volumes = [
             "${caddyfilePath}:/etc/caddy/Caddyfile:ro"
@@ -115,7 +117,7 @@ in {
           description = "Validate and install rendered Caddyfile";
           wants = ["network-online.target"] ++ caddyEnvUnits;
           before = ["caddy.service"];
-          after = ["network-online.target"] ++ caddyEnvUnits ++ ["caddy-build.service"];
+          after = ["network-online.target"] ++ caddyEnvUnits;
           path = [pkgs.coreutils];
           serviceConfig = {
             Type = "oneshot";
@@ -129,14 +131,10 @@ in {
             install -d -m 0755 ${lib.escapeShellArg datasets.app.children.caddy.path}
             install -m 0644 ${config.caddy.caddyfile} "$candidate"
 
-            if ! ${pkgs.podman}/bin/podman image exists ${lib.escapeShellArg caddyImage}; then
-              ${pkgs.systemd}/bin/systemctl start caddy-build.service
-            fi
-
             ${pkgs.podman}/bin/podman run --rm --pull=never --network host \
               ${caddyEnvFileArgs} \
               --volume "$candidate:/etc/caddy/Caddyfile:ro" \
-              ${lib.escapeShellArg caddyImage} \
+              ${lib.escapeShellArg caddyImageRef} \
               caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
             install -m 0644 "$candidate" ${lib.escapeShellArg caddyfilePath}

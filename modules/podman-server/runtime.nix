@@ -22,6 +22,8 @@
     requiredUnits = dependencyUnits ++ derivedEnvUnitNames;
     afterUnits = dependencyUnits ++ derivedEnvUnitNames;
     quadletConfig = removeNulls (lib.filterAttrs (key: _: !(lib.hasPrefix "_" key) && key != "ref") container.quadlet);
+    image = container.quadlet.containerConfig.image or null;
+    archiveImage = image != null && (lib.hasPrefix "docker-archive:" image || lib.hasPrefix "oci-archive:" image);
   in
     lib.mkMerge [
       (quadletConfig
@@ -40,6 +42,8 @@
           autoUpdate = lib.mkDefault (
             if container.build != null
             then "local"
+            else if archiveImage
+            then null
             else "registry"
           );
           networks = lib.mkBefore [config.virtualisation.quadlet.networks.apps.ref];
