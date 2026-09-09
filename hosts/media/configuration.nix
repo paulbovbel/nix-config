@@ -205,12 +205,29 @@ in {
 
   gameServer = {
     # abiotic.enable = true;
-    minecraft.enable = true;
     upnp.enable = true;
 
     minecraft = {
+      enable = true;
       ops = ["agent_x3r"];
       users = ["agent_x3r" "arteed2" "babablinchiki" "Waddle_Dee_dee"];
+    };
+
+    valheim = {
+      enable = true;
+      worldName = "Jewels";
+      admins.agentx3r = "76561198028043290";
+      permittedUsers = {
+        Jewels42 = "76561199813276072";
+        mjp0000 = "76561198120904256";
+        supernatur4L = "76561197977879286";
+        waterfox = "76561198197967175";
+      };
+      modifiers = {
+        deathPenalty = "casual";
+        playerBasedRaids = true;
+        resources = "most";
+      };
     };
   };
 

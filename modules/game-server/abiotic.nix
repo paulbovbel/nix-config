@@ -10,9 +10,14 @@
   containerUser = "${toString user.uid}:${toString user.gid}";
 in {
   config = lib.mkIf cfg.abiotic.enable {
-    age.secrets.abiotic-env.file = ../../secrets/server/abiotic-env.age;
+    age.secrets.game-server-env.file = ../../secrets/server/game-server-env.age;
 
     storage.datasets.app.children.abiotic = {};
+
+    podmanServer.derivedEnvFiles.abiotic = {
+      secretEnvironmentFiles = [config.age.secrets.game-server-env.path];
+      variables.ServerPassword = "$SERVER_PASSWORD";
+    };
 
     podmanServer.containers.abiotic = {
       quadlet.containerConfig = {
@@ -34,7 +39,7 @@ in {
           AutoUpdate = "true";
         };
       };
-      secretEnvironmentFiles = [config.age.secrets.abiotic-env.path];
+      derivedEnvironmentFiles = ["abiotic"];
     };
 
     upnp.forwards = lib.mkIf cfg.upnp.enable {

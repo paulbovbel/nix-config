@@ -3,7 +3,7 @@
   users = [
     {
       name = "pbovbel";
-      profiles = ["work"];
+      profiles = ["work" "gaming"];
     }
   ];
 }
