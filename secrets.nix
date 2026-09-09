@@ -21,7 +21,7 @@ in {
   "secrets/server/pia-env.age".publicKeys = [pbovbel media];
   "secrets/server/mam-id-env.age".publicKeys = [pbovbel media];
   "secrets/server/plex-token-env.age".publicKeys = [pbovbel media];
-  "secrets/server/abiotic-env.age".publicKeys = [pbovbel media];
+  "secrets/server/game-server-env.age".publicKeys = [pbovbel media];
   "secrets/server/attic-server-env.age".publicKeys = [pbovbel media];
   "secrets/server/github-runner-token.age".publicKeys = [pbovbel media];
   "secrets/server/youtube-api-key.age".publicKeys = [pbovbel media];
