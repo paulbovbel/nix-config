@@ -173,6 +173,17 @@
       quadlet-nix.nixosModules.quadlet
     ];
 
+    catppuccinPaletteSource = let
+      source = (lib.importJSON "${catppuccin}/pkgs/sources.json").palette;
+    in
+      (builtins.fetchTree {
+        type = "github";
+        owner = "catppuccin";
+        repo = "palette";
+        inherit (source) rev;
+        narHash = source.hash;
+      }).outPath;
+
     userHomeModules = user: let
       userProfiles = profiles.${user.name};
       selectedProfiles = map (profileName: userProfiles.${profileName}) user.profiles;
@@ -210,6 +221,9 @@
       rootFs.homeUsers = configuredUserNames;
 
       accounts = lib.genAttrs configuredUserNames (_: {enable = true;});
+
+      # Avoid building a target-platform package for TTY colors during evaluation.
+      catppuccin.sources.palette = catppuccinPaletteSource;
 
       nixpkgs = {
         inherit overlays;
