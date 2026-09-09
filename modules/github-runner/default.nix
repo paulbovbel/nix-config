@@ -56,6 +56,7 @@ in {
         };
       };
       config = {pkgs, ...}: {
+        nix.settings.extra-platforms = config.boot.binfmt.emulatedSystems;
         nix.settings.experimental-features = [
           "nix-command"
           "flakes"

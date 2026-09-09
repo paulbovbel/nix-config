@@ -50,6 +50,7 @@ in {
   ];
 
   boot = {
+    binfmt.emulatedSystems = ["aarch64-linux"];
     initrd.systemd.enable = true;
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
@@ -89,6 +90,22 @@ in {
 
   atticCache = {
     enable = true;
+  };
+
+  system.autoUpgrade = {
+    enable = true;
+    flake = "github:paulbovbel/nix-config/main#media";
+    upgrade = false;
+    operation = "switch";
+    dates = "daily";
+    randomizedDelaySec = "45min";
+    fixedRandomDelay = true;
+    persistent = true;
+    allowReboot = true;
+    rebootWindow = {
+      lower = "03:00";
+      upper = "05:00";
+    };
   };
 
   githubRunner = {
