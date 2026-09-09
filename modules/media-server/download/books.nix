@@ -8,8 +8,12 @@
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
   containerUser = "${toString user.uid}:${toString user.gid}";
-  mamUpdateDeps = ["network-online.target" "qbittorrent.service" "jackett.service"];
-  mamUpdateRotateDeps = mamUpdateDeps ++ ["autobrr.service"];
+  mamUpdateDeps = [
+    "network-online.target"
+    "qbittorrent.service"
+    "jackett.service"
+    "autobrr.service"
+  ];
   mamUpdate = pkgs.writeTextFile {
     name = "mam-update.py";
     executable = true;
@@ -41,29 +45,16 @@ in {
 
       services = {
         myanonamouse-update = {
-          description = "Update MyAnonamouse egress IPs";
+          description = "Update MyAnonamouse egress IPs and integrations";
+          wantedBy = ["multi-user.target"];
           wants = mamUpdateDeps;
           after = mamUpdateDeps;
+          restartTriggers = [config.age.secrets.mam-id-env.file];
           path = [pkgs.podman];
           serviceConfig = {
             Type = "oneshot";
             EnvironmentFile = config.age.secrets.mam-id-env.path;
             ExecStart = mamUpdateCommand;
-          };
-        };
-
-        myanonamouse-update-on-switch = {
-          description = "Update MyAnonamouse integrations after configuration changes";
-          wantedBy = ["multi-user.target"];
-          wants = mamUpdateRotateDeps;
-          after = mamUpdateRotateDeps;
-          restartTriggers = [config.age.secrets.mam-id-env.file];
-          path = [pkgs.podman];
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            EnvironmentFile = config.age.secrets.mam-id-env.path;
-            ExecStart = "-${mamUpdateCommand} --rotate-app-configs";
           };
         };
       };

@@ -39,7 +39,7 @@ def run(args, *, input_text=None):
 
 
 def podman_exec(container, args, *, input_text=None, user=None):
-    command = ["podman", "exec"]
+    command = ["podman", "--events-backend=none", "exec"]
     if user:
         command.extend(["--user", user])
     if input_text is not None:
@@ -99,6 +99,10 @@ def curl(
 
 def fingerprint(value):
     return hashlib.sha256(value.encode()).hexdigest()
+
+
+def mam_id_fingerprint_path(target):
+    return target.config_dir / f"mam.cookie-fingerprint.{target.interface}"
 
 
 def read_text(path):
@@ -170,19 +174,22 @@ def wait_for_json(fetch, description):
     raise AssertionError("unreachable")
 
 
-def update_mam_ip(target, mam_id):
+def update_mam_ip(target, mam_id, mam_id_changed):
     cached_ip = target.config_dir / f"mam.ip.{target.interface}"
     cookie_jar = target.config_dir / f"mam.cookies.{target.interface}"
-    cookie_fingerprint = (
-        target.config_dir / f"mam.cookie-fingerprint.{target.interface}"
-    )
+    cookie_fingerprint = mam_id_fingerprint_path(target)
     container_cookie_jar = f"{CONTAINER_CONFIG_DIR}/mam.cookies.{target.interface}"
 
     new_fingerprint = fingerprint(mam_id)
-    if read_text(cookie_fingerprint) != new_fingerprint:
+    if mam_id_changed:
+        print(
+            f"{target.container} MAM ID fingerprint changed; "
+            f"invalidating cached credentials and IP"
+        )
         remove_file(cached_ip)
         remove_file(cookie_jar)
     if file_older_than(cached_ip, CACHED_IP_TTL_SECONDS):
+        print(f"{target.container} cached MAM IP expired; invalidating it")
         remove_file(cached_ip)
 
     new_ip = curl(
@@ -270,7 +277,7 @@ def update_jackett(target, mam_id):
     backup_path = config_path.with_suffix(config_path.suffix + ".bak")
     backup_path.write_text(old_config)
     replace_json_preserving_metadata(config_path, config)
-    run(["podman", "restart", target.container])
+    run(["podman", "--events-backend=none", "restart", target.container])
     print("Updated Jackett MyAnonamouse mam_id")
 
 
@@ -330,13 +337,14 @@ def update_autobrr(mam_id):
     print("Updated autobrr MyAnonamouse mam_id")
 
 
-def update_indexer_apps(target, mam_id):
+def update_indexer_apps(target, mam_id, mam_id_changed):
     app_fingerprint = target.config_dir / "mam.app-fingerprint"
     new_fingerprint = fingerprint(mam_id)
-    if read_text(app_fingerprint) == new_fingerprint:
+    if not mam_id_changed:
         print("MyAnonamouse app configs unchanged")
         return
 
+    print("Indexer MAM ID fingerprint changed; updating app configs")
     update_jackett(target, mam_id)
     update_autobrr(mam_id)
     write_private(app_fingerprint, new_fingerprint)
@@ -347,7 +355,6 @@ def parse_args():
     parser.add_argument("--container-user", required=True)
     parser.add_argument("--qbittorrent-config-dir", required=True)
     parser.add_argument("--jackett-config-dir", required=True)
-    parser.add_argument("--rotate-app-configs", action="store_true")
     args = parser.parse_args()
 
     torrent = MamTarget(
@@ -362,30 +369,42 @@ def parse_args():
         interface="eth0",
         config_dir=Path(args.jackett_config_dir),
     )
-    return args.rotate_app_configs, torrent, indexer
+    return torrent, indexer
 
 
 def main():
-    rotate_app_configs, torrent, indexer = parse_args()
+    torrent, indexer = parse_args()
 
     try:
         torrent_mam_id = mam_id_from_env("MAM_ID_TORRENT")
         indexer_mam_id = mam_id_from_env("MAM_ID_INDEXER")
 
-        switch_fingerprint = indexer.config_dir / "mam.switch-fingerprint"
-        new_switch_fingerprint = fingerprint(f"{torrent_mam_id}\0{indexer_mam_id}")
-        if (
-            rotate_app_configs
-            and read_text(switch_fingerprint) == new_switch_fingerprint
-        ):
-            print("MyAnonamouse mam_id secrets unchanged")
-            return
+        torrent_fingerprint = mam_id_fingerprint_path(torrent)
+        indexer_fingerprint = mam_id_fingerprint_path(indexer)
+        app_fingerprint = indexer.config_dir / "mam.app-fingerprint"
+        torrent_mam_id_changed = read_text(torrent_fingerprint) != fingerprint(
+            torrent_mam_id
+        )
+        indexer_mam_id_changed = read_text(indexer_fingerprint) != fingerprint(
+            indexer_mam_id
+        )
+        app_mam_id_changed = read_text(app_fingerprint) != fingerprint(indexer_mam_id)
 
-        update_mam_ip(torrent, torrent_mam_id)
-        update_mam_ip(indexer, indexer_mam_id)
-        if rotate_app_configs:
-            update_indexer_apps(indexer, indexer_mam_id)
-            write_private(switch_fingerprint, new_switch_fingerprint)
+        changed = []
+        if torrent_mam_id_changed:
+            changed.append("torrent MAM ID")
+        if indexer_mam_id_changed:
+            changed.append("indexer MAM ID")
+        if app_mam_id_changed and not indexer_mam_id_changed:
+            changed.append("indexer app configuration")
+        if changed:
+            print(f"Triggered by changed state: {', '.join(changed)}")
+        else:
+            print("Triggered with unchanged fingerprints; checking scheduled IP state")
+
+        update_mam_ip(torrent, torrent_mam_id, torrent_mam_id_changed)
+        update_mam_ip(indexer, indexer_mam_id, indexer_mam_id_changed)
+        update_indexer_apps(indexer, indexer_mam_id, app_mam_id_changed)
     except (RuntimeError, subprocess.CalledProcessError) as error:
         if isinstance(error, subprocess.CalledProcessError):
             sys.stderr.write(error.stderr)
