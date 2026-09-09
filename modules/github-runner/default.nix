@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   cfg = config.githubRunner;
@@ -37,6 +38,10 @@ in {
       uid = 989;
       group = "github-runner";
     };
+
+    systemd.services."container@github-runner".serviceConfig.ExecStartPost = lib.mkAfter [
+      "${pkgs.systemd}/bin/systemctl --machine=github-runner is-active --quiet github-runner-nix-config.service"
+    ];
 
     containers.github-runner = {
       autoStart = true;
@@ -80,6 +85,7 @@ in {
             if cfg.name == null
             then config.networking.hostName
             else cfg.name;
+          replace = true;
           tokenFile = "/run/secrets/github-runner-token";
           extraPackages = [pkgs.openssh];
           workDir = "/var/lib/github-runner/work";
