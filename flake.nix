@@ -285,6 +285,7 @@
           deadnix
           fd
           just
+          python3
           ruff
           shellcheck
           shfmt

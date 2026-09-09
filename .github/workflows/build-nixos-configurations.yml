@@ -24,7 +24,7 @@ jobs:
           nix develop --command just check
 
   build:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/update_flake_lock_action')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/update-flake-lock')
     needs: check
     runs-on: [self-hosted, nix-media]
     strategy:

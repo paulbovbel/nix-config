@@ -11,6 +11,9 @@ dry-run host=`hostname`:
 build host=`hostname`:
   nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel"
 
+update-caddy:
+  nix develop --command python3 modules/caddy/update.py
+
 switch host=`hostname`:
   #!/usr/bin/env bash
   set -euo pipefail

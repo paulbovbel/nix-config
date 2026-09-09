@@ -39,6 +39,7 @@
     ["tmux" pkgs.tmux]
     ["traceroute" pkgs.traceroute]
     ["tree" pkgs.tree]
+    ["unrar" pkgs.unrar]
     ["unzip" pkgs.unzip]
     ["usbutils" pkgs.usbutils]
     ["wget" pkgs.wget]
