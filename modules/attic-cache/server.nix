@@ -47,6 +47,12 @@ in {
         allowed-hosts = [domain];
         api-endpoint = endpoint;
         database.url = "sqlite://${cfg.dataDir}/server.db?mode=rwc";
+        chunking = {
+          nar-size-threshold = 0;
+          min-size = 16384;
+          avg-size = 65536;
+          max-size = 262144;
+        };
         storage = {
           type = "local";
           path = cacheDir;

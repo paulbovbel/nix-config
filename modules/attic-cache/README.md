@@ -55,3 +55,29 @@ This module runs the Attic server and watch-store client, but cache creation and
    ```bash
    unset admin_token client_token ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64 ATTIC_SERVER_TOKEN_HS256_SECRET_BASE64
    ```
+
+## Full Cache Reset
+
+This permanently removes all Attic cache metadata and objects. Stop both the
+uploader and server, verify that the expected ZFS datasets are mounted, then
+empty them:
+
+```bash
+sudo systemctl stop attic-watch-store.service atticd.service
+
+mountpoint -q /storage/app/attic
+mountpoint -q /var/lib/attic/storage
+
+sudo find /storage/app/attic -mindepth 1 -delete
+sudo find /var/lib/attic/storage -mindepth 1 -delete
+
+sudo systemctl start atticd.service
+```
+
+The reset removes the cache definition along with the database. Repeat the
+admin-token and cache-creation steps above, then restart the uploader:
+
+```bash
+attic cache create --public --priority 41 bovbel:nixos
+sudo systemctl start attic-watch-store.service
+```
