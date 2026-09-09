@@ -14,7 +14,11 @@ build host=`hostname`:
 update-caddy:
   nix develop --command python3 modules/caddy/update.py
 
-switch host=`hostname`:
+switch host=`hostname`: (_activate "switch" host)
+
+boot host=`hostname`: (_activate "boot" host)
+
+_activate action host:
   #!/usr/bin/env bash
   set -euo pipefail
   flake_path='{{ justfile_directory() }}'
@@ -23,9 +27,9 @@ switch host=`hostname`:
   test "${configured_host}" = '{{ host }}'
   if [ '{{ host }}' = "$(hostname)" ]; then
     if [[ "${target_system}" = aarch64-* ]]; then
-      sudo --preserve-env=SSH_AUTH_SOCK nixos-rebuild switch --impure --flake "${flake_path}#{{ host }}" -L
+      sudo --preserve-env=SSH_AUTH_SOCK nixos-rebuild '{{ action }}' --impure --flake "${flake_path}#{{ host }}" -L
     else
-      sudo --preserve-env=SSH_AUTH_SOCK nixos-rebuild switch --flake "${flake_path}#{{ host }}" -L
+      sudo --preserve-env=SSH_AUTH_SOCK nixos-rebuild '{{ action }}' --flake "${flake_path}#{{ host }}" -L
     fi
   else
     if [[ "${target_system}" = aarch64-* ]]; then
@@ -33,7 +37,7 @@ switch host=`hostname`:
       printf 'Remote deployment of aarch64 hosts is not supported: %s\n' '{{ host }}' >&2
       exit 1
     fi
-    nixos-rebuild switch --flake "${flake_path}#{{ host }}" --target-host '{{ host }}' --build-host '{{ host }}' --sudo --ask-sudo-password -L
+    nixos-rebuild '{{ action }}' --flake "${flake_path}#{{ host }}" --target-host '{{ host }}' --build-host '{{ host }}' --sudo --ask-sudo-password -L
   fi
 
 nix-lint:
