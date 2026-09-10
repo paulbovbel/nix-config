@@ -59,6 +59,7 @@
           "com.rtosta.zapzap"
         ]
         ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
+          "com.bambulab.BambuStudio"
           "com.spotify.Client"
           "com.discordapp.Discord"
           "org.signal.Signal"

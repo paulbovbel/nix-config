@@ -8,7 +8,6 @@ in {
 
   dconf.settings."org/gnome/shell".favorite-apps = lib.mkAfter [
     "steam.desktop"
-    "org.prismlauncher.PrismLauncher.desktop"
     "com.discordapp.Discord.desktop"
   ];
 
