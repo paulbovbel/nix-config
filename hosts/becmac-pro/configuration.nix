@@ -44,6 +44,8 @@ in {
     };
   };
 
+  grafanaCloud.role = "laptop";
+
   rootFs = {
     enable = true;
     backend = "zfs";

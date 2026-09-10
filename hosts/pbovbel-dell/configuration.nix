@@ -23,6 +23,8 @@
 
   environment.systemPackages = [pkgs.intel-gpu-tools];
 
+  grafanaCloud.role = "laptop";
+
   rootFs = {
     enable = true;
     backend = "zfs";

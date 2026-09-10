@@ -161,6 +161,7 @@ in {
   cockpit.enable = true;
   caddy.sites.media.redirect = "/cockpit/";
   smokeping.enable = true;
+  grafanaCloud.role = "server";
 
   # syncthing = {
   #   enable = true;
