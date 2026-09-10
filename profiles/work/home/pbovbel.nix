@@ -63,7 +63,7 @@ in {
               --yes \
               --name ${lib.escapeShellArg name} \
               --image ${lib.escapeShellArg image} \
-              --additional-packages ${lib.escapeShellArgs cliPackages.aptPackages} \
+              --additional-packages ${lib.escapeShellArg (lib.concatStringsSep " " cliPackages.aptPackages)} \
               --init-hooks ${lib.escapeShellArg (lib.concatMapStrings mkHostWrapper ["xrandr" "nmcli"])}
           fi
         '';
