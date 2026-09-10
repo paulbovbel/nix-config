@@ -9,6 +9,21 @@
 
   derivedEnvUnits = names: map (name: "podman-server-${name}-env.service") names;
   derivedEnvFiles = names: map (name: cfg.derivedEnvFiles.${name}.path) names;
+  ageSecretFilesByPath = lib.mapAttrs' (_: secret: lib.nameValuePair secret.path secret.file) config.age.secrets;
+  derivedEnvSecretPaths = names:
+    lib.concatMap (
+      name: let
+        envFile = cfg.derivedEnvFiles.${name};
+      in
+        envFile.secretEnvironmentFiles ++ derivedEnvSecretPaths envFile.derivedEnvironmentFiles
+    )
+    names;
+  secretRestartTriggers = container:
+    map
+    (path: ageSecretFilesByPath.${path})
+    (builtins.filter
+      (path: builtins.hasAttr path ageSecretFilesByPath)
+      (lib.unique (container.secretEnvironmentFiles ++ derivedEnvSecretPaths container.derivedEnvironmentFiles)));
   storageUnits = lib.optional config.storage.enable "zfs-mount.service";
   removeNulls = value:
     if lib.isAttrs value
@@ -65,9 +80,11 @@
 
   mkContainerService = name: container: {
     description = "Run ${name} Podman container";
-    restartTriggers = [
-      (pkgs.writeText "podman-server-${name}-config" (builtins.toJSON container))
-    ];
+    restartTriggers =
+      [
+        (pkgs.writeText "podman-server-${name}-config" (builtins.toJSON container))
+      ]
+      ++ secretRestartTriggers container;
   };
 
   parsePublishPort = publishPort: let
