@@ -5,6 +5,15 @@ default:
 
 check: nix-lint python-lint shell-lint nix-check
 
+dashboards-check:
+  gcx dev lint run monitoring/grafana
+
+dashboards-dry-run:
+  scripts/grafana-dashboards.sh --dry-run
+
+dashboards-apply:
+  scripts/grafana-dashboards.sh
+
 dry-run host=`hostname`:
   nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel" --dry-run
 

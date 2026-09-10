@@ -285,9 +285,11 @@
     in {
       default = pkgs.mkShell {
         packages = with pkgs; [
+          agenix.packages.${system}.default
           alejandra
           deadnix
           fd
+          gcx
           just
           python3
           ruff

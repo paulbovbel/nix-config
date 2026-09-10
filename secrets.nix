@@ -15,6 +15,7 @@ in {
   "secrets/common/pbovbel-password-hash.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell media becmac_pro];
   "secrets/common/rbovbel-password-hash.age".publicKeys = [pbovbel white_tower becmac_pro];
   "secrets/common/abovbel-password-hash.age".publicKeys = [pbovbel rainbow_wave white_tower];
+  "secrets/management/grafana-cloud-env.age".publicKeys = [pbovbel];
   "secrets/server/google-oauth-env.age".publicKeys = [pbovbel media];
   "secrets/server/aws-access-env.age".publicKeys = [pbovbel media];
   "secrets/server/web-credentials-env.age".publicKeys = [pbovbel media];
