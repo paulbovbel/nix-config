@@ -56,6 +56,7 @@ in {
     ]
     ++ cliPackages.nixPackages
     ++ [
+      pkgs.awscli2
       pkgs.dust
       pkgs.eza
       pkgs.jless
