@@ -71,12 +71,12 @@ Verify that the command prints `false`.
 Run the destructive installation. The explicit substituters allow installation when the private cache is unavailable:
 
 ```bash
-NIX_CONFIG=$'substituters = https://cache.nixos.org https://nix-community.cachix.org https://cuda-maintainers.cachix.org' \
+NIX_CONFIG=$'substituters = https://cache.nixos.org https://nix-community.cachix.org' \
 nix run github:nix-community/nixos-anywhere -- \
   --build-on remote \
   --no-use-machine-substituters \
   --debug -L --show-trace \
-  --option substituters "https://cache.nixos.org https://nix-community.cachix.org https://cuda-maintainers.cachix.org" \
+  --option substituters "https://cache.nixos.org https://nix-community.cachix.org" \
   --flake .#"$host_name" \
   --phases disko,install,reboot \
   --extra-files "$tmpdir" \
