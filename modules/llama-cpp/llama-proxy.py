@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import time
 from enum import StrEnum
@@ -98,6 +97,19 @@ async def _run_command(*cmd: str) -> tuple[int, str, str]:
     return proc.returncode, stdout.decode().strip(), stderr.decode().strip()
 
 
+async def _logout_graphical_sessions() -> None:
+    code, out, err = await _run_command(
+        "graphical-sessions",
+        "logout",
+        "--warning-seconds",
+        str(LOGOUT_WARNING_SECONDS),
+    )
+    if code != 0:
+        raise RuntimeError(f"failed to log out graphical sessions: {err or out}")
+    if err:
+        LOGGER.info("graphical session logout: %s", err)
+
+
 class StageTracker:
     def __init__(self) -> None:
         self.stage: Stage = Stage.STARTING
@@ -120,11 +132,9 @@ class LlamaProcessManager:
         self,
         session: ClientSession,
         stage: StageTracker,
-        logout_manager: "SessionLogoutManager",
     ) -> None:
         self.session = session
         self.stage = stage
-        self.logout_manager = logout_manager
         self.proc = None
         self.proc_lock = asyncio.Lock()
         self.starting = False
@@ -138,7 +148,7 @@ class LlamaProcessManager:
                 return
             self.stage.set(Stage.STARTING)
             if allow_logout:
-                await self.logout_manager.logout_graphical_sessions()
+                await _logout_graphical_sessions()
             else:
                 LOGGER.info("skipping graphical session logout for local request")
             self.starting = True
@@ -175,109 +185,6 @@ class LlamaProcessManager:
             await self.proc.wait()
 
 
-class SessionLogoutManager:
-    def __init__(self, warning_seconds: int) -> None:
-        self.warning_seconds = warning_seconds
-
-    async def _send_logout_warning(self, user_name: str, uid: int) -> bool:
-        notify_cmd = [
-            "sudo",
-            "-n",
-            "-u",
-            user_name,
-            "env",
-            f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
-            "gdbus",
-            "call",
-            "--session",
-            "--dest",
-            "org.gnome.Shell",
-            "--object-path",
-            "/org/freedesktop/Notifications",
-            "--method",
-            "org.freedesktop.Notifications.Notify",
-            "logout-warning",
-            "0",
-            "dialog-warning",
-            "Logout pending",
-            f"You will be logged out in {self.warning_seconds} seconds.",
-            "[]",
-            "{}",
-            str(self.warning_seconds * 1000),
-        ]
-        code, out, err = await _run_command(*notify_cmd)
-        if code != 0:
-            LOGGER.warning(
-                "failed to send logout warning to %s (uid=%s): %s %s",
-                user_name,
-                uid,
-                out,
-                err,
-            )
-            return False
-        return True
-
-    async def logout_graphical_sessions(self) -> None:
-        graphical_sessions = await self._list_graphical_sessions()
-        warned_users: set[tuple[str, int]] = set()
-        users = {(user_name, uid) for _session_id, uid, user_name in graphical_sessions}
-
-        for user_name, uid in users:
-            if await self._send_logout_warning(user_name, uid):
-                warned_users.add((user_name, uid))
-
-        if graphical_sessions:
-            if not warned_users:
-                LOGGER.warning(
-                    "no logout warnings were delivered before terminating sessions"
-                )
-            await asyncio.sleep(self.warning_seconds)
-
-        for session_id, _uid, _user_name in graphical_sessions:
-            LOGGER.info("terminating session %s", session_id)
-            code, _out, err = await _run_command(
-                "loginctl", "terminate-session", session_id
-            )
-            if code != 0:
-                LOGGER.warning("failed to terminate session %s: %s", session_id, err)
-
-    async def _list_graphical_sessions(self) -> list[tuple[str, int, str]]:
-        code, out, err = await _run_command("loginctl", "list-sessions", "--json=short")
-        if code != 0:
-            raise RuntimeError(f"failed to list sessions: {err or out}")
-
-        sessions: list[tuple[str, int, str]] = []
-        try:
-            raw_sessions = json.loads(out)
-        except json.JSONDecodeError:
-            raise RuntimeError(f"failed to parse sessions json: {out!r}")
-
-        for entry in raw_sessions:
-            session_id = entry.get("session")
-            uid_raw = entry.get("uid")
-            user_name = entry.get("user")
-            seat = entry.get("seat")
-            session_class = entry.get("class")
-            if not session_id or uid_raw is None or not user_name:
-                continue
-            if seat is None:
-                continue
-            seat_str = str(seat).strip().lower()
-            if not seat_str.startswith("seat"):
-                continue
-            if session_class != "user":
-                continue
-            try:
-                uid = int(uid_raw)
-            except ValueError:
-                LOGGER.info(
-                    "failed to parse uid for session %s: %r", session_id, uid_raw
-                )
-                continue
-            sessions.append((session_id, uid, user_name))
-        return sessions
-
-
 class LlamaProxy:
     def __init__(self) -> None:
         self.last_activity = 0.0
@@ -286,7 +193,6 @@ class LlamaProxy:
         self.reaper_task: asyncio.Task[None] | None = None
         self.model_ready = asyncio.Event()
         self.stage = StageTracker()
-        self.logout_manager = SessionLogoutManager(LOGOUT_WARNING_SECONDS)
 
     def set_stage(self, stage: Stage, details: str = "") -> None:
         self.stage.set(stage, details)
@@ -379,9 +285,7 @@ class LlamaProxy:
     async def on_startup(self, _app: web.Application) -> None:
         self.set_stage(Stage.STARTING)
         self.session = ClientSession(timeout=None)
-        self.llama_manager = LlamaProcessManager(
-            self.session, self.stage, self.logout_manager
-        )
+        self.llama_manager = LlamaProcessManager(self.session, self.stage)
         await self.ensure_model_present()
         self.model_ready.set()
         self.reaper_task = asyncio.create_task(self.idle_reaper())

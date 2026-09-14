@@ -28,6 +28,8 @@
     swapSize = "32G";
   };
 
+  autoUpgrade.enable = true;
+
   llamaCpp.enable = false;
 
   services.udev.extraRules = ''

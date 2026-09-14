@@ -28,6 +28,8 @@
     swapSize = "8G";
   };
 
+  autoUpgrade.enable = true;
+
   system.stateVersion = "26.05";
 
   netboot = {

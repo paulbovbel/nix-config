@@ -91,36 +91,7 @@ in {
     enable = true;
   };
 
-  age.secrets.nix-config-ssh-key = {
-    file = ../../secrets/common/pbovbel-id_rsa.age;
-    owner = "root";
-    group = "root";
-    mode = "0400";
-  };
-
-  programs.ssh.knownHosts."github.com".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
-
-  system.autoUpgrade = {
-    enable = true;
-    flake = "git+ssh://git@github.com/paulbovbel/nix-config.git?ref=main#media";
-    upgrade = false;
-    operation = "switch";
-    dates = "daily";
-    randomizedDelaySec = "45min";
-    fixedRandomDelay = true;
-    persistent = true;
-    allowReboot = true;
-    rebootWindow = {
-      lower = "03:00";
-      upper = "05:00";
-    };
-  };
-
-  systemd.services.nixos-upgrade = {
-    wants = ["agenix-install-secrets.service"];
-    after = ["agenix-install-secrets.service"];
-    environment.GIT_SSH_COMMAND = "${pkgs.openssh}/bin/ssh -i ${config.age.secrets.nix-config-ssh-key.path} -o IdentitiesOnly=yes";
-  };
+  autoUpgrade.enable = true;
 
   githubRunner = {
     enable = true;

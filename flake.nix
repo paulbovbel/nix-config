@@ -63,6 +63,7 @@
   };
 
   outputs = {
+    self,
     nixpkgs,
     nixpkgs-unstable,
     home-manager,
@@ -82,6 +83,12 @@
     ...
   }: let
     inherit (nixpkgs) lib;
+    configurationBranch = let
+      branch = builtins.getEnv "NIX_CONFIG_BRANCH";
+    in
+      if branch == ""
+      then "main"
+      else branch;
     systems = [
       "aarch64-linux"
       "x86_64-linux"
@@ -209,6 +216,9 @@
       ];
 
       rootFs.homeUsers = configuredUserNames;
+
+      system.configurationRevision = self.rev or self.dirtyRev or null;
+      environment.etc."nix-config/branch".text = configurationBranch;
 
       accounts = lib.genAttrs configuredUserNames (_: {enable = true;});
 
