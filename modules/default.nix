@@ -5,6 +5,7 @@
 in {
   imports = [
     ./accounts
+    ./auto-upgrade
     ./backup
     ./ddns
     ./attic-cache
