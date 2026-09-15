@@ -2,9 +2,11 @@
   config,
   lib,
   pkgs,
+  unstablePkgs,
   ...
 }: let
   cfg = config.nvidia;
+  inherit (unstablePkgs.linuxPackagesFor config.boot.kernelPackages.kernel) nvidiaPackages;
 in {
   options.moduleDocumentation.nvidia = lib.mkOption {
     internal = true;
@@ -25,14 +27,10 @@ in {
         modesetting.enable = true;
         inherit (cfg) open;
         nvidiaSettings = true;
-        # package = lib.mkDefault config.boot.kernelPackages.nvidiaPackages.latest;
-        package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-          version = "610.57.04";
-          sha256_64bit = "sha256-suk1xmuDuwDAyFe8jg7g/VLekoa0DJzB7sKafOfrEW0=";
-          openSha256 = "sha256-rQHOOOY4KL92Ww3KDwh+j4eGU7oNAH8LutZC5wmFnPo=";
-          settingsSha256 = "sha256-ZEMo8I8Zc2Tq6RVDNYpAH+f094dUaZiBqO+5f6lIjRI=";
-          persistencedSha256 = "sha256-aXmD2VY1RLlgAnlHhOUMWzvMyhI6JTClcFLm4imF/mA=";
-        };
+        package =
+          if cfg.bleedingEdge
+          then nvidiaPackages.bleeding_edge
+          else nvidiaPackages.production;
         powerManagement.enable = true;
         powerManagement.finegrained = lib.mkDefault false;
       };

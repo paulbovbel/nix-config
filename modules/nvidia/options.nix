@@ -12,6 +12,12 @@
       description = "Use NVIDIA's open kernel modules.";
     };
 
+    bleedingEdge = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Use nixpkgs unstable's bleeding-edge NVIDIA driver instead of its production driver.";
+    };
+
     prime = {
       enable = lib.mkOption {
         type = lib.types.bool;

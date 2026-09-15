@@ -17,7 +17,10 @@
     extraModulePackages = [];
   };
 
-  nvidia.enable = true;
+  nvidia = {
+    enable = true;
+    bleedingEdge = true;
+  };
 
   rootFs.diskId = "/dev/disk/by-id/nvme-ADATA_SX8200PNP_2K4829A5C2U1";
 
