@@ -142,6 +142,10 @@ in {
         email = "eugene.tkach@gmail.com";
         roles = ["share"];
       }
+      {
+        email = "pbovbel@gmail.com";
+        roles = ["share"];
+      }
     ];
   };
 

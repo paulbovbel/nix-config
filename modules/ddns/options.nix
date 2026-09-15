@@ -3,7 +3,7 @@
     enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable dynamic DNS record updates.";
+      description = "Enable public dynamic DNS updates and tailnet DNS responses.";
     };
 
     zone = lib.mkOption {
@@ -15,7 +15,7 @@
     records = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [];
-      description = "DNS record names to update with the host's public address.";
+      description = "DNS record names mapped to the host's public and Tailscale addresses.";
     };
   };
 }
