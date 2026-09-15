@@ -13,6 +13,15 @@
     text = builtins.readFile ./attic-watch-store.sh;
   };
 in {
+  options.moduleDocumentation.attic-cache = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "Attic Cache";
+      summary = "Attic binary cache server and automatic watch-store uploads.";
+    };
+  };
+
   imports = [
     ./options.nix
     ./server.nix

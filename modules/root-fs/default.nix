@@ -8,6 +8,15 @@
   volumeMountpoints = map (volume: volume.mountpoint) (lib.attrValues cfg.volumes);
   reservedMountpoints = ["/" "/boot" "/home" "/nix" cfg.persistPath] ++ map (name: "/home/${name}") cfg.homeUsers;
 in {
+  options.moduleDocumentation.root-fs = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "Root Filesystem";
+      summary = "Disko-managed Btrfs or ZFS roots, encryption, impermanence, and persistent state.";
+    };
+  };
+
   imports = [
     ./options.nix
     ./disko.nix

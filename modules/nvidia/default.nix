@@ -6,6 +6,15 @@
 }: let
   cfg = config.nvidia;
 in {
+  options.moduleDocumentation.nvidia = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "NVIDIA";
+      summary = "Proprietary NVIDIA drivers and PRIME hybrid graphics.";
+    };
+  };
+
   imports = [./options.nix];
 
   config = lib.mkIf cfg.enable (lib.mkMerge [

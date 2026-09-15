@@ -1,0 +1,46 @@
+name: Publish module documentation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    permissions:
+      contents: read
+    runs-on: [self-hosted, nix-media]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build documentation
+        run: |
+          nix build .#checks.x86_64-linux.module-docs-check
+          nix build .#module-docs --out-link result-docs
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: result-docs
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: [self-hosted, nix-media]
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

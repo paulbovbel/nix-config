@@ -8,6 +8,15 @@
   runnerPath = config.storage.datasets.app.children.github-runner.path;
   githubKnownHost.publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 in {
+  options.moduleDocumentation.github-runner = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "GitHub Runner";
+      summary = "Containerized self-hosted GitHub Actions runner.";
+    };
+  };
+
   imports = [./options.nix];
 
   config = lib.mkIf cfg.enable {

@@ -9,6 +9,15 @@
   cfg = config.llamaCpp;
   llamaProxy = ./llama-proxy.py;
 in {
+  options.moduleDocumentation.llama-cpp = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "llama.cpp";
+      summary = "Locally hosted llama.cpp inference service.";
+    };
+  };
+
   options.llamaCpp.enable = lib.mkOption {
     type = lib.types.bool;
     default = false;

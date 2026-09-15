@@ -16,6 +16,15 @@
   identityFile = config.age.secrets.nix-config-auto-upgrade-key.path;
   outbox = "/var/lib/auto-upgrade/reports";
 in {
+  options.moduleDocumentation.auto-upgrade = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "Automatic Upgrades";
+      summary = "Guarded branch-aware NixOS upgrades with reboot windows and email reports.";
+    };
+  };
+
   imports = [./options.nix];
 
   config = lib.mkIf cfg.enable {
