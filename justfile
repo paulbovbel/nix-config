@@ -36,7 +36,7 @@ switch host=`hostname`: (_activate "switch" host)
 [confirm]
 [group('grafana')]
 dashboards-apply:
-    scripts/grafana-dashboards.sh
+    monitoring/grafana-dashboards.sh
 
 # Lint Grafana dashboards.
 [group('grafana')]
@@ -46,7 +46,7 @@ dashboards-check:
 # Preview Grafana dashboard changes.
 [group('grafana')]
 dashboards-dry-run:
-    scripts/grafana-dashboards.sh --dry-run
+    monitoring/grafana-dashboards.sh --dry-run
 
 # Update generated Caddy configuration.
 [group('maintenance')]

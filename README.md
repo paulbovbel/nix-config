@@ -86,6 +86,7 @@ Do not add plaintext secrets. Stateful services on impermanent hosts must declar
 
 ## Runbooks
 
-- [Define and install a host](docs/install.md)
+- [Define and install a host](hosts/install.md)
+- [Manage Grafana dashboards](monitoring/README.md)
 - [Caddy site and endpoint declarations](modules/caddy/README.md)
 - [Attic cache initialization](modules/attic-cache/README.md)

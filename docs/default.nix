@@ -104,12 +104,14 @@
   landingReadme =
     builtins.replaceStrings
     [
-      "(docs/install.md)"
+      "(hosts/install.md)"
+      "(monitoring/README.md)"
       "(modules/caddy/README.md)"
       "(modules/attic-cache/README.md)"
     ]
     [
       "(install.html)"
+      "(monitoring.html)"
       "(caddy.html)"
       "(attic-cache.html)"
     ]
@@ -125,7 +127,8 @@
   );
   introductionHeading = pkgs.writeText "introduction-heading.md" (builtins.readFile ./introduction.md);
   optionsHeading = pkgs.writeText "options-heading.md" (builtins.readFile ./options.md);
-  installation = pkgs.writeText "installation.md" (builtins.readFile ./install.md);
+  installation = pkgs.writeText "installation.md" (builtins.readFile (sourceRoot + "/hosts/install.md"));
+  monitoring = pkgs.writeText "monitoring.md" (builtins.readFile (sourceRoot + "/monitoring/README.md"));
 
   renderPage = {
     title,
@@ -172,6 +175,11 @@ in rec {
         title = "Installation";
         inputs = [installation];
         output = "install.html";
+      }}
+      ${renderPage {
+        title = "Grafana dashboards";
+        inputs = [monitoring];
+        output = "monitoring.html";
       }}
       ${lib.concatMapStringsSep "\n" (name: ''
           nixos-render-docs -j "$NIX_BUILD_CORES" options commonmark \
