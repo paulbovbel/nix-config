@@ -2,12 +2,7 @@
 
 ## Backups
 
-- Add Syncthing data to rsync.net backups once Syncthing is enabled and the sync layout is finalized.
-
-## Syncthing
-
-- Set up Syncthing across all machines.
-- Decide which datasets/directories are shared between desktop, laptop, and media host.
+- Add email reporting to backups
 
 ## Service Isolation
 
