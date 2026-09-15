@@ -60,7 +60,7 @@ in {
         grimmory = {
           dependsOn = ["grimmory-db"];
           quadlet.containerConfig = {
-            image = "ghcr.io/paulbovbel/grimmory:preview-c2c4460";
+            image = "ghcr.io/paulbovbel/grimmory:preview-240cc39";
             environments = {
               USER_ID = toString user.uid;
               GROUP_ID = toString user.gid;
