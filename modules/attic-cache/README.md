@@ -2,6 +2,14 @@
 
 This module runs the Attic server and watch-store client, but cache creation and token generation are manual.
 
+## Requirements
+
+The server requires shared storage, the root filesystem volume abstraction, Caddy ingress, and agenix-managed server credentials. The watch-store client requires its own push token.
+
+## Persistence
+
+Attic metadata is stored in `storage.datasets.app.children.attic`; cache objects are stored in `rootFs.volumes.attic`. Both paths must be available before `atticd` starts. The watch-store client uses systemd-managed state to remember upload progress.
+
 ## Initialize a New Cache
 
 1. Deploy the host with `atticCache.enable = true` and verify `atticd` is reachable at the public endpoint.
@@ -81,3 +89,7 @@ admin-token and cache-creation steps above, then restart the uploader:
 attic cache create --public --priority 41 bovbel:nixos
 sudo systemctl start attic-watch-store.service
 ```
+
+## Troubleshooting
+
+Inspect `atticd.service` for database or mount failures and use `systemctl cat atticd.service` to locate its generated `atticd.toml`. Metadata and the SQLite database live at `/storage/app/attic/server.db`; cache objects live on `zroot/root/attic` mounted at `/var/lib/attic/storage`. Inspect `attic-watch-store.service` and its state directory `/var/lib/attic-watch-store` for token or upload failures, and test the local server on port 8080 before debugging the Caddy endpoint.
