@@ -50,6 +50,15 @@
   };
   datasetOwnershipRules = lib.mapAttrsToList (_: dataset: "d ${dataset.path} ${dataset.mode} ${dataset.owner} ${dataset.group} - -") datasetAttrs;
 in {
+  options.moduleDocumentation.storage = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "Storage";
+      summary = "Nested shared ZFS datasets with generated mount paths and snapshot policy.";
+    };
+  };
+
   imports = [./options.nix];
 
   config = lib.mkIf cfg.enable {

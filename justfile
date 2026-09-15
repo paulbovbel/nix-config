@@ -19,6 +19,11 @@ build host=`hostname`:
 dry-run host=`hostname`:
     nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel" --dry-run
 
+# Build generated module documentation.
+[group('documentation')]
+docs:
+    @nix build .#module-docs --no-link --print-out-paths
+
 # Activate a host configuration on the next boot.
 [group('deployment')]
 boot host=`hostname`: (_activate "boot" host)
@@ -105,6 +110,7 @@ python-lint:
 # Run Python unit tests.
 [group('checks')]
 python-test:
+    python3 -m unittest discover -s docs -p 'test_*.py'
     python3 -m unittest discover -s modules/accounts -p 'test_*.py'
     python3 -m unittest discover -s modules/auto-upgrade -p 'test_*.py'
 

@@ -7,14 +7,32 @@
 }: let
   forwardType = lib.types.submodule {
     options = {
-      from = lib.mkOption {type = lib.types.port;};
-      to = lib.mkOption {type = lib.types.port;};
-      proto = lib.mkOption {type = lib.types.enum ["tcp" "udp"];};
+      from = lib.mkOption {
+        type = lib.types.port;
+        description = "External router port to forward.";
+      };
+      to = lib.mkOption {
+        type = lib.types.port;
+        description = "Local host port receiving forwarded traffic.";
+      };
+      proto = lib.mkOption {
+        type = lib.types.enum ["tcp" "udp"];
+        description = "Transport protocol to forward.";
+      };
     };
   };
   cfg = config.upnp;
   forwards = lib.mapAttrsToList (name: forward: forward // {inherit name;}) cfg.forwards;
 in {
+  options.moduleDocumentation.upnp = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "UPnP";
+      summary = "Periodic router port-forward declarations.";
+    };
+  };
+
   options.upnp.forwards = lib.mkOption {
     type = lib.types.attrsOf forwardType;
     default = {};

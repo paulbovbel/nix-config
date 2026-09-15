@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="$lang$">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>$pagetitle$</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <div class="layout">
+@sidebar@
+      <div class="content">
+        <main id="content">
+$body$
+        </main>
+        <footer>
+          <a href="$repositoryUrl$">Source repository</a>
+          <span>Revision <code>$revision$</code></span>
+        </footer>
+      </div>
+    </div>
+    <script src="site.js"></script>
+  </body>
+</html>

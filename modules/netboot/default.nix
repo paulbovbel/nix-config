@@ -18,13 +18,22 @@
 
   espMountPoint = config.boot.loader.efi.efiSysMountPoint;
 in {
+  options.moduleDocumentation.netboot = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "Network Boot";
+      summary = "Local network boot services and netboot.xyz images.";
+    };
+  };
+
   options.netboot = {
     enable = lib.mkEnableOption "netboot.xyz boot entry";
 
     installLegacyImage = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Install the legacy netboot.xyz EFI image instead of the standard EFI image.";
+      description = "Install the legacy netboot.xyz EFI image instead of the standard EFI image. Only do this if the keyboard doesn't work on standard image.";
     };
   };
 

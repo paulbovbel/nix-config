@@ -6,6 +6,15 @@
 }: let
   cfg = config.ddns;
 in {
+  options.moduleDocumentation.ddns = lib.mkOption {
+    internal = true;
+    readOnly = true;
+    default = {
+      title = "Dynamic DNS";
+      summary = "Automatic public DNS record updates.";
+    };
+  };
+
   imports = [./options.nix];
 
   config = lib.mkIf cfg.enable {

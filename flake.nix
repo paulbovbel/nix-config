@@ -282,13 +282,53 @@
       media = import ./hosts/media;
     };
     nixosConfigurations = lib.mapAttrs mkHost hosts;
+    mkDocs = system: let
+      pkgs = import nixpkgs {inherit system;};
+      unstablePkgs = import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfree = true;
+      };
+      evaluation = nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = {inherit unstablePkgs;};
+        modules = [
+          agenix.nixosModules.default
+          disko.nixosModules.disko
+          disko-zfs.nixosModules.default
+          impermanence.nixosModules.impermanence
+          quadlet-nix.nixosModules.quadlet
+          ./modules
+          {
+            networking.hostName = "module-docs";
+            networking.domain = "example.invalid";
+            tailscale.domain = "tailnet.example.invalid";
+            time.timeZone = "UTC";
+            system.stateVersion = "26.05";
+          }
+        ];
+      };
+      revision = self.shortRev or (self.dirtyShortRev or "dirty");
+      sourceRevision = self.rev or "main";
+    in
+      import ./docs {
+        inherit pkgs revision sourceRevision;
+        inherit (nixpkgs) lib;
+        inherit (evaluation) config options;
+        repositoryUrl = "https://github.com/paulbovbel/nix-config";
+        sourceRoot = ./.;
+      };
   in {
     inherit nixosConfigurations;
     lib.hostNames = lib.attrNames hosts;
     packages = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
+      docs = mkDocs system;
     in {
       inherit (pkgs) attic-client;
+      inherit (docs) module-docs;
+    });
+    checks = forAllSystems (system: {
+      inherit (mkDocs system) module-docs-check;
     });
     devShells = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
