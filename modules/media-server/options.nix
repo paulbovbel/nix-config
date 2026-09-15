@@ -36,6 +36,13 @@
       channels = lib.mkOption {
         type = lib.types.listOf channelType;
         default = [];
+        example = [
+          {
+            channel = "@example";
+            count = 10;
+            maxLength = 30;
+          }
+        ];
         description = "YouTube channels whose most popular videos should be downloaded.";
       };
 
