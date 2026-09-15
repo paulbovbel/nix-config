@@ -16,10 +16,12 @@
       ops = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
+        description = "Minecraft usernames granted operator privileges.";
       };
       users = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
+        description = "Minecraft usernames allowed to join the server.";
       };
     };
 

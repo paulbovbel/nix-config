@@ -51,6 +51,11 @@
         };
       });
       default = null;
+      example = {
+        efiDevice = "/dev/disk/by-partlabel/EFI";
+        rootDevice = "/dev/disk/by-partlabel/nixos";
+        swapDevice = "/dev/disk/by-partlabel/swap";
+      };
       description = "Existing partitions to use without modifying their parent partition table.";
     };
 
@@ -104,6 +109,12 @@
         };
       });
       default = {};
+      example = {
+        database = {
+          mountpoint = "/var/lib/example";
+          quota = "20G";
+        };
+      };
       description = "Additional persistent root-pool volumes.";
     };
 

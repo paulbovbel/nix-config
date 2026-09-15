@@ -86,6 +86,7 @@
         children = lib.mkOption {
           type = lib.types.lazyAttrsOf (datasetType "${parentPath}/${name}");
           default = {};
+          visible = "shallow";
           description = "Child datasets.";
         };
       };
@@ -101,6 +102,16 @@ in {
     datasets = lib.mkOption {
       type = lib.types.lazyAttrsOf (datasetType config.storage.dataPath);
       default = {};
+      example = lib.literalExpression ''
+        {
+          media = {
+            owner = "media";
+            group = "media";
+            options.recordsize = "1M";
+            children.movies = {};
+          };
+        }
+      '';
       description = "Nested shared host storage datasets.";
     };
 

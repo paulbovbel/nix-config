@@ -113,18 +113,22 @@ in {
       name = lib.mkOption {
         type = lib.types.str;
         default = "pbovbel";
+        description = "Name of the host user that owns Podman server state.";
       };
       group = lib.mkOption {
         type = lib.types.str;
         default = "pbovbel";
+        description = "Name of the host group that owns Podman server state.";
       };
       uid = lib.mkOption {
         type = lib.types.int;
         default = 1000;
+        description = "Numeric ID of the Podman server host user.";
       };
       gid = lib.mkOption {
         type = lib.types.int;
         default = 1000;
+        description = "Numeric ID of the Podman server host group.";
       };
     };
 
@@ -143,6 +147,17 @@ in {
     containers = lib.mkOption {
       type = lib.types.attrsOf containerType;
       default = {};
+      example = lib.literalExpression ''
+        {
+          example = {
+            quadlet.containerConfig = {
+              image = "docker.io/library/nginx:latest";
+              publishPorts = [ "8080:80" ];
+            };
+            dependsOn = [ "database" ];
+          };
+        }
+      '';
       description = "Containers rendered as Podman Quadlet units.";
     };
 
