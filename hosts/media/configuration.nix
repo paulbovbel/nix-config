@@ -163,10 +163,6 @@ in {
   smokeping.enable = true;
   grafanaCloud.role = "server";
 
-  # syncthing = {
-  #   enable = true;
-  # };
-
   mediaServer = {
     downloads.enable = true;
     downloads.popularVideos.channels = [
