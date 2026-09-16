@@ -2,6 +2,7 @@
   imports = [
     ../site.nix
     ./hardware-configuration.nix
+    ./robot-demo.nix
   ];
 
   boot = {
