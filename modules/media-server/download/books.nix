@@ -123,7 +123,7 @@ in {
         path = "/shelfmark";
         host = "shelfmark";
         port = 8084;
-        role = "share";
+        role = "user";
       };
     };
   };

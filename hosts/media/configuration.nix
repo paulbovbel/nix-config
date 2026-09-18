@@ -112,39 +112,39 @@ in {
     users = [
       {
         email = "paul@bovbel.com";
-        roles = ["admin" "share"];
+        roles = ["admin" "user"];
       }
       {
         email = "rebecca@bovbel.com";
-        roles = ["admin" "share"];
+        roles = ["admin" "user"];
       }
       {
         email = "andrew@bovbel.com";
-        roles = ["admin" "share"];
+        roles = ["admin" "user"];
       }
       {
         email = "irina@bovbel.com";
-        roles = ["share"];
+        roles = ["user"];
       }
       {
         email = "dmitri@bovbel.com";
-        roles = ["admin" "share"];
+        roles = ["admin" "user"];
       }
       {
         email = "arthur@bovbel.com";
-        roles = ["share"];
+        roles = ["user"];
       }
       {
         email = "igorlitvinov@gmail.com";
-        roles = ["share"];
+        roles = ["user"];
       }
       {
         email = "eugene.tkach@gmail.com";
-        roles = ["share"];
+        roles = ["user"];
       }
       {
         email = "pbovbel@gmail.com";
-        roles = ["share"];
+        roles = ["user"];
       }
     ];
   };

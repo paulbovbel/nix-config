@@ -145,6 +145,11 @@
 
   renderSite = site: concatMapStrings (renderDomain site) site.domains;
 
+  oauthDomains = lib.unique (lib.concatMap (site:
+    if lib.any (endpoint: endpoint.auth == "oauth") (lib.attrValues site.endpoints)
+    then map (domain: domain.host) site.domains
+    else []) (lib.attrValues cfg.sites));
+
   renderSecurity = renderBlock "security" (
     renderBlock "oauth identity provider google" ''
       realm google
@@ -157,10 +162,12 @@
     + renderBlock "authentication portal defaultportal" (''
         crypto default token lifetime ${toString cfg.tokenLifetime}
         crypto key sign-verify {$CADDY_TOKEN_SECRET}
-        enable identity provider google
-        cookie lifetime ${toString cfg.cookieLifetime}
+         enable identity provider google
+         cookie lifetime ${toString cfg.cookieLifetime}
 
       ''
+      + concatMapStrings (domain: "trust login redirect uri domain exact ${domain} path prefix /\n") oauthDomains
+      + "\n"
       + concatMapStrings renderUser cfg.users)
     + "\n"
     + concatMapStrings (role:

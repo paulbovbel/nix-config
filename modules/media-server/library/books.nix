@@ -117,7 +117,7 @@ in {
           path = "/grimmory";
           host = "grimmory";
           port = 6060;
-          role = "share";
+          role = "user";
         };
       };
     };

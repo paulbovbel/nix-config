@@ -126,7 +126,7 @@ in {
 
     roles = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = ["admin" "share"];
+      default = ["admin" "user"];
       description = "Roles recognized by the authentication portal.";
     };
 

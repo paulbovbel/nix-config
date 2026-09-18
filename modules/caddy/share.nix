@@ -21,7 +21,7 @@ in {
         type = "share";
         auth = "oauth";
         path = "/share";
-        role = "share";
+        role = "user";
       };
     };
   };
