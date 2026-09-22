@@ -11,7 +11,6 @@ import argparse
 import asyncio
 import collections
 import dataclasses
-import json
 import logging
 import os
 import re
@@ -77,6 +76,7 @@ class AudioMetadata:
     album: str
     track: str
     track_number: int | None = None
+    release_date: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -95,71 +95,10 @@ class FFmpegError(Exception):
 # Audio Processing Helpers
 
 
-def loudnorm_filter(measured: dict | None = None) -> str:
-    options = {
-        "I": "-16",
-        "TP": "-1.5",
-        "LRA": "11",
-    }
-    if measured:
-        options |= {
-            "measured_I": measured["input_i"],
-            "measured_TP": measured["input_tp"],
-            "measured_LRA": measured["input_lra"],
-            "measured_thresh": measured["input_thresh"],
-            "offset": measured["target_offset"],
-            "linear": "true",
-            "print_format": "summary",
-        }
-    else:
-        options["print_format"] = "json"
-
-    return "loudnorm=" + ":".join(f"{key}={value}" for key, value in options.items())
-
-
-def parse_loudnorm(stderr: str) -> dict:
-    # ffmpeg prints loudnorm JSON to stderr mixed with other log lines.
-    start = stderr.rfind("{")
-    end = stderr.rfind("}")
-    if start < 0 or end < start:
-        raise FFmpegError(f"Failed to parse loudnorm measurements:\n{stderr}")
-
-    try:
-        return json.loads(stderr[start : end + 1])
-    except json.JSONDecodeError as err:
-        raise FFmpegError(f"Failed to parse loudnorm measurements:\n{stderr}") from err
-
-
-async def _measure_loudness(infile: Path) -> dict:
-    process = await asyncio.create_subprocess_exec(
-        "ffmpeg",
-        "-hide_banner",
-        "-nostdin",
-        "-i",
-        str(infile),
-        "-map",
-        "0:a:0",
-        "-af",
-        loudnorm_filter(),
-        "-f",
-        "null",
-        "-",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    _, stderr = await process.communicate()
-    stderr_text = stderr.decode("utf-8", errors="replace")
-
-    if process.returncode != 0:
-        raise FFmpegError(stderr_text)
-
-    return parse_loudnorm(stderr_text)
-
-
-async def write_normalized_audio(
+async def write_audio(
     conversion: Conversion,
-    measured: dict,
     artwork: Path | None = None,
+    transcode: bool = False,
 ) -> None:
     infile = conversion.infile
     outfile = conversion.outfile
@@ -185,7 +124,10 @@ async def write_normalized_audio(
     if artwork:
         cmd += ["-map", "1:v:0"]
 
-    cmd += ["-c:a", "aac", "-q:a", "2", "-af", loudnorm_filter(measured)]
+    if transcode:
+        cmd += ["-c:a", "aac", "-q:a", "2"]
+    else:
+        cmd += ["-c:a", "copy"]
     if artwork:
         cmd += ["-c:v", "mjpeg", "-disposition:v:0", "attached_pic"]
 
@@ -198,9 +140,13 @@ async def write_normalized_audio(
         f"artist={metadata.artist}",
         "-metadata",
         f"album_artist={metadata.artist}",
+        "-metadata",
+        f"comment={item_plex_url(conversion.item)}",
     ]
     if metadata.track_number is not None:
         cmd += ["-metadata", f"track={metadata.track_number}"]
+    if metadata.release_date is not None:
+        cmd += ["-metadata", f"date={metadata.release_date}"]
 
     cmd += [str(partial_file)]
     process = None
@@ -283,14 +229,26 @@ def episode_metadata(item) -> AudioMetadata:
     return AudioMetadata(artist.strip(), album.strip(), track.strip(), episode_number)
 
 
+def item_release_date(item) -> str | None:
+    release_date = getattr(item, "originallyAvailableAt", None)
+    if release_date is not None:
+        value = release_date.isoformat() if hasattr(release_date, "isoformat") else str(release_date)
+        return value.split("T", 1)[0]
+
+    year = getattr(item, "year", None)
+    return str(year) if year is not None else None
+
+
 def item_metadata(item) -> AudioMetadata:
     item_type = getattr(item, "TYPE", None)
     if item_type == "movie":
-        return movie_metadata(item.title)
-    if item_type == "episode":
-        return episode_metadata(item)
+        metadata = movie_metadata(item.title)
+    elif item_type == "episode":
+        metadata = episode_metadata(item)
+    else:
+        raise ValueError(f"Unsupported playable Plex item type {item_type}: {item.title}")
 
-    raise ValueError(f"Unsupported playable Plex item type {item_type}: {item.title}")
+    return dataclasses.replace(metadata, release_date=item_release_date(item))
 
 
 def path_segment(value: str) -> str:
@@ -356,10 +314,12 @@ async def process_conversion(
 
     try:
         artwork = await artwork_for(conversion, artwork_dir)
-        LOGGER.info("Measuring loudness: %s", conversion.infile)
-        measured = await _measure_loudness(conversion.infile)
-        LOGGER.info("Converting %s -> %s", conversion.infile, conversion.outfile)
-        await write_normalized_audio(conversion, measured, artwork=artwork)
+        LOGGER.info("Extracting %s -> %s", conversion.infile, conversion.outfile)
+        try:
+            await write_audio(conversion, artwork=artwork)
+        except FFmpegError:
+            LOGGER.info("Direct extraction failed; transcoding %s", conversion.infile)
+            await write_audio(conversion, artwork=artwork, transcode=True)
     except FFmpegError as err:
         LOGGER.error("Failed to process %s:\n%s", conversion.outfile, err)
         return None
