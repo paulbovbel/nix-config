@@ -300,7 +300,7 @@ def playable_items(item) -> list:
     return []
 
 
-def movie_metadata(title: str) -> AudioMetadata:
+def movie_metadata(title: str, release_date: str | None = None) -> AudioMetadata:
     separators = [
         (index, separator)
         for separator in (":", " - ")
@@ -309,12 +309,18 @@ def movie_metadata(title: str) -> AudioMetadata:
     if separators:
         separator_index, separator = min(separators)
         artist = title[:separator_index].strip()
-        album = title[separator_index + len(separator) :].strip()
-        if artist and album:
-            return AudioMetadata(artist, album, album)
+        track = title[separator_index + len(separator) :].strip()
+        if artist and track:
+            album = track
+            if release_date and len(release_date) >= 4 and release_date[:4].isdigit():
+                album = f"{track} ({release_date[:4]})"
+            return AudioMetadata(artist, album, track)
 
     title = title.strip()
-    return AudioMetadata(title, title, title)
+    album = title
+    if release_date and len(release_date) >= 4 and release_date[:4].isdigit():
+        album = f"{title} ({release_date[:4]})"
+    return AudioMetadata(title, album, title)
 
 
 def episode_metadata(item) -> AudioMetadata:
@@ -345,8 +351,9 @@ def item_release_date(item) -> str | None:
 
 def item_metadata(item) -> AudioMetadata:
     item_type = getattr(item, "TYPE", None)
+    release_date = item_release_date(item)
     if item_type == "movie":
-        metadata = movie_metadata(item.title)
+        metadata = movie_metadata(item.title, release_date)
     elif item_type == "episode":
         metadata = episode_metadata(item)
     else:
@@ -354,7 +361,7 @@ def item_metadata(item) -> AudioMetadata:
             f"Unsupported playable Plex item type {item_type}: {item.title}"
         )
 
-    return dataclasses.replace(metadata, release_date=item_release_date(item))
+    return dataclasses.replace(metadata, release_date=release_date)
 
 
 def path_segment(value: str) -> str:
@@ -388,6 +395,21 @@ def item_artwork_url(item) -> str | None:
         return None
 
     return item._server.url(thumb, includeToken=True)
+
+
+def item_artist_artwork_url(item, artist: str) -> str | None:
+    if getattr(item, "TYPE", None) != "movie":
+        return None
+
+    for role in getattr(item, "roles", []):
+        if getattr(role, "tag", "").casefold() != artist.casefold():
+            continue
+
+        thumb = getattr(role, "thumb", None)
+        if thumb:
+            return item._server.url(thumb, includeToken=True)
+
+    return None
 
 
 def item_plex_url(item) -> str:
@@ -576,6 +598,38 @@ def sync_progress(
             LOGGER.error(
                 "Failed to synchronize progress for Plex item %s (%s)",
                 source_key,
+                type(err).__name__,
+            )
+
+
+def ensure_artist_artwork(plex: PlexServer, conversions: list[Conversion]) -> None:
+    artwork_by_artist = {}
+    for conversion in conversions:
+        key = (conversion.output_library, conversion.metadata.artist)
+        if key in artwork_by_artist:
+            continue
+
+        artwork_url = item_artist_artwork_url(
+            conversion.item, conversion.metadata.artist
+        )
+        if artwork_url:
+            artwork_by_artist[key] = artwork_url
+
+    output_sections = {}
+    for (output_library, artist), artwork_url in artwork_by_artist.items():
+        try:
+            if output_library not in output_sections:
+                output_sections[output_library] = plex.library.section(output_library)
+            plex_artist = output_sections[output_library].get(artist)
+            if getattr(plex_artist, "thumb", None):
+                continue
+
+            plex_artist.uploadPoster(url=artwork_url)
+            LOGGER.info("Set Plex artist artwork for %s", artist)
+        except Exception as err:
+            LOGGER.error(
+                "Failed to set Plex artist artwork for %s (%s)",
+                artist,
                 type(err).__name__,
             )
 
@@ -881,6 +935,7 @@ async def main():
             await plex_updates.put(None)
             await plex_update_task
 
+    ensure_artist_artwork(plex, conversions)
     sync_progress(plex, runtime_config, conversions)
 
 

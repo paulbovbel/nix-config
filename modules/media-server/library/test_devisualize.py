@@ -122,6 +122,24 @@ class ProcessingManifestTests(unittest.TestCase):
 
 
 class MetadataTests(unittest.TestCase):
+    def test_movies_are_grouped_as_comedy_specials(self):
+        self.assertEqual(
+            devisualize.movie_metadata("John Mulaney: Baby J", "2023-04-25"),
+            devisualize.AudioMetadata(
+                artist="John Mulaney",
+                album="Baby J (2023)",
+                track="Baby J",
+            ),
+        )
+        self.assertEqual(
+            devisualize.movie_metadata("Unstructured Special"),
+            devisualize.AudioMetadata(
+                artist="Unstructured Special",
+                album="Unstructured Special",
+                track="Unstructured Special",
+            ),
+        )
+
     def test_release_date_prefers_full_date_and_falls_back_to_year(self):
         self.assertEqual(
             devisualize.item_release_date(
@@ -152,6 +170,65 @@ class MetadataTests(unittest.TestCase):
             "https://app.plex.tv/desktop/#!/server/"
             "server%20id/details?key=%2Flibrary%2Fmetadata%2F42%2Fextra",
         )
+
+    def test_artist_artwork_uses_matching_movie_role(self):
+        server = SimpleNamespace(url=mock.Mock(return_value="https://plex/artist.jpg"))
+        item = SimpleNamespace(
+            TYPE="movie",
+            _server=server,
+            roles=[
+                SimpleNamespace(tag="Someone Else", thumb="/someone"),
+                SimpleNamespace(tag="Maria Bamford", thumb="/maria"),
+            ],
+        )
+
+        self.assertEqual(
+            devisualize.item_artist_artwork_url(item, "maria bamford"),
+            "https://plex/artist.jpg",
+        )
+        server.url.assert_called_once_with("/maria", includeToken=True)
+
+    def test_artist_artwork_ignores_non_movies(self):
+        item = SimpleNamespace(
+            TYPE="episode",
+            roles=[SimpleNamespace(tag="Host", thumb="/host")],
+        )
+
+        self.assertIsNone(devisualize.item_artist_artwork_url(item, "Host"))
+
+    def test_artist_artwork_is_only_uploaded_when_missing(self):
+        source_server = SimpleNamespace(
+            url=mock.Mock(return_value="https://plex/maria")
+        )
+        source_item = SimpleNamespace(
+            TYPE="movie",
+            _server=source_server,
+            roles=[SimpleNamespace(tag="Maria Bamford", thumb="/maria")],
+        )
+        conversion = devisualize.Conversion(
+            infile=Path("source.mkv"),
+            outfile=Path("output.m4a"),
+            output_root=Path("output"),
+            source_id="42:0",
+            item=source_item,
+            output_library="Devisualized",
+            metadata=devisualize.AudioMetadata(
+                "Maria Bamford", "Old Baby (2017)", "Old Baby"
+            ),
+        )
+        plex_artist = SimpleNamespace(thumb=None, uploadPoster=mock.Mock())
+        section = SimpleNamespace(get=mock.Mock(return_value=plex_artist))
+        plex = SimpleNamespace(
+            library=SimpleNamespace(section=mock.Mock(return_value=section))
+        )
+
+        devisualize.ensure_artist_artwork(plex, [conversion])
+        plex_artist.uploadPoster.assert_called_once_with(url="https://plex/maria")
+
+        plex_artist.thumb = "/existing"
+        plex_artist.uploadPoster.reset_mock()
+        devisualize.ensure_artist_artwork(plex, [conversion])
+        plex_artist.uploadPoster.assert_not_called()
 
 
 class ProcessingTests(unittest.TestCase):
