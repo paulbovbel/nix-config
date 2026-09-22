@@ -278,6 +278,14 @@ def item_artwork_url(item) -> str | None:
     return item._server.url(thumb, includeToken=True)
 
 
+def item_plex_url(item) -> str:
+    return (
+        "https://app.plex.tv/desktop/#!/server/"
+        f"{item._server.machineIdentifier}/details?key=%2Flibrary%2Fmetadata%2F"
+        f"{item.ratingKey}"
+    )
+
+
 def download_artwork(item, directory: Path) -> Path | None:
     url = item_artwork_url(item)
     if not url:
@@ -307,9 +315,6 @@ async def process_conversion(
     conversion: Conversion,
     artwork_dir: Path,
 ) -> Conversion | None:
-    if conversion.outfile.exists():
-        return None
-
     conversion.outfile.parent.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -468,7 +473,9 @@ def conversions_for_item(
             )
         outfile = output_path(output_root, config.input_library, metadata)
         conversions.append(
-            Conversion(infile, outfile, item, config.output_library, metadata)
+            Conversion(
+                infile, outfile, output_root, item, config.output_library, metadata
+            )
         )
 
     return conversions
@@ -528,16 +535,20 @@ def dedupe_conversions(conversions: list[Conversion]) -> list[Conversion]:
     return deduped
 
 
-def pending_conversions(conversions: list[Conversion]) -> list[Conversion]:
+def pending_conversions(
+    conversions: list[Conversion], manifest: ProcessingManifest
+) -> list[Conversion]:
     return [
         conversion
         for conversion in dedupe_conversions(conversions)
-        if not conversion.outfile.exists()
+        if manifest.needs_processing(conversion)
     ]
 
 
-def log_dry_run(conversions: list[Conversion]) -> None:
-    conversions = pending_conversions(conversions)
+def log_dry_run(
+    conversions: list[Conversion], manifest: ProcessingManifest
+) -> None:
+    conversions = pending_conversions(conversions, manifest)
     LOGGER.info("Dry run: %d conversion(s) would be processed", len(conversions))
     for conversion in conversions:
         LOGGER.info("Would convert %s -> %s", conversion.infile, conversion.outfile)
@@ -545,16 +556,18 @@ def log_dry_run(conversions: list[Conversion]) -> None:
 
 async def process_conversions(
     conversions: list[Conversion],
+    manifest: ProcessingManifest,
     artwork_dir: Path,
     plex_updates: asyncio.Queue,
 ):
     semaphore = asyncio.Semaphore(FFMPEG_CONCURRENCY)
-    conversions = pending_conversions(conversions)
+    conversions = pending_conversions(conversions, manifest)
 
     async def process_one(conversion: Conversion):
         async with semaphore:
             processed = await process_conversion(conversion, artwork_dir)
         if processed:
+            manifest.mark_processed(processed)
             await plex_updates.put(processed)
 
     await asyncio.gather(*(process_one(conversion) for conversion in conversions))
@@ -601,8 +614,9 @@ async def main():
     )
     plex = PlexServer(runtime_config.plex_url, plex_token)
     conversions = collect_conversions(plex, runtime_config, CONFIG)
+    manifest = ProcessingManifest(conversions)
     if runtime_config.dry_run:
-        log_dry_run(conversions)
+        log_dry_run(conversions, manifest)
         return
 
     with tempfile.TemporaryDirectory() as temporary_directory:
@@ -612,7 +626,7 @@ async def main():
         plex_update_task = asyncio.create_task(plex_updater.run(plex_updates))
 
         try:
-            await process_conversions(conversions, artwork_dir, plex_updates)
+            await process_conversions(conversions, manifest, artwork_dir, plex_updates)
         finally:
             await plex_updates.put(None)
             await plex_update_task
