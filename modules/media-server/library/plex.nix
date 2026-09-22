@@ -21,7 +21,7 @@
   };
   python = pkgs.python3.withPackages (ps: [ps.plexapi]);
   devisualizeConfig = {
-    calendar = "daily";
+    calendar = "*:0/5";
   };
   shufflePlexCollectionsConfig = {
     calendar = "daily";

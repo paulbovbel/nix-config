@@ -4,7 +4,7 @@ import sys
 import tempfile
 import types
 import unittest
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -192,6 +192,53 @@ class ProcessingTests(unittest.TestCase):
                 write_audio.await_args_list[0].kwargs.get("transcode", False)
             )
             self.assertTrue(write_audio.await_args_list[1].kwargs["transcode"])
+
+
+class ProgressSyncTests(unittest.TestCase):
+    @staticmethod
+    def item(offset, last_viewed_at=None, played=False, duration=100_000):
+        return SimpleNamespace(
+            duration=duration,
+            viewOffset=offset,
+            isPlayed=played,
+            lastViewedAt=last_viewed_at,
+            markPlayed=mock.Mock(),
+            markUnplayed=mock.Mock(),
+            updateProgress=mock.Mock(),
+        )
+
+    def test_most_recent_item_can_rewind_progress(self):
+        older = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        newer = datetime(2026, 1, 2, tzinfo=timezone.utc)
+        recent_item = self.item(20_000, newer)
+        stale_item = self.item(80_000, older)
+
+        self.assertTrue(devisualize.sync_progress_pair(recent_item, stale_item))
+
+        stale_item.updateProgress.assert_called_once_with(20_000)
+        recent_item.updateProgress.assert_not_called()
+
+    def test_furthest_progress_wins_when_timestamps_are_unavailable(self):
+        less_progressed = self.item(20_000)
+        more_progressed = self.item(80_000)
+
+        self.assertTrue(
+            devisualize.sync_progress_pair(less_progressed, more_progressed)
+        )
+
+        less_progressed.updateProgress.assert_called_once_with(80_000)
+        more_progressed.updateProgress.assert_not_called()
+
+    def test_recent_partial_progress_clears_played_status(self):
+        older = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        newer = datetime(2026, 1, 2, tzinfo=timezone.utc)
+        recent_item = self.item(40_000, newer)
+        stale_item = self.item(0, older, played=True)
+
+        self.assertTrue(devisualize.sync_progress_pair(recent_item, stale_item))
+
+        stale_item.markUnplayed.assert_called_once_with()
+        stale_item.updateProgress.assert_called_once_with(40_000)
 
 
 if __name__ == "__main__":

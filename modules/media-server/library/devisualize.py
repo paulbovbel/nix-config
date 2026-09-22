@@ -26,6 +26,7 @@ from plexapi.server import PlexServer
 
 FFMPEG_CONCURRENCY = 1
 MANIFEST_FILENAME = ".devisualize-manifest.json"
+MINIMUM_PROGRESS_CHANGE_MS = 1000
 PROCESSING_VERSION = 1
 PATH_SEPARATOR_PATTERN = re.compile(r"[\\/]+")
 LOGGER = logging.getLogger(__name__)
@@ -447,6 +448,138 @@ async def process_conversion(
     return conversion
 
 
+def progress_fraction(item) -> float:
+    if bool(getattr(item, "isPlayed", False)):
+        return 1.0
+
+    duration = getattr(item, "duration", None) or 0
+    if duration <= 0:
+        return 0.0
+
+    offset = getattr(item, "viewOffset", None) or 0
+    return max(0.0, min(offset / duration, 1.0))
+
+
+def progress_timestamp(item) -> float:
+    last_viewed_at = getattr(item, "lastViewedAt", None)
+    return last_viewed_at.timestamp() if last_viewed_at is not None else 0.0
+
+
+def mirror_progress_attributes(source, target, offset: int) -> None:
+    target.viewCount = 1 if bool(getattr(source, "isPlayed", False)) else 0
+    target.viewOffset = offset
+    target.lastViewedAt = getattr(source, "lastViewedAt", None)
+
+
+def copy_progress(source, target) -> bool:
+    source_progress = progress_fraction(source)
+    target_progress = progress_fraction(target)
+    target_duration = getattr(target, "duration", None) or 0
+    source_played = bool(getattr(source, "isPlayed", False))
+    target_played = bool(getattr(target, "isPlayed", False))
+
+    if source_played:
+        if target_played:
+            return False
+        target.markPlayed()
+        mirror_progress_attributes(source, target, 0)
+        return True
+
+    changed = False
+    if target_played:
+        target.markUnplayed()
+        mirror_progress_attributes(source, target, 0)
+        changed = True
+
+    if source_progress == 0.0:
+        if target_progress > 0.0 and not changed:
+            target.markUnplayed()
+            mirror_progress_attributes(source, target, 0)
+            changed = True
+        return changed
+
+    if target_duration <= 1:
+        return changed
+
+    desired_offset = max(
+        1, min(int(source_progress * target_duration), target_duration - 1)
+    )
+    current_offset = getattr(target, "viewOffset", None) or 0
+    if abs(desired_offset - current_offset) < MINIMUM_PROGRESS_CHANGE_MS:
+        return changed
+
+    target.updateProgress(desired_offset)
+    mirror_progress_attributes(source, target, desired_offset)
+    return True
+
+
+def sync_progress_pair(first, second) -> bool:
+    first_timestamp = progress_timestamp(first)
+    second_timestamp = progress_timestamp(second)
+    if first_timestamp > second_timestamp:
+        return copy_progress(first, second)
+    if second_timestamp > first_timestamp:
+        return copy_progress(second, first)
+    if progress_fraction(first) >= progress_fraction(second):
+        return copy_progress(first, second)
+    return copy_progress(second, first)
+
+
+def sync_progress(
+    plex: PlexServer,
+    runtime_config: RuntimeConfig,
+    conversions: list[Conversion],
+) -> None:
+    mapper = PlexPathMapper(
+        runtime_config.plex_media_root.resolve(),
+        runtime_config.host_media_root.resolve(),
+    )
+    output_tracks = {}
+    for output_library in {conversion.output_library for conversion in conversions}:
+        try:
+            tracks = plex.library.section(output_library).search(libtype="track")
+        except Exception as err:
+            LOGGER.error(
+                "Failed to list tracks in %s (%s)", output_library, type(err).__name__
+            )
+            continue
+
+        for track in tracks:
+            for plex_file in item_files(track):
+                output_tracks[mapper.to_host(plex_file).resolve()] = track
+
+    source_items = {}
+    synced_pairs = set()
+    for conversion in conversions:
+        output_track = output_tracks.get(conversion.outfile.resolve())
+        if output_track is None:
+            LOGGER.warning("Output track not found in Plex: %s", conversion.outfile)
+            continue
+
+        source_key = str(conversion.item.ratingKey)
+        pair = (source_key, str(output_track.ratingKey))
+        if pair in synced_pairs:
+            continue
+        synced_pairs.add(pair)
+
+        try:
+            if source_key not in source_items:
+                source_items[source_key] = conversion.item.reload()
+            source_item = source_items[source_key]
+            if sync_progress_pair(source_item, output_track):
+                LOGGER.info(
+                    "Synchronized progress between Plex items %s and %s",
+                    source_key,
+                    output_track.ratingKey,
+                )
+        except Exception as err:
+            LOGGER.error(
+                "Failed to synchronize progress for Plex item %s (%s)",
+                source_key,
+                type(err).__name__,
+            )
+
+
 async def wait_for_scan(plex: PlexServer, scan_timeout: int):
     def is_scanning():
         return any(
@@ -747,6 +880,8 @@ async def main():
         finally:
             await plex_updates.put(None)
             await plex_update_task
+
+    sync_progress(plex, runtime_config, conversions)
 
 
 if __name__ == "__main__":
