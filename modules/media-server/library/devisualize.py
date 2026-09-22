@@ -11,18 +11,22 @@ import argparse
 import asyncio
 import collections
 import dataclasses
+import json
 import logging
 import os
 import re
 import tempfile
 import uuid
 from pathlib import Path
+from urllib.parse import quote
 
 import requests
 from plexapi.exceptions import NotFound
 from plexapi.server import PlexServer
 
 FFMPEG_CONCURRENCY = 1
+MANIFEST_FILENAME = ".devisualize-manifest.json"
+PROCESSING_VERSION = 1
 PATH_SEPARATOR_PATTERN = re.compile(r"[\\/]+")
 LOGGER = logging.getLogger(__name__)
 
@@ -83,6 +87,8 @@ class AudioMetadata:
 class Conversion:
     infile: Path
     outfile: Path
+    output_root: Path
+    source_id: str
     item: object
     output_library: str
     metadata: AudioMetadata
@@ -90,6 +96,99 @@ class Conversion:
 
 class FFmpegError(Exception):
     pass
+
+
+class ProcessingManifest:
+    def __init__(self, conversions: list[Conversion]):
+        self.entries: dict[Path, dict] = {}
+        for conversion in conversions:
+            path = self._path(conversion)
+            if path in self.entries:
+                continue
+
+            try:
+                data = json.loads(path.read_text()) if path.exists() else {}
+                items = data.get("items", {})
+                if not isinstance(items, dict) or not all(
+                    isinstance(key, str) and isinstance(value, dict)
+                    for key, value in items.items()
+                ):
+                    raise ValueError("manifest items must be an object")
+                self.entries[path] = items
+            except (OSError, ValueError) as err:
+                LOGGER.warning("Ignoring invalid manifest %s: %s", path, err)
+                self.entries[path] = {}
+
+    @staticmethod
+    def _path(conversion: Conversion) -> Path:
+        return conversion.output_root / MANIFEST_FILENAME
+
+    @staticmethod
+    def _state(conversion: Conversion) -> dict | None:
+        try:
+            source = conversion.infile.stat()
+        except OSError as err:
+            LOGGER.warning("Cannot inspect source file %s: %s", conversion.infile, err)
+            return None
+
+        return {
+            "processing_version": PROCESSING_VERSION,
+            "source": {
+                "path": str(conversion.infile),
+                "size": source.st_size,
+                "mtime_ns": source.st_mtime_ns,
+            },
+            "output": str(conversion.outfile),
+            "metadata": dataclasses.asdict(conversion.metadata),
+            "plex_url": item_plex_url(conversion.item),
+            "artwork": getattr(conversion.item, "thumb", None)
+            or getattr(conversion.item, "grandparentThumb", None),
+        }
+
+    def needs_processing(self, conversion: Conversion) -> bool:
+        if not conversion.outfile.exists():
+            return True
+
+        state = self._state(conversion)
+        if state is None:
+            return True
+
+        return self.entries[self._path(conversion)].get(conversion.source_id) != state
+
+    def mark_processed(self, conversion: Conversion) -> None:
+        state = self._state(conversion)
+        if state is None:
+            return
+
+        path = self._path(conversion)
+        previous = self.entries[path].get(conversion.source_id, {})
+        previous_output = previous.get("output")
+        self.entries[path][conversion.source_id] = state
+
+        if previous_output and previous_output != str(conversion.outfile):
+            stale_output = Path(previous_output)
+            if stale_output.resolve().is_relative_to(conversion.output_root.resolve()):
+                try:
+                    stale_output.unlink(missing_ok=True)
+                except OSError as err:
+                    LOGGER.warning(
+                        "Failed to remove stale output %s: %s", stale_output, err
+                    )
+            else:
+                LOGGER.warning(
+                    "Refusing to remove output outside library: %s", stale_output
+                )
+
+        partial_path = path.with_name(f"{path.name}.{uuid.uuid4().hex}.partial")
+        try:
+            partial_path.write_text(
+                json.dumps({"items": self.entries[path]}, indent=2, sort_keys=True)
+                + "\n"
+            )
+            os.replace(partial_path, path)
+        finally:
+            if partial_path.exists():
+                partial_path.unlink()
 
 
 # Audio Processing Helpers
@@ -120,7 +219,7 @@ async def write_audio(
     if artwork:
         cmd += ["-i", str(artwork)]
 
-    cmd += ["-map", "0:a:0"]
+    cmd += ["-map", "0:a:0", "-map_metadata", "-1"]
     if artwork:
         cmd += ["-map", "1:v:0"]
 
@@ -232,8 +331,12 @@ def episode_metadata(item) -> AudioMetadata:
 def item_release_date(item) -> str | None:
     release_date = getattr(item, "originallyAvailableAt", None)
     if release_date is not None:
-        value = release_date.isoformat() if hasattr(release_date, "isoformat") else str(release_date)
-        return value.split("T", 1)[0]
+        value = (
+            release_date.isoformat()
+            if hasattr(release_date, "isoformat")
+            else str(release_date)
+        )
+        return value.split("T", 1)[0].split(" ", 1)[0]
 
     year = getattr(item, "year", None)
     return str(year) if year is not None else None
@@ -246,14 +349,22 @@ def item_metadata(item) -> AudioMetadata:
     elif item_type == "episode":
         metadata = episode_metadata(item)
     else:
-        raise ValueError(f"Unsupported playable Plex item type {item_type}: {item.title}")
+        raise ValueError(
+            f"Unsupported playable Plex item type {item_type}: {item.title}"
+        )
 
     return dataclasses.replace(metadata, release_date=item_release_date(item))
 
 
 def path_segment(value: str) -> str:
     cleaned = PATH_SEPARATOR_PATTERN.sub("_", value).strip()
-    return cleaned or "Unknown"
+    cleaned = "".join(
+        "_" if ord(character) < 32 else character for character in cleaned
+    )
+    if cleaned in {"", ".", ".."}:
+        return "Unknown"
+
+    return cleaned.encode("utf-8")[:200].decode("utf-8", errors="ignore") or "Unknown"
 
 
 def output_path(
@@ -279,10 +390,11 @@ def item_artwork_url(item) -> str | None:
 
 
 def item_plex_url(item) -> str:
+    machine_identifier = quote(str(item._server.machineIdentifier), safe="")
+    metadata_key = quote(f"/library/metadata/{item.ratingKey}", safe="")
     return (
         "https://app.plex.tv/desktop/#!/server/"
-        f"{item._server.machineIdentifier}/details?key=%2Flibrary%2Fmetadata%2F"
-        f"{item.ratingKey}"
+        f"{machine_identifier}/details?key={metadata_key}"
     )
 
 
@@ -306,7 +418,9 @@ async def artwork_for(conversion: Conversion, artwork_dir: Path) -> Path | None:
         return await asyncio.to_thread(download_artwork, conversion.item, artwork_dir)
     except requests.RequestException as err:
         LOGGER.warning(
-            "Failed to download artwork for %s: %s", conversion.item.title, err
+            "Failed to download artwork for %s (%s)",
+            conversion.item.title,
+            type(err).__name__,
         )
         return None
 
@@ -325,7 +439,7 @@ async def process_conversion(
         except FFmpegError:
             LOGGER.info("Direct extraction failed; transcoding %s", conversion.infile)
             await write_audio(conversion, artwork=artwork, transcode=True)
-    except FFmpegError as err:
+    except (FFmpegError, OSError) as err:
         LOGGER.error("Failed to process %s:\n%s", conversion.outfile, err)
         return None
 
@@ -397,8 +511,6 @@ class PlexLibraryUpdater:
             await merge_albums(output_section, albums_by_artist)
         else:
             LOGGER.warning("Plex scan did not complete before timeout")
-            for artist, albums in albums_by_artist.items():
-                self.pending[output_library][artist].update(albums)
 
     async def _drain_queue(self, queue: asyncio.Queue) -> None:
         while True:
@@ -474,7 +586,13 @@ def conversions_for_item(
         outfile = output_path(output_root, config.input_library, metadata)
         conversions.append(
             Conversion(
-                infile, outfile, output_root, item, config.output_library, metadata
+                infile=infile,
+                outfile=outfile,
+                output_root=output_root,
+                source_id=f"{item.ratingKey}:{index}",
+                item=item,
+                output_library=config.output_library,
+                metadata=metadata,
             )
         )
 
@@ -526,8 +644,9 @@ def dedupe_conversions(conversions: list[Conversion]) -> list[Conversion]:
     for conversion in conversions:
         outfile = conversion.outfile
         if outfile in seen:
-            LOGGER.warning("Skipping duplicate output path: %s", outfile)
-            continue
+            raise ValueError(
+                f"Multiple Plex items map to the same output path: {outfile}"
+            )
 
         seen.add(outfile)
         deduped.append(conversion)
@@ -545,9 +664,7 @@ def pending_conversions(
     ]
 
 
-def log_dry_run(
-    conversions: list[Conversion], manifest: ProcessingManifest
-) -> None:
+def log_dry_run(conversions: list[Conversion], manifest: ProcessingManifest) -> None:
     conversions = pending_conversions(conversions, manifest)
     LOGGER.info("Dry run: %d conversion(s) would be processed", len(conversions))
     for conversion in conversions:
