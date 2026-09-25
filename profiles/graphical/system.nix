@@ -65,6 +65,10 @@
           "org.signal.Signal"
           "tv.plex.PlexDesktop"
         ];
+      overrides.settings."com.rtosta.zapzap".Environment = {
+        QTWEBENGINE_DISABLE_GPU = "1";
+        QT_QUICK_BACKEND = "software";
+      };
     };
 
     xserver = {
