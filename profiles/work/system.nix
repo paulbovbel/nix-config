@@ -35,9 +35,12 @@
     };
 
     systemPackages = [
+      pkgs.docker-compose
       pkgs.distrobox
       pkgs.ike-scan
       locus-vpn-client.packages.${pkgs.stdenv.hostPlatform.system}.default
+      pkgs.podman-compose
+      pkgs.xhost
     ];
   };
 
