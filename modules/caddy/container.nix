@@ -28,7 +28,7 @@
   ];
   caddyPackage = pkgs.caddy.withPlugins {
     plugins = caddyPlugins;
-    hash = "sha256-oBcXDJ1+xs80HHiz/MR0ncKCDWW2uRgv+LYr0guaK4w=";
+    hash = "sha256-gywarH3oya2Y1DlasfDnkcev2yiUW/d5oYKiRGqtFVM=";
   };
   caddyImageTag = builtins.hashString "sha256" (builtins.toJSON caddyPlugins);
   caddyImage = pkgs.dockerTools.buildLayeredImage {
