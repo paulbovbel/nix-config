@@ -54,6 +54,7 @@
       packages =
         [
           "org.mozilla.firefox"
+          "com.bitwarden.desktop"
           "org.gimp.GIMP"
           "org.inkscape.Inkscape"
           "com.rtosta.zapzap"
@@ -69,6 +70,9 @@
         QTWEBENGINE_DISABLE_GPU = "1";
         QT_QUICK_BACKEND = "software";
       };
+      overrides.settings."com.bitwarden.desktop".Context.filesystems = [
+        "~/.mozilla/native-messaging-hosts:create"
+      ];
     };
 
     xserver = {
@@ -115,20 +119,21 @@
 
   environment = {
     systemPackages = [
+      pkgs.gnome-icon-theme
+      pkgs.gnome-power-manager
       pkgs.gnome-tweaks
-      pkgs.gnomeExtensions.dash-to-dock
       pkgs.gnomeExtensions.appindicator
+      pkgs.gnomeExtensions.dash-to-dock
       pkgs.gnomeExtensions.headsetcontrol
       pkgs.gnomeExtensions.unlock-dialog-background
-      pkgs.gnome-icon-theme
       pkgs.headsetcontrol
-      pkgs.yaru-theme
       pkgs.libva-utils
       pkgs.qpwgraph
       pkgs.remmina
       pkgs.vlc
       pkgs.wireshark
       pkgs.xrandr
+      pkgs.yaru-theme
     ];
 
     sessionVariables = {
