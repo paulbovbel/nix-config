@@ -89,7 +89,7 @@ When the selected host matches the running hostname, the build can embed an encr
 
 The archive preserves ownership, permissions, ACLs, extended attributes, and sparse files. It excludes personal XDG directories (`Desktop`, `Documents`, `Downloads`, `Music`, `Pictures`, `Public`, `Templates`, and `Videos`) plus `.cache`, `.local/share/Trash`, and Flatpak application cache directories. Other application state, including XDG, Flatpak, and non-XDG hidden directories, remains included.
 
-Persisted state includes NixOS UID/GID allocation, the machine ID, NetworkManager connections and state, Tailscale identity, Bluetooth pairings, CUPS, system Flatpaks, and GDM. Missing paths are skipped. Logs, coredumps, fwupd history, Alloy and systemd state, caches, and `/persist/etc/agenix/host.agekey` are not included; the installer handles the host identity separately.
+Persisted state includes NixOS UID/GID allocation, the machine ID, SSH host keys, NetworkManager connections and state, Tailscale identity, Bluetooth pairings, CUPS, system Flatpaks, and GDM. Missing paths are skipped. Logs, coredumps, fwupd history, Alloy and systemd state, caches, and `/persist/etc/agenix/host.agekey` are not included; the installer handles the agenix host identity separately.
 
 The archive is compressed and streamed directly into encryption for the temporary installer recipient; no plaintext archive is written to disk or copied into the Nix store. During installation, the passphrase entered to unlock the host identity also unlocks the archive, which is extracted into the mounted target homes and persistence volume after Disko prepares the filesystems. This supports migrations between filesystem backends, but it is not a replacement for a separate backup.
 
