@@ -138,8 +138,6 @@
 
     sessionVariables = {
       TERMINAL = "kitty";
-      OPENAI_BASE_URL = "http://white-tower:11434/v1";
-      OPENAI_API_KEY = "dummy";
     };
   };
 
