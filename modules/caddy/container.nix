@@ -23,12 +23,12 @@
     "podman-server-caddy-basic-auth-env.service"
   ];
   caddyPlugins = [
-    "github.com/greenpau/caddy-security@v1.1.64"
+    "github.com/greenpau/caddy-security@v1.2.2"
     "github.com/caddy-dns/route53@v1.6.2"
   ];
   caddyPackage = pkgs.caddy.withPlugins {
     plugins = caddyPlugins;
-    hash = "sha256-oBcXDJ1+xs80HHiz/MR0ncKCDWW2uRgv+LYr0guaK4w=";
+    hash = "sha256-cofEVMOovDDIzo3VoVktTK8C2+uYKLvnslTPkUua6Jc=";
   };
   caddyImageTag = builtins.hashString "sha256" (builtins.toJSON caddyPlugins);
   caddyImage = pkgs.dockerTools.buildLayeredImage {

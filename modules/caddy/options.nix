@@ -155,13 +155,13 @@ in {
 
     tokenLifetime = lib.mkOption {
       type = lib.types.ints.positive;
-      default = 7884000;
+      default = 3600;
       description = "OAuth token lifetime in seconds.";
     };
 
     cookieLifetime = lib.mkOption {
       type = lib.types.ints.positive;
-      default = 7884000;
+      default = 3600;
       description = "OAuth cookie lifetime in seconds.";
     };
 

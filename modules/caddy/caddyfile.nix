@@ -53,7 +53,7 @@
 
   headerLines = endpoint:
     concatMapStrings (header: "header_up ${header}\n") endpoint.headerUp
-    + optionalString endpoint.spoofBasic "header_up +Authorization \"Basic {$BASIC_AUTH_HEADER}\"\n";
+    + optionalString endpoint.spoofBasic "header_up Authorization \"Basic {$BASIC_AUTH_HEADER}\"\n";
 
   reverseProxy = endpoint:
     renderBlock "reverse_proxy * ${endpoint.scheme}://${endpoint.host}:${toString endpoint.port}" (proxyTransport endpoint + headerLines endpoint);
@@ -173,10 +173,12 @@
     + concatMapStrings (role:
       renderBlock "authorization policy ${role}" ''
         set auth url /auth/oauth2/google
+        set access_token cookie name AUTHP_ACCESS_TOKEN
+        set token sources cookie
         crypto key verify {$CADDY_TOKEN_SECRET}
         allow roles authp/${role}
-        validate bearer header
         inject headers with claims
+        enable strip token
         enable js redirect
       '')
     cfg.roles
