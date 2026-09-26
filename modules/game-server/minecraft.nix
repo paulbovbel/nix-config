@@ -20,7 +20,7 @@ in {
 
       containers.minecraft = {
         quadlet.containerConfig = {
-          image = "ghcr.io/itzg/minecraft-server:latest";
+          image = "ghcr.io/itzg/minecraft-server:java21";
           publishPorts = ["25565:25565"];
           volumes = ["${datasets.app.children.minecraft.path}:/data"];
           environments = {
@@ -34,8 +34,8 @@ in {
             ENABLE_RCON = "TRUE";
             VERSION = "1.21.1";
             MODPACK_PLATFORM = "MODRINTH";
-            MODRINTH_MODPACK = "default3.mrpack";
-            SEED = "-7903651094132931013";
+            MODRINTH_MODPACK = "https://modrinth.com/modpack/cobbleverse";
+            SEED = "-8021755361276700313";
           };
         };
         derivedEnvironmentFiles = ["minecraft"];
