@@ -62,32 +62,12 @@ in {
   programs = {
     opencode = {
       enable = true;
-      package = unstablePkgs.opencode;
+      package = pkgs.opencode;
       settings = {
-        enabled_providers = ["openai" "llama.cpp"];
-        model = "llama.cpp/qwen3.6";
-        provider = {
-          openai = {};
-          "llama.cpp" = {
-            npm = "@ai-sdk/openai-compatible";
-            name = "Local LLM";
-            options = {
-              baseURL = "http://white-tower:11434/v1";
-              stream = false;
-            };
-            models = {
-              "qwen3.6" = {
-                name = "Local Model";
-                tool_call = true;
-                options.toolParser = "auto";
-              };
-            };
-          };
-        };
         permission.external_directory."/nix/store/**" = "allow";
         mcp.nixos = {
           type = "local";
-          command = ["${unstablePkgs.mcp-nixos}/bin/mcp-nixos"];
+          command = ["${pkgs.mcp-nixos}/bin/mcp-nixos"];
         };
         mcp.plex = {
           type = "remote";
