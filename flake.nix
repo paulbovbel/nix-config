@@ -89,6 +89,12 @@
       if branch == ""
       then "main"
       else branch;
+    configurationRevision = let
+      revision = builtins.getEnv "NIX_CONFIG_REVISION";
+    in
+      if revision != ""
+      then revision
+      else self.rev or self.dirtyRev or null;
     systems = [
       "aarch64-linux"
       "x86_64-linux"
@@ -202,6 +208,7 @@
         (lib.subtractLists (lib.attrNames profiles.${user.name}) user.profiles))
       knownUsers;
     in
+      assert lib.assertMsg (builtins.match "age1.+" cfg.ageRecipient != null) "Host ${name} must define a valid ageRecipient";
       assert lib.assertMsg (unknownAccounts == []) "Host ${name} selects unknown accounts: ${lib.concatStringsSep ", " unknownAccounts}";
       assert lib.assertMsg (unknownUsers == []) "Host ${name} selects unknown users: ${lib.concatStringsSep ", " unknownUsers}";
       assert lib.assertMsg (unknownProfiles == []) "Host ${name} selects unknown profiles: ${lib.concatStringsSep ", " unknownProfiles}";
@@ -217,7 +224,7 @@
 
       rootFs.homeUsers = configuredUserNames;
 
-      system.configurationRevision = self.rev or self.dirtyRev or null;
+      system.configurationRevision = configurationRevision;
       environment.etc."nix-config/branch".text = configurationBranch;
 
       accounts = lib.genAttrs configuredUserNames (_: {enable = true;});
@@ -248,7 +255,7 @@
       })
       users;
 
-    mkHost = name: rawCfg: let
+    mkHost = name: rawCfg: extraModules: let
       cfg = validateHost name rawCfg;
       inherit (cfg) system;
       configuredUserNames = map (user: user.name) cfg.users;
@@ -271,7 +278,8 @@
           ]
           ++ externalModules
           ++ lib.unique (lib.concatMap userSystemModules cfg.users)
-          ++ mkUserModules cfg.users;
+          ++ mkUserModules cfg.users
+          ++ extraModules;
       };
 
     hosts = {
@@ -281,7 +289,46 @@
       becmac-pro = import ./hosts/becmac-pro;
       media = import ./hosts/media;
     };
-    nixosConfigurations = lib.mapAttrs mkHost hosts;
+    nixosConfigurations = lib.mapAttrs (name: cfg: mkHost name cfg []) hosts;
+    mkInstaller = {
+      firmwareDirectory ? null,
+      homeBackup ? null,
+      hostName,
+      keyPayload,
+      unlockPayload,
+    }: let
+      host = hosts.${hostName} or (throw "Unknown installer host: ${hostName}");
+      inherit (host) system;
+      isAppleSilicon = system == "aarch64-linux";
+      targetSystem = mkHost hostName host (lib.optional (firmwareDirectory != null) {
+        hardware.asahi.peripheralFirmwareDirectory = lib.mkForce firmwareDirectory;
+      });
+    in
+      nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = {
+          expectedRecipient = host.ageRecipient;
+          inherit homeBackup keyPayload targetSystem unlockPayload;
+        };
+        modules =
+          (
+            if isAppleSilicon
+            then [nixos-apple-silicon.nixosModules.apple-silicon-installer]
+            else [(nixpkgs + "/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix")]
+          )
+          ++ [
+            ./installer
+            {
+              nixpkgs.hostPlatform.system = system;
+            }
+          ]
+          ++ lib.optional isAppleSilicon {
+            hardware.asahi.pkgsSystem = system;
+          }
+          ++ lib.optional (isAppleSilicon && firmwareDirectory != null) {
+            hardware.asahi.peripheralFirmwareDirectory = lib.mkForce firmwareDirectory;
+          };
+      };
     mkDocs = system: let
       pkgs = import nixpkgs {inherit system;};
       unstablePkgs = import nixpkgs-unstable {
@@ -319,7 +366,10 @@
       };
   in {
     inherit nixosConfigurations;
-    lib.hostNames = lib.attrNames hosts;
+    lib = {
+      hostNames = lib.attrNames hosts;
+      inherit mkInstaller;
+    };
     packages = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
       docs = mkDocs system;
