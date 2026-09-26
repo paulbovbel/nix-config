@@ -117,3 +117,9 @@ nix build --impure --out-link "$repo/result" --expr '
 
 printf 'Installer image:\n'
 printf '  %s\n' "$repo"/result/iso/*.iso
+
+printf '\nWrite this image to a USB disk now? [y/N] '
+write_usb=""
+if read -r write_usb && [[ "$write_usb" == y || "$write_usb" == Y ]]; then
+  "$repo/installer/write-usb.sh" "$repo"/result/iso/*.iso
+fi
