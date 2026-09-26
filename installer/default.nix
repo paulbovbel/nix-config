@@ -134,6 +134,12 @@
         exit 1
       fi
 
+      ${lib.optionalString usesExistingPartitions ''
+        wipefs --all "$target_root"
+        wipefs --all "$target_swap"
+        udevadm settle
+      ''}
+
       ${diskoScript}
 
       ${lib.optionalString (stateBackup != null) ''
