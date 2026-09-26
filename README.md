@@ -26,7 +26,7 @@ just switch <host>
 | `becmac-pro` | Personal laptop | `pbovbel: graphical`, `rbovbel: graphical` |
 | `media` | Media, game, cache, ingress, and storage server | `pbovbel: headless` |
 
-Hosts are registered in `flake.nix`. Each `hosts/<host>/default.nix` declares its target system and selects users and their profiles, while `hosts/<host>/configuration.nix` contains machine settings and enables host-facing modules. Settings shared by the local site, including DNS domains, live in `hosts/site.nix`.
+Hosts are registered in `flake.nix`. Each `hosts/<host>/default.nix` declares its target system, public age recipient, and selected users and profiles, while `hosts/<host>/configuration.nix` contains machine settings and enables host-facing modules. Settings shared by the local site, including DNS domains, live in `hosts/site.nix`.
 
 ## Architecture
 
@@ -87,6 +87,7 @@ Do not add plaintext secrets. Stateful services on impermanent hosts must declar
 ## Runbooks
 
 - [Define and install a host](hosts/install.md)
+- [Build an offline USB installer](installer/README.md)
 - [Manage Grafana dashboards](monitoring/README.md)
 - [Caddy site and endpoint declarations](modules/caddy/README.md)
 - [Attic cache initialization](modules/attic-cache/README.md)

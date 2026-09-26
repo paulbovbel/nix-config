@@ -2,6 +2,8 @@
 
 This runbook defines and installs a clean NixOS host with `nixos-anywhere` and the repository's Disko configuration.
 
+For a self-contained, host-selectable USB installer, see [Offline USB Installer](../installer/README.md).
+
 ## Safety Warning
 
 > **Warning:** The installation phases repartition the target disk and destroy existing data. Confirm the host, target address, and disk configuration before running them. The procedure also changes the host's agenix recipient, so encrypted secrets must be rekeyed before installation.
@@ -50,7 +52,6 @@ ssh "$target_host" true
 Generate the host identity in the persistent path expected by agenix:
 
 ```bash
-host_key_name="${host_name//-/_}"
 tmpdir="$(mktemp -d)"
 mkdir -p "$tmpdir/persist/etc/agenix"
 age-keygen -o "$tmpdir/persist/etc/agenix/host.agekey"
@@ -58,18 +59,20 @@ chmod 755 -R "$tmpdir/persist"
 chmod 600 "$tmpdir/persist/etc/agenix/host.agekey"
 ```
 
-Update the matching host key declaration in `secrets.nix`, then rekey all affected secrets:
+Update the host's public age recipient, then rekey all affected secrets:
 
 ```bash
-sed -i "s|^  ${host_key_name} = \".*\";|  ${host_key_name} = \"$(age-keygen -y "$tmpdir/persist/etc/agenix/host.agekey")\";|" secrets.nix
+host_definition="hosts/$host_name/default.nix"
+sed -i "s|^  ageRecipient = \".*\";|  ageRecipient = \"$(age-keygen -y "$tmpdir/persist/etc/agenix/host.agekey")\";|" "$host_definition"
 agenix -r
 ```
 
 ## Validate the Configuration
 
-Review the `secrets.nix` change and verify the configuration before modifying the target disk:
+Review the host recipient and rekeyed secrets, then verify the configuration before modifying the target disk:
 
 ```bash
+git diff -- "$host_definition" secrets
 just check
 just dry-run "$host_name"
 ```

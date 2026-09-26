@@ -105,12 +105,14 @@
     builtins.replaceStrings
     [
       "(hosts/install.md)"
+      "(installer/README.md)"
       "(monitoring/README.md)"
       "(modules/caddy/README.md)"
       "(modules/attic-cache/README.md)"
     ]
     [
       "(install.html)"
+      "(installer.html)"
       "(monitoring.html)"
       "(caddy.html)"
       "(attic-cache.html)"
@@ -127,7 +129,18 @@
   );
   introductionHeading = pkgs.writeText "introduction-heading.md" (builtins.readFile ./introduction.md);
   optionsHeading = pkgs.writeText "options-heading.md" (builtins.readFile ./options.md);
-  installation = pkgs.writeText "installation.md" (builtins.readFile (sourceRoot + "/hosts/install.md"));
+  installation = pkgs.writeText "installation.md" (
+    builtins.replaceStrings
+    ["(../installer/README.md)"]
+    ["(installer.html)"]
+    (builtins.readFile (sourceRoot + "/hosts/install.md"))
+  );
+  installer = pkgs.writeText "installer.md" (
+    builtins.replaceStrings
+    ["(../hosts/install.md)"]
+    ["(install.html)"]
+    (builtins.readFile (sourceRoot + "/installer/README.md"))
+  );
   monitoring = pkgs.writeText "monitoring.md" (builtins.readFile (sourceRoot + "/monitoring/README.md"));
 
   renderPage = {
@@ -175,6 +188,11 @@ in rec {
         title = "Installation";
         inputs = [installation];
         output = "install.html";
+      }}
+      ${renderPage {
+        title = "Offline USB installer";
+        inputs = [installer];
+        output = "installer.html";
       }}
       ${renderPage {
         title = "Grafana dashboards";
