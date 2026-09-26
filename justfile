@@ -37,6 +37,11 @@ switch host=`hostname`: (_activate "switch" host)
 installer-iso host key_mode *args:
     installer/build-iso.sh "{{ host }}" "{{ key_mode }}" {{ args }}
 
+# Interactively select or explicitly provide a USB drive to write.
+[group('deployment')]
+installer-write image device="":
+    installer/write-usb.sh "{{ image }}" "{{ device }}"
+
 # Apply Grafana dashboards.
 [confirm]
 [group('grafana')]
