@@ -32,6 +32,11 @@ boot host=`hostname`: (_activate "boot" host)
 [group('deployment')]
 switch host=`hostname`: (_activate "switch" host)
 
+# Build an offline installer ISO with a reused or new host identity.
+[group('deployment')]
+installer-iso host key_mode *args:
+    installer/build-iso.sh "{{ host }}" "{{ key_mode }}" {{ args }}
+
 # Apply Grafana dashboards.
 [confirm]
 [group('grafana')]
