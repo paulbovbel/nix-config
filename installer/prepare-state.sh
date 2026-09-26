@@ -25,6 +25,7 @@ fi
 persisted_paths=(
   persist/var/lib/nixos
   persist/etc/machine-id
+  persist/etc/ssh
   persist/etc/NetworkManager/system-connections
   persist/var/lib/NetworkManager
   persist/var/lib/tailscale
