@@ -48,8 +48,7 @@ in {
 
   rootFs = {
     enable = true;
-    backend = "zfs";
-    zfs.arcMaxPercent = 25;
+    backend = "btrfs";
     encrypted = false;
     impermanent = true;
   };
