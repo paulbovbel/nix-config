@@ -1,11 +1,11 @@
 let
   keys = import ./keys.nix;
   inherit (keys) pbovbel;
-  white_tower = "age1wk8sq7rwy46a4rms25gwyvxjd0utt53l8nvwnuaujqmqj6ek5ujqjsgt8t";
-  rainbow_wave = "age17vygkuef5n8yc5ruha3punredg4gudyhpd9fwpl7zkw8q9yjveks8r6ddn";
-  pbovbel_dell = "age1epr0phq646m4suyfv74558lx25wv5da27jfjhe66cxj9hu9tkygqnvjy7u";
-  media = "age19grruxtufcshcg7j0sveurtqq0tqg9zpjrsk7ghaq4800r8j4shsfv0hae";
-  becmac_pro = "age1kkxf00p34aqj8ua53utfwzcrhahhtzmrhymlfynsjmrtkp3k3q5qjuavxx";
+  white_tower = (import ./hosts/white-tower).ageRecipient;
+  rainbow_wave = (import ./hosts/rainbow-wave).ageRecipient;
+  pbovbel_dell = (import ./hosts/pbovbel-dell).ageRecipient;
+  media = (import ./hosts/media).ageRecipient;
+  becmac_pro = (import ./hosts/becmac-pro).ageRecipient;
 in {
   "secrets/common/pbovbel-id_rsa.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell media becmac_pro];
   "secrets/laptop/tailscale-oauth-authkey.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell becmac_pro];
