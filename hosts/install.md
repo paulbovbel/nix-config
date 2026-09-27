@@ -47,6 +47,31 @@ Confirm SSH access before proceeding:
 ssh "$target_host" true
 ```
 
+## Connect the Installer to Tailscale
+
+The live installer does not include Tailscale. Start it temporarily from
+`nixpkgs`, then complete the interactive login using the URL printed by
+`tailscale up`:
+
+```bash
+ssh -t "$target_host" '
+  nix --extra-experimental-features "nix-command flakes" shell nixpkgs#tailscale --command bash -c '\''
+    sudo tailscaled --state=/tmp/tailscale.state >/tmp/tailscaled.log 2>&1 &
+    tailscaled_pid=$!
+    trap "sudo kill $tailscaled_pid" EXIT
+    sudo tailscale up
+    tailscale status
+    curl --fail https://nix-cache.bovbel.com/nixos/nix-cache-info
+    wait
+  '\''
+'
+```
+
+Leave this command running for the installation. The installed system enrolls
+with its agenix-managed Tailscale key after reboot, so remove the temporary
+installer device from the Tailscale admin console when installation is
+complete.
+
 ## Generate the Host Identity
 
 Generate the host identity in the persistent path expected by agenix:
@@ -79,12 +104,16 @@ just dry-run "$host_name"
 
 ## Prepare the Nix Daemon
 
-Prepare the live installer's Nix daemon for a remote build. This temporarily allows generated, unsigned store paths such as Home Manager activation scripts to be imported; the installed system restores signature checking:
+Prepare the live installer's Nix daemon for a remote build. This temporarily allows generated, unsigned store paths such as Home Manager activation scripts to be imported and enables the cache now reachable over Tailscale; the installed system restores its declared Nix settings:
 
 ```bash
 ssh "$target_host" '
   cp --dereference /etc/nix/nix.conf /tmp/nix.conf
-  printf "\nrequire-sigs = false\n" >> /tmp/nix.conf
+  cat >> /tmp/nix.conf <<"EOF"
+require-sigs = false
+substituters = https://cache.nixos.org https://nix-community.cachix.org https://nix-cache.bovbel.com/nixos
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbOJTs4f2vT5M9T8qN9kYChdD4= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nixos:H0/odUxYOFF1DaN52oWwcKlHUkXIZmrqb8QywcCYvd4=
+EOF
   mount --bind /tmp/nix.conf /etc/nix/nix.conf
   systemctl restart nix-daemon
   nix --extra-experimental-features nix-command config show require-sigs
@@ -95,15 +124,19 @@ Verify that the command prints `false`.
 
 ## Install NixOS
 
-Run the destructive installation. The explicit substituters allow installation when the private cache is unavailable:
+Run the destructive installation. The target live installer uses the private cache over Tailscale and falls back to the public caches if needed:
 
 ```bash
-NIX_CONFIG=$'substituters = https://cache.nixos.org https://nix-community.cachix.org' \
+substituters="https://cache.nixos.org https://nix-community.cachix.org https://nix-cache.bovbel.com/nixos"
+trusted_public_keys="cache.nixos.org-1:6NCHdD59X431o0gWypbOJTs4f2vT5M9T8qN9kYChdD4= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nixos:H0/odUxYOFF1DaN52oWwcKlHUkXIZmrqb8QywcCYvd4="
+
+NIX_CONFIG="substituters = $substituters
+trusted-public-keys = $trusted_public_keys" \
 nix run github:nix-community/nixos-anywhere -- \
   --build-on remote \
-  --no-use-machine-substituters \
   --debug -L --show-trace \
-  --option substituters "https://cache.nixos.org https://nix-community.cachix.org" \
+  --option substituters "$substituters" \
+  --option trusted-public-keys "$trusted_public_keys" \
   --flake .#"$host_name" \
   --phases disko,install,reboot \
   --extra-files "$tmpdir" \
