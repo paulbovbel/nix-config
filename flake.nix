@@ -38,8 +38,7 @@
       };
     };
     nixos-apple-silicon = {
-      # OpenZFS 2.4 supports kernels through 7.0; newer Asahi releases use 7.1.
-      url = "github:nix-community/nixos-apple-silicon/3902c801519264191a7c3dfec8dd1f9faeb38fd5";
+      url = "github:nix-community/nixos-apple-silicon/release-2026-07-30";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     impermanence = {
