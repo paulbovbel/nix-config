@@ -204,6 +204,9 @@
       configuredUserNames = map (user: user.name) cfg.users;
       unknownAccounts = lib.subtractLists accountNames configuredUserNames;
       unknownUsers = lib.subtractLists (lib.attrNames profiles) configuredUserNames;
+      invalidHideFromLogin = map (user: user.name) (builtins.filter (user:
+        user ? hideFromLogin && !builtins.isBool user.hideFromLogin)
+      cfg.users);
       knownUsers = builtins.filter (user: builtins.hasAttr user.name profiles) cfg.users;
       unknownProfiles = lib.concatMap (user:
         map (profileName: "${user.name}.${profileName}")
@@ -213,10 +216,14 @@
       assert lib.assertMsg (builtins.match "age1.+" cfg.ageRecipient != null) "Host ${name} must define a valid ageRecipient";
       assert lib.assertMsg (unknownAccounts == []) "Host ${name} selects unknown accounts: ${lib.concatStringsSep ", " unknownAccounts}";
       assert lib.assertMsg (unknownUsers == []) "Host ${name} selects unknown users: ${lib.concatStringsSep ", " unknownUsers}";
+      assert lib.assertMsg (invalidHideFromLogin == []) "Host ${name} users must define hideFromLogin as a boolean: ${lib.concatStringsSep ", " invalidHideFromLogin}";
       assert lib.assertMsg (unknownProfiles == []) "Host ${name} selects unknown profiles: ${lib.concatStringsSep ", " unknownProfiles}";
       assert lib.assertMsg (invalidProfiles == []) "Profiles must define list-valued homeModules and systemModules, with optional boolean graphical: ${lib.concatStringsSep ", " invalidProfiles}"; cfg;
 
-    mkHostSettings = name: configuredUserNames: unstablePkgs: {config, ...}: {
+    mkHostSettings = name: users: unstablePkgs: {config, ...}: let
+      configuredUserNames = map (user: user.name) users;
+      hiddenUserNames = map (user: user.name) (builtins.filter (user: user.hideFromLogin or false) users);
+    in {
       assertions = [
         {
           assertion = config.networking.hostName == name;
@@ -230,6 +237,10 @@
       environment.etc."nix-config/branch".text = configurationBranch;
 
       accounts = lib.genAttrs configuredUserNames (_: {enable = true;});
+
+      services.displayManager.gdm.settings = lib.mkIf (hiddenUserNames != []) {
+        greeter.Exclude = lib.concatStringsSep "," hiddenUserNames;
+      };
 
       # Avoid building a target-platform package for TTY colors during evaluation.
       catppuccin.sources.palette = catppuccinPaletteSource;
@@ -260,7 +271,6 @@
     mkHost = name: rawCfg: extraModules: let
       cfg = validateHost name rawCfg;
       inherit (cfg) system;
-      configuredUserNames = map (user: user.name) cfg.users;
       nixpkgsForHost =
         if cfg.useUnstablePackages or false
         then nixpkgs-unstable
@@ -276,7 +286,7 @@
           [
             ./hosts/${name}/configuration.nix
             ./modules
-            (mkHostSettings name configuredUserNames unstablePkgs)
+            (mkHostSettings name cfg.users unstablePkgs)
           ]
           ++ externalModules
           ++ lib.unique (lib.concatMap userSystemModules cfg.users)

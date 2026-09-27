@@ -10,6 +10,7 @@
     {
       name = "pbovbel";
       profiles = ["gaming"];
+      hideFromLogin = true;
     }
   ];
 }
