@@ -81,15 +81,17 @@ git status --short
 
 Do not deploy the rekeyed configuration to the old installation because its old identity no longer matches the new recipient.
 
-Both modes prompt once for a strong passphrase protecting a temporary installer identity. The host identity and optional home archive are encrypted to that temporary identity, so the same passphrase unlocks every installer payload. The resulting ISO is under `result/iso/` and contains the complete selected system closure. Private identities are never copied into the Nix store in plaintext. After a successful build, the script offers to select and write a connected USB disk.
+Both modes prompt once for a strong passphrase protecting a temporary installer identity. The host identity and optional state archive are encrypted to that temporary identity, so the same passphrase unlocks every installer payload. The resulting ISO is under `result/iso/` and contains the complete selected system closure. Private identities are never copied into the Nix store in plaintext. After a successful build, the script offers to select and write a connected USB disk.
 
-### Migrate Home Application State
+### Migrate Application And System State
 
-When the selected host matches the running hostname, the build can embed an encrypted archive of its configured users' home directories. It optionally stops running systemd graphical application scopes before capture while preserving the scope containing the build terminal. GNOME Shell, GNOME session services, and the display manager are not stopped. Applications outside systemd application scopes may remain active, and the build fails if files change while `tar` reads them.
+When the selected host matches the running hostname, the build can embed an encrypted archive of its configured users' home directories and selected paths under `/persist`. It optionally stops running systemd graphical application scopes before capture while preserving the scope containing the build terminal. GNOME Shell, GNOME session services, the display manager, and system services are not stopped. Applications or services outside the stopped application scopes may remain active, and the build fails if files change while `tar` reads them.
 
 The archive preserves ownership, permissions, ACLs, extended attributes, and sparse files. It excludes personal XDG directories (`Desktop`, `Documents`, `Downloads`, `Music`, `Pictures`, `Public`, `Templates`, and `Videos`) plus `.cache`, `.local/share/Trash`, and Flatpak application cache directories. Other application state, including XDG, Flatpak, and non-XDG hidden directories, remains included.
 
-The archive is compressed and streamed directly into encryption for the temporary installer recipient; no plaintext archive is written to disk or copied into the Nix store. During installation, the passphrase entered to unlock the host identity also unlocks the archive, which is extracted into the mounted target homes after Disko prepares the filesystems. This supports migrations between filesystem backends, but it is not a replacement for a separate backup.
+Persisted state includes NixOS UID/GID allocation, the machine ID, NetworkManager connections and state, Tailscale identity, Bluetooth pairings, CUPS, system Flatpaks, and GDM. Missing paths are skipped. Logs, coredumps, fwupd history, Alloy and systemd state, caches, and `/persist/etc/agenix/host.agekey` are not included; the installer handles the host identity separately.
+
+The archive is compressed and streamed directly into encryption for the temporary installer recipient; no plaintext archive is written to disk or copied into the Nix store. During installation, the passphrase entered to unlock the host identity also unlocks the archive, which is extracted into the mounted target homes and persistence volume after Disko prepares the filesystems. This supports migrations between filesystem backends, but it is not a replacement for a separate backup.
 
 ## Automatic Upgrades
 

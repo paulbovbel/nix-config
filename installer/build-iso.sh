@@ -38,7 +38,7 @@ export NIXOS_INSTALLER_HOST="$host"
 export NIXOS_INSTALLER_KEY_PAYLOAD="$payload"
 export NIXOS_INSTALLER_UNLOCK_PAYLOAD="$unlock_payload"
 export NIXOS_INSTALLER_FIRMWARE=""
-export NIXOS_INSTALLER_HOME_BACKUP=""
+export NIXOS_INSTALLER_STATE_BACKUP=""
 
 temporary_directory="$(mktemp -d --tmpdir "${host}-installer.XXXXXXXX")"
 cleanup_temporary_directory() {
@@ -59,9 +59,9 @@ fi
 installer_recipient="$(<"$installer_recipient_path")"
 
 if [[ "$host" == "$(hostname)" ]]; then
-  printf "Embed encrypted application state from this host's home directories? [y/N] "
-  backup_homes=""
-  if read -r backup_homes && [[ "$backup_homes" == y || "$backup_homes" == Y ]]; then
+  printf 'Embed encrypted home and persisted system state from this host? [y/N] '
+  backup_state=""
+  if read -r backup_state && [[ "$backup_state" == y || "$backup_state" == Y ]]; then
     printf 'Close other graphical applications before archiving? [y/N] '
     close_apps=""
     if read -r close_apps && [[ "$close_apps" == y || "$close_apps" == Y ]]; then
@@ -72,12 +72,12 @@ if [[ "$host" == "$(hostname)" ]]; then
         "$NIXOS_INSTALLER_FLAKE#nixosConfigurations.$host.config.rootFs.homeUsers" \
         --apply 'builtins.concatStringsSep "\n"'
     )
-    home_backup="$temporary_directory/homes.tar.zst.age"
-    "$repo/installer/prepare-homes.sh" \
-      "$home_backup" \
+    state_backup="$temporary_directory/state.tar.zst.age"
+    "$repo/installer/prepare-state.sh" \
+      "$state_backup" \
       "$installer_recipient" \
       "${home_users[@]}"
-    export NIXOS_INSTALLER_HOME_BACKUP="$home_backup"
+    export NIXOS_INSTALLER_STATE_BACKUP="$state_backup"
   fi
 fi
 
@@ -103,16 +103,16 @@ nix build --impure --out-link "$repo/result" --expr '
         path = firmwarePath;
         name = "${hostName}-vendorfw";
       };
-    homeBackupPath = builtins.getEnv "NIXOS_INSTALLER_HOME_BACKUP";
-    homeBackup =
-      if homeBackupPath == ""
+    stateBackupPath = builtins.getEnv "NIXOS_INSTALLER_STATE_BACKUP";
+    stateBackup =
+      if stateBackupPath == ""
       then null
       else builtins.path {
-        path = homeBackupPath;
-        name = "${hostName}-homes.tar.zst.age";
+        path = stateBackupPath;
+        name = "${hostName}-state.tar.zst.age";
       };
   in
-    (flake.lib.mkInstaller { inherit firmwareDirectory homeBackup hostName keyPayload unlockPayload; }).config.system.build.isoImage
+    (flake.lib.mkInstaller { inherit firmwareDirectory hostName keyPayload stateBackup unlockPayload; }).config.system.build.isoImage
 ' "$@"
 
 printf 'Installer image:\n'

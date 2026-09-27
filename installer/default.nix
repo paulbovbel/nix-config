@@ -1,9 +1,9 @@
 {
   expectedRecipient,
-  homeBackup,
   keyPayload,
   lib,
   pkgs,
+  stateBackup,
   targetSystem,
   unlockPayload,
   ...
@@ -90,7 +90,7 @@
         pkgs.systemd
         pkgs.util-linux
       ]
-      ++ lib.optionals (homeBackup != null) [
+      ++ lib.optionals (stateBackup != null) [
         pkgs.gnutar
         pkgs.zstd
       ];
@@ -137,12 +137,12 @@
 
       ${diskoScript}
 
-      ${lib.optionalString (homeBackup != null) ''
-        printf '\nRestoring the encrypted home application-state archive.\n'
+      ${lib.optionalString (stateBackup != null) ''
+        printf '\nRestoring the encrypted home and persisted system-state archive.\n'
         age \
           --decrypt \
           --identity "$installer_identity" \
-          ${lib.escapeShellArg (toString homeBackup)} \
+          ${lib.escapeShellArg (toString stateBackup)} \
           | zstd --decompress --stdout \
           | tar \
             --extract \
@@ -195,7 +195,7 @@ in {
         targetSystemPath
         unlockPayload
       ]
-      ++ lib.optional (homeBackup != null) homeBackup;
+      ++ lib.optional (stateBackup != null) stateBackup;
   };
 
   boot.supportedFilesystems = lib.mkOverride 40 target.boot.supportedFilesystems;

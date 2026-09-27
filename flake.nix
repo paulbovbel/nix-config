@@ -292,9 +292,9 @@
     nixosConfigurations = lib.mapAttrs (name: cfg: mkHost name cfg []) hosts;
     mkInstaller = {
       firmwareDirectory ? null,
-      homeBackup ? null,
       hostName,
       keyPayload,
+      stateBackup ? null,
       unlockPayload,
     }: let
       host = hosts.${hostName} or (throw "Unknown installer host: ${hostName}");
@@ -308,7 +308,7 @@
         inherit system;
         specialArgs = {
           expectedRecipient = host.ageRecipient;
-          inherit homeBackup keyPayload targetSystem unlockPayload;
+          inherit keyPayload stateBackup targetSystem unlockPayload;
         };
         modules =
           (
