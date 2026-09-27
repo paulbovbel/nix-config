@@ -40,7 +40,7 @@ def is_local_proxy() -> bool:
 
 def opencode_env() -> dict[str, str]:
     env = os.environ.copy()
-    if is_local_proxy() and "OPENCODE_CONFIG_CONTENT" not in env:
+    if "OPENCODE_CONFIG_CONTENT" not in env:
         env["OPENCODE_CONFIG_CONTENT"] = json.dumps(
             {
                 "provider": {
@@ -55,24 +55,27 @@ def opencode_env() -> dict[str, str]:
     return env
 
 
-def log_stage(payload: dict[str, str] | None, verbose: bool) -> None:
+def log_stage(payload: dict[str, object] | None, verbose: bool) -> None:
     if not verbose:
         return
     if payload is None:
         return
-    stage = payload.get("stage", "")
-    details = payload.get("details", "")
+    stage = str(payload.get("stage", ""))
+    details = str(payload.get("details", ""))
     msg = f"stage={stage}"
     if details:
         msg += f" details={details}"
     print(msg, file=sys.stderr, flush=True)
 
 
-async def fetch_status(session: ClientSession) -> dict[str, str] | None:
-    async with session.get(PROXY_STATUS_URL) as resp:
-        if resp.status != 200:
-            return None
-        return await resp.json()
+async def fetch_status(session: ClientSession) -> dict[str, object] | None:
+    try:
+        async with session.get(PROXY_STATUS_URL) as resp:
+            if resp.status != 200:
+                return None
+            return await resp.json()
+    except ClientError:
+        return None
 
 
 async def trigger_start(session: ClientSession) -> bool:
@@ -117,11 +120,11 @@ async def poll_until_ready(verbose: bool) -> None:
         while asyncio.get_running_loop().time() < timeout_at:
             payload = await fetch_status(session)
             if payload is not None:
-                current_stage = payload.get("stage", "")
+                current_stage = str(payload.get("stage", ""))
                 if current_stage != last_stage:
                     log_stage(payload, verbose)
                     last_stage = current_stage
-                if current_stage == "ready":
+                if current_stage == "ready" and payload.get("llama_running") is True:
                     return
 
             await trigger_start(session)
@@ -138,7 +141,8 @@ async def run_opencode(args: list[str]) -> int:
 
 
 async def main_async(opencode_args: list[str], verbose: bool) -> None:
-    await wake_white_tower(verbose)
+    if not is_local_proxy():
+        await wake_white_tower(verbose)
     await poll_until_ready(verbose)
     code = await run_opencode(opencode_args)
     raise SystemExit(code)

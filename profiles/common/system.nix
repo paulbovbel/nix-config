@@ -10,4 +10,6 @@
     enable = true;
     smartctl.enable = true;
   };
+
+  llamaCpp.client.enable = true;
 }

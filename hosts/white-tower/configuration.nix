@@ -30,7 +30,7 @@
 
   autoUpgrade.enable = true;
 
-  llamaCpp.enable = false;
+  llamaCpp.server.enable = false;
 
   services.udev.extraRules = ''
     # Prevent the Audeze Maxwell dongle from autosuspending mid-session.

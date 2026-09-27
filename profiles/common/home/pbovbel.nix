@@ -46,18 +46,7 @@ in {
     install -m 600 ${sshConfig} "$HOME/.ssh/config"
   '';
 
-  home.packages = with pkgs; [
-    nix-tree
-    (pkgs.writeShellApplication {
-      name = "llama-client";
-      runtimeInputs = with pkgs; [
-        (python3.withPackages (ps: [ps.aiohttp]))
-      ];
-      text = ''
-        exec python ${./llama-client.py} "$@"
-      '';
-    })
-  ];
+  home.packages = [pkgs.nix-tree];
 
   programs = {
     opencode = {
