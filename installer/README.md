@@ -20,7 +20,7 @@ Before running Disko, every image:
 - decrypts the embedded host identity and verifies its public recipient
 - requires the exact confirmation `ERASE <host>`
 
-The Apple Silicon variant additionally verifies that the configured EFI partition matches the Asahi EFI partition published by the device tree. Damage to Apple Silicon partition tables, recovery partitions, or the Asahi UEFI environment can require a DFU restore.
+The Apple Silicon variant additionally verifies that the configured EFI partition matches the Asahi EFI partition published by the device tree and enables the target's tiny-dfr package for Touch Bar function keys. Damage to Apple Silicon partition tables, recovery partitions, or the Asahi UEFI environment can require a DFU restore.
 
 ## Build The ISO
 
@@ -130,7 +130,7 @@ The writer rejects partitions, non-USB paths, mounted devices, active swap, and 
 1. Shut down the target and connect the USB drive.
 2. Boot the USB through the machine's UEFI environment.
 3. On Apple Silicon, use the existing Asahi U-Boot environment and select the USB entry from `bootmenu` if it does not boot automatically.
-4. Wait for the installer prompt on tty1.
+4. Wait for the root autologin to start the installer on tty1.
 5. Enter the passphrase protecting the installer payloads.
 6. Review the displayed target disk or partitions.
 7. Type `ERASE <host>` exactly.
@@ -144,6 +144,8 @@ The installer copies the decrypted identity to `/persist/etc/agenix/host.agekey`
 If identity decryption, recipient validation, or storage validation fails, no disk changes have occurred. Correct the problem and reboot the installer.
 
 If installation fails after Disko starts, leave the USB connected, reboot into it, and repeat the installation. Disko and `nixos-install` recreate the configured filesystems and installation.
+
+If the installer is cancelled or exits with an error, tty1 falls back to an interactive root shell for inspection and recovery.
 
 The Apple Silicon image does not create the Asahi stub, EFI partition, or UEFI environment. If those are missing or damaged, repair them from macOS using the upstream Asahi installer before retrying.
 

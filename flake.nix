@@ -324,6 +324,10 @@
           ]
           ++ lib.optional isAppleSilicon {
             hardware.asahi.pkgsSystem = system;
+            hardware.apple.touchBar = {
+              enable = true;
+              package = targetSystem.config.hardware.apple.touchBar.package;
+            };
           }
           ++ lib.optional (isAppleSilicon && firmwareDirectory != null) {
             hardware.asahi.peripheralFirmwareDirectory = lib.mkForce firmwareDirectory;
