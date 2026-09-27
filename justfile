@@ -4,10 +4,10 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 default:
     @just --list
 
-# Run all repository checks in parallel.
+# Run routine repository checks in parallel.
 [group('checks')]
 [parallel]
-check: just-lint nix-lint python-lint python-test shell-lint dashboards-check nix-check
+check: just-lint nix-lint python-lint python-test shell-lint dashboards-check
 
 # Build a host configuration.
 [group('deployment')]
@@ -106,10 +106,19 @@ nix-lint:
     deadnix .
     alejandra --check .
 
-# Evaluate flake checks.
+# Build all flake checks, including NixOS integration tests.
 [group('checks')]
-nix-check:
-    nix flake check -L
+nix-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    system="$(nix eval --impure --raw --expr builtins.currentSystem)"
+    nix build \
+      ".#checks.${system}.module-docs-check" \
+      ".#checks.${system}.installer-btrfs-state-migration" \
+      ".#checks.${system}.installer-zfs-state-migration" \
+      ".#checks.${system}.root-fs-btrfs-impermanence" \
+      ".#checks.${system}.root-fs-zfs-impermanence" \
+      -L
 
 # Lint and format-check Python files.
 [group('checks')]
