@@ -1,6 +1,8 @@
 # Agent Workflow
 
-After every configuration change, run `nix develop --command just check`
+After every change, run `nix develop --command just check`.
+
+For Nix changes, also evaluate or build the affected host, package, or check. Use `nix develop --command just nix-test` only when full flake-check validation, including integration tests, is specifically needed; CI runs it for every change.
 
 ## Repo Structure
 

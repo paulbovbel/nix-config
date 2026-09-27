@@ -59,7 +59,7 @@ The documentation site is built independently of any host configuration. Each mo
 
 Public options should provide descriptions and representative examples in the module's `options.nix`. Add `modules/<name>/README.md` when a module also needs usage guidance, invariants, or operational procedures. Module READMEs remain standalone documents with an H1 title; the site generator places their content under the page's Introduction section.
 
-The generated site and its internal links are built as part of `just check`.
+The generated site and its internal links are built as part of the CI-only `just nix-test` flake checks.
 
 Run the full validation suite after every configuration change:
 
