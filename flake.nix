@@ -316,7 +316,7 @@
             else [(nixpkgs + "/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix")]
           )
           ++ [
-            ./installer
+            ./deploy/usb
             {
               nixpkgs.hostPlatform.system = system;
             }
@@ -392,6 +392,7 @@
         inherit (mkDocs system) module-docs-check;
       }
       // lib.optionalAttrs (system == "x86_64-linux") {
+        # TODO: Add end-to-end Btrfs and ZFS USB installer state-migration tests.
         root-fs-btrfs-impermanence = rootFsImpermanenceTest "btrfs";
         root-fs-zfs-impermanence = rootFsImpermanenceTest "zfs";
       });

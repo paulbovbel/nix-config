@@ -1,8 +1,8 @@
-# Install a Host
+# Remote Deployment
 
 This runbook defines and installs a clean NixOS host with `nixos-anywhere` and the repository's Disko configuration.
 
-For a self-contained, host-selectable USB installer, see [Offline USB Installer](../installer/README.md).
+For a self-contained, host-selectable USB installer, see [Offline USB Installer](../usb/README.md).
 
 ## Safety Warning
 

@@ -24,8 +24,21 @@ jobs:
           set -euo pipefail
           nix develop --command just check
 
-  build:
+  test:
     needs: check
+    runs-on: [self-hosted, nix-media]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Verify Nix
+        run: nix --version
+
+      - name: Run NixOS integration tests
+        run: nix develop --command just nix-test
+
+  build:
+    needs: [check, test]
     runs-on: [self-hosted, nix-media]
     strategy:
       fail-fast: false

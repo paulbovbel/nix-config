@@ -26,21 +26,23 @@ docs:
 
 # Activate a host configuration on the next boot.
 [group('deployment')]
-boot host=`hostname`: (_activate "boot" host)
+boot host=`hostname`:
+    deploy/remote/activate.sh boot "{{ host }}"
 
 # Build and activate a host configuration immediately.
 [group('deployment')]
-switch host=`hostname`: (_activate "switch" host)
+switch host=`hostname`:
+    deploy/remote/activate.sh switch "{{ host }}"
 
 # Build an offline installer ISO with a reused or new host identity.
 [group('deployment')]
 installer-iso host key_mode *args:
-    installer/build-iso.sh "{{ host }}" "{{ key_mode }}" {{ args }}
+    deploy/usb/build-iso.sh "{{ host }}" "{{ key_mode }}" {{ args }}
 
 # Interactively select or explicitly provide a USB drive to write.
 [group('deployment')]
 installer-write image device="":
-    installer/write-usb.sh "{{ image }}" "{{ device }}"
+    deploy/usb/write-usb.sh "{{ image }}" "{{ device }}"
 
 # Apply Grafana dashboards.
 [confirm]
@@ -63,37 +65,6 @@ dashboards-dry-run:
 update-caddy:
     nix develop --command python3 modules/caddy/update.py
 
-# Build and activate a local or remote host.
-[private]
-_activate action host:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    flake_path='{{ justfile_directory() }}'
-    configuration_branch="$(git -C "${flake_path}" branch --show-current)"
-    if [ -z "${configuration_branch}" ]; then
-      printf 'Cannot activate from a detached HEAD; check out the intended branch first.\n' >&2
-      exit 1
-    fi
-
-    # Auto-upgrade needs this repository's branch, so activation must be impure.
-    export NIX_CONFIG_BRANCH="${configuration_branch}"
-
-    configured_host="$(nix eval --impure --raw "${flake_path}#nixosConfigurations.{{ host }}.config.networking.hostName")"
-    test "${configured_host}" = '{{ host }}'
-
-    if [ '{{ host }}' = "$(hostname)" ]; then
-      sudo --preserve-env=SSH_AUTH_SOCK,NIX_CONFIG_BRANCH nixos-rebuild '{{ action }}' --impure --flake "${flake_path}#{{ host }}" -L
-    else
-      target_system="$(nix eval --impure --raw "${flake_path}#nixosConfigurations.{{ host }}.config.nixpkgs.hostPlatform.system")"
-      if [[ "${target_system}" = aarch64-* ]]; then
-        # The required vendorfw directory is unavailable on remote hosts.
-        printf 'Remote deployment of aarch64 hosts is not supported: %s\n' '{{ host }}' >&2
-        exit 1
-      fi
-
-      nixos-rebuild '{{ action }}' --impure --flake "${flake_path}#{{ host }}" --target-host '{{ host }}' --build-host '{{ host }}' --sudo --ask-sudo-password -L
-    fi
-
 # Check justfile formatting.
 [group('checks')]
 just-lint:
@@ -109,16 +80,8 @@ nix-lint:
 # Build all flake checks, including NixOS integration tests.
 [group('checks')]
 nix-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    system="$(nix eval --impure --raw --expr builtins.currentSystem)"
-    nix build \
-      ".#checks.${system}.module-docs-check" \
-      ".#checks.${system}.installer-btrfs-state-migration" \
-      ".#checks.${system}.installer-zfs-state-migration" \
-      ".#checks.${system}.root-fs-btrfs-impermanence" \
-      ".#checks.${system}.root-fs-zfs-impermanence" \
-      -L
+    system="$(nix eval --impure --raw --expr builtins.currentSystem)"; \
+      nix build --no-link -L $(nix eval --raw ".#checks.$system" --apply 'checks: builtins.concatStringsSep " " (map (name: ".#checks.'"$system"'.${name}") (builtins.attrNames checks))')
 
 # Lint and format-check Python files.
 [group('checks')]
