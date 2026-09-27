@@ -50,7 +50,7 @@ in {
     enable = true;
     backend = "btrfs";
     encrypted = false;
-    impermanent = true;
+    impermanent = false;
   };
 
   system.stateVersion = "26.05";
