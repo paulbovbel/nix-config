@@ -141,6 +141,7 @@
       ''}
 
       ${diskoScript}
+      # chmod 0755 /mnt
 
       ${lib.optionalString (stateBackup != null) ''
         printf '\nRestoring the encrypted home and persisted system-state archive.\n'
@@ -167,6 +168,8 @@
         --system ${targetSystemPath} \
         --no-channel-copy \
         --no-root-password
+
+      # chmod 0755 /mnt /mnt/nix /mnt/persist /mnt/etc /mnt/persist/var /mnt/persist/var/lib
 
       sync
       printf '\nInstallation complete. Remove the USB drive, then press Enter to reboot.\n'

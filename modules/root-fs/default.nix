@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   cfg = config.rootFs;
@@ -57,5 +58,15 @@ in {
       directories = lib.unique cfg.persistDirectories;
       files = lib.unique cfg.persistFiles;
     };
+
+    system.activationScripts.rootFsMachineId = {
+      deps = ["etc"];
+      text = ''
+        if [ ! -s /etc/machine-id ]; then
+          ${lib.getExe' pkgs.systemd "systemd-machine-id-setup"}
+        fi
+      '';
+    };
+
   };
 }
