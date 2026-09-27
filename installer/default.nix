@@ -103,7 +103,6 @@
       }
       trap cleanup EXIT
 
-      clear
       printf '%s\n' \
         'Offline NixOS installer for ${hostName}' \
         '========================================' \
@@ -169,6 +168,12 @@
       systemctl reboot
     '';
   };
+  installerShell = pkgs.writeShellScriptBin "installer-shell" ''
+    if [ "$(${pkgs.coreutils}/bin/tty)" = /dev/tty1 ]; then
+      ${lib.getExe installHost}
+    fi
+    exec ${lib.getExe pkgs.bashInteractive} -l
+  '';
 in {
   assertions = [
     {
@@ -201,22 +206,8 @@ in {
   boot.supportedFilesystems = lib.mkOverride 40 target.boot.supportedFilesystems;
 
   networking.hostName = "${hostName}-installer";
-  systemd.services.install-host = {
-    description = "Install the offline ${hostName} system image";
-    wantedBy = ["multi-user.target"];
-    after = ["getty@tty1.service" "systemd-udev-settle.service"];
-    wants = ["systemd-udev-settle.service"];
-    serviceConfig = {
-      Type = "oneshot";
-      StandardInput = "tty-force";
-      StandardOutput = "tty";
-      StandardError = "tty";
-      TTYPath = "/dev/tty1";
-      TTYReset = true;
-      TTYVHangup = true;
-    };
-    script = "${lib.getExe installHost}";
-  };
+  services.getty.autologinUser = lib.mkForce "root";
+  users.users.root.shell = "${installerShell}/bin/installer-shell";
 
   environment.systemPackages = [installHost];
 }
