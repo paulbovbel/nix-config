@@ -103,6 +103,7 @@ in {
         autoSnapshot = {
           enable = true;
           frequent = 0;
+          monthly = 2;
         };
         autoScrub = {
           enable = true;

@@ -381,9 +381,21 @@
       inherit (pkgs) attic-client;
       inherit (docs) module-docs;
     });
-    checks = forAllSystems (system: {
-      inherit (mkDocs system) module-docs-check;
-    });
+    checks = forAllSystems (system: let
+      pkgs = import nixpkgs {inherit system;};
+      rootFsImpermanenceTest = backend:
+        import ./tests/root-fs-impermanence.nix {
+          inherit backend disko disko-zfs impermanence nixpkgs pkgs;
+          root = ./.;
+        };
+    in
+      {
+        inherit (mkDocs system) module-docs-check;
+      }
+      // lib.optionalAttrs (system == "x86_64-linux") {
+        root-fs-btrfs-impermanence = rootFsImpermanenceTest "btrfs";
+        root-fs-zfs-impermanence = rootFsImpermanenceTest "zfs";
+      });
     devShells = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
     in {

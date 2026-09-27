@@ -109,7 +109,7 @@ in {
           timestamp_format = "long-iso";
           snapshot_dir = "@snapshots";
           snapshot_preserve_min = "latest";
-          snapshot_preserve = "24h 7d 4w 12m";
+          snapshot_preserve = "24h 7d 4w 2m";
           snapshot_qgroup_destroy = "yes";
           volume."/.btrfs-root".subvolume = snapshotSubvolumes;
         };
