@@ -62,7 +62,7 @@ in {
   programs = {
     opencode = {
       enable = true;
-      package = pkgs.opencode;
+      package = unstablePkgs.opencode;
       settings = {
         permission.external_directory."/nix/store/**" = "allow";
         mcp.nixos = {

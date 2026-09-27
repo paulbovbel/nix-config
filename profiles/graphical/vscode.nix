@@ -1,5 +1,5 @@
 {
-  unstablePkgs,
+  pkgs,
   vscode-workspace-populator,
   ...
 }: let
@@ -7,14 +7,14 @@
   inherit (workspacePopulatorPackage) name publisher version;
   uniqueId = "${publisher}.${name}";
 
-  workspacePopulatorExtension = unstablePkgs.vscode-utils.buildVscodeExtension {
+  workspacePopulatorExtension = pkgs.vscode-utils.buildVscodeExtension {
     pname = name;
     inherit version;
     sourceRoot = "${name}-${version}";
     vscodeExtPublisher = publisher;
     vscodeExtName = name;
     vscodeExtUniqueId = uniqueId;
-    src = unstablePkgs.buildNpmPackage {
+    src = pkgs.buildNpmPackage {
       pname = name;
       inherit version;
       src = vscode-workspace-populator;
@@ -28,7 +28,7 @@
   };
 
   vscodeExtensions =
-    (with unstablePkgs.vscode-marketplace; [
+    (with pkgs.vscode-marketplace; [
       github.codespaces
       github.copilot-chat
       github.vscode-github-actions
@@ -58,7 +58,7 @@
 in {
   programs.vscode = {
     enable = true;
-    package = unstablePkgs.vscode;
+    package = pkgs.vscode;
     mutableExtensionsDir = false;
     profiles.default = {
       extensions = vscodeExtensions;

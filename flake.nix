@@ -2,8 +2,11 @@
   description = "pbovbel NixOS configuration";
 
   inputs = {
+    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1";
-    nixpkgs-unstable.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1";
+
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # nixpkgs-unstable.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1";
     tiny-dfr-nyan = {
       url = "github:paulbovbel/tiny-dfr-nyan";
       inputs.nixpkgs.follows = "nixpkgs";
