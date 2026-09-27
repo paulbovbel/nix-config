@@ -1,4 +1,4 @@
-# Offline USB Installer
+# USB Deployment
 
 This directory builds a self-contained USB installer for any host registered in `flake.nix`. The selected host determines the target system, Disko layout, boot media, and encrypted agenix identity. Installation does not require network access.
 
@@ -151,4 +151,4 @@ The Apple Silicon image does not create the Asahi stub, EFI partition, or UEFI e
 
 ## Remote Alternative
 
-For a networked installation driven by another machine, use the existing `nixos-anywhere` procedure in [`hosts/install.md`](../hosts/install.md). That path is preferable when the target can be reached over SSH and does not need a self-contained offline image.
+For a networked installation driven by another machine, use the existing `nixos-anywhere` procedure in [Remote Deployment](../remote/README.md). That path is preferable when the target can be reached over SSH and does not need a self-contained offline image.

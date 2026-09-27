@@ -104,15 +104,15 @@
   landingReadme =
     builtins.replaceStrings
     [
-      "(hosts/install.md)"
-      "(installer/README.md)"
+      "(deploy/remote/README.md)"
+      "(deploy/usb/README.md)"
       "(monitoring/README.md)"
       "(modules/caddy/README.md)"
       "(modules/attic-cache/README.md)"
     ]
     [
-      "(install.html)"
-      "(installer.html)"
+      "(remote-deployment.html)"
+      "(usb-deployment.html)"
       "(monitoring.html)"
       "(caddy.html)"
       "(attic-cache.html)"
@@ -129,19 +129,38 @@
   );
   introductionHeading = pkgs.writeText "introduction-heading.md" (builtins.readFile ./introduction.md);
   optionsHeading = pkgs.writeText "options-heading.md" (builtins.readFile ./options.md);
-  installation = pkgs.writeText "installation.md" (
-    builtins.replaceStrings
-    ["(../installer/README.md)"]
-    ["(installer.html)"]
-    (builtins.readFile (sourceRoot + "/hosts/install.md"))
-  );
-  installer = pkgs.writeText "installer.md" (
-    builtins.replaceStrings
-    ["(../hosts/install.md)"]
-    ["(install.html)"]
-    (builtins.readFile (sourceRoot + "/installer/README.md"))
-  );
-  monitoring = pkgs.writeText "monitoring.md" (builtins.readFile (sourceRoot + "/monitoring/README.md"));
+  guides = map (guide:
+    guide
+    // {
+      input = pkgs.writeText "${guide.name}.md" (
+        builtins.replaceStrings guide.linkSources guide.linkTargets (
+          builtins.readFile (sourceRoot + "/${guide.source}")
+        )
+      );
+      output = "${guide.name}.html";
+    }) [
+    {
+      name = "remote-deployment";
+      title = "Remote deployment";
+      source = "deploy/remote/README.md";
+      linkSources = ["(../usb/README.md)"];
+      linkTargets = ["(usb-deployment.html)"];
+    }
+    {
+      name = "usb-deployment";
+      title = "USB deployment";
+      source = "deploy/usb/README.md";
+      linkSources = ["(../remote/README.md)"];
+      linkTargets = ["(remote-deployment.html)"];
+    }
+    {
+      name = "monitoring";
+      title = "Grafana dashboards";
+      source = "monitoring/README.md";
+      linkSources = [];
+      linkTargets = [];
+    }
+  ];
 
   renderPage = {
     title,
@@ -184,21 +203,12 @@ in rec {
         inputs = [allOptions];
         output = "all-options.html";
       }}
-      ${renderPage {
-        title = "Installation";
-        inputs = [installation];
-        output = "install.html";
-      }}
-      ${renderPage {
-        title = "Offline USB installer";
-        inputs = [installer];
-        output = "installer.html";
-      }}
-      ${renderPage {
-        title = "Grafana dashboards";
-        inputs = [monitoring];
-        output = "monitoring.html";
-      }}
+      ${lib.concatMapStringsSep "\n" (guide:
+        renderPage {
+          inherit (guide) output title;
+          inputs = [guide.input];
+        })
+      guides}
       ${lib.concatMapStringsSep "\n" (name: ''
           nixos-render-docs -j "$NIX_BUILD_CORES" options commonmark \
             --manpage-urls ${pkgs.path + "/doc/manpage-urls.json"} \
