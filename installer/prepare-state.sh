@@ -22,11 +22,31 @@ if ((${#homes[@]} == 0)); then
   exit 1
 fi
 
+persisted_paths=(
+  persist/var/lib/nixos
+  persist/etc/machine-id
+  persist/etc/NetworkManager/system-connections
+  persist/var/lib/NetworkManager
+  persist/var/lib/tailscale
+  persist/var/lib/bluetooth
+  persist/var/lib/cups
+  persist/var/lib/flatpak
+  persist/var/lib/gdm
+)
+archive_paths=("${homes[@]}")
+for path in "${persisted_paths[@]}"; do
+  if [[ -e "/$path" ]]; then
+    archive_paths+=("$path")
+  else
+    printf 'Skipping missing persisted path: /%s\n' "$path" >&2
+  fi
+done
+
 trap 'status=$?; if ((status != 0)); then rm -f -- "$output"; fi' EXIT
 
-printf 'Archiving application state from:\n'
-printf '  /%s\n' "${homes[@]}"
-printf 'Close applications that may write to these directories. Changed files abort the archive.\n'
+printf 'Archiving home and persisted system state from:\n'
+printf '  /%s\n' "${archive_paths[@]}"
+printf 'Changed files abort the archive.\n'
 
 sudo tar \
   --create \
@@ -47,8 +67,8 @@ sudo tar \
   --exclude='home/*/.cache' \
   --exclude='home/*/.local/share/Trash' \
   --exclude='home/*/.var/app/*/cache' \
-  "${homes[@]}" |
+  "${archive_paths[@]}" |
   zstd --threads=0 --stdout |
   age --recipient "$recipient" --output "$output"
 
-printf 'Prepared encrypted home archive: %s\n' "$output"
+printf 'Prepared encrypted state archive: %s\n' "$output"
