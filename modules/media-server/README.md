@@ -2,11 +2,25 @@
 
 The media server module composes library services, download automation, storage datasets, ingress, and optional UPnP forwards. It is intended to run on a host that also enables the storage, Podman server, and Caddy abstractions.
 
+## Library Services
+
+`mediaServer.library.enable` runs Plex, Jellyfin, Tautulli, and supporting library services against the shared media datasets. The service modules declare their own containers, routes, and persistent application directories.
+
+## Download Automation
+
+`mediaServer.downloads.enable` runs the torrent, video, and book download stack. Download managers write to shared download datasets, while automation services move completed content into the appropriate libraries.
+
+### Popular Videos
+
+`mediaServer.downloads.popularVideos.channels` selects a fixed number of popular videos from each configured YouTube channel, optionally limited by duration. The calendar option controls the systemd timer that refreshes those selections.
+
+## Network Exposure
+
+`mediaServer.upnp.enable` allows services that require direct public ports to declare UPnP forwards. Web interfaces remain exposed through Caddy.
+
 ## Requirements
 
-Enable shared storage and the Podman server before enabling library or download services. Caddy is required for declared web routes, agenix supplies service credentials, and optional router exposure uses the UPnP module.
-
-Library and download state is placed in declared storage datasets. Public routes and port forwards are derived by the owning service modules rather than duplicated in host configuration.
+Library and download services need shared storage and the Podman server. Web routes need Caddy; credentials come from agenix. Service modules declare their own routes and optional UPnP forwards.
 
 ## Persistence
 
@@ -14,4 +28,4 @@ Application databases and configuration live under `storage.datasets.app`; media
 
 ## Troubleshooting
 
-Inspect the service-specific unit first, such as `jellyfin.service`, `plex.service`, `qbittorrent.service`, `sonarr.service`, `radarr.service`, `readarr.service`, or `shelfmark.service`. Application state is under `/storage/app/<service>`, downloads under `/storage/downloads`, and libraries under `/storage/media/{audiobooks,books,comics,movies,tv,youtube}`; verify the relevant mounts and ownership before changing container settings. For automation failures, inspect units such as `qbittorrent-config.service`, `cleanup-downloads.service`, `download-popular-videos.service`, or `myanonamouse-update.service`; generated environment files are under `/run/podman-server`.
+Inspect the affected service unit and verify its mounts and ownership: application state is under `/storage/app/<service>`, downloads under `/storage/downloads`, and libraries under `/storage/media`. For automation failures, check the relevant job's unit and its generated environment file under `/run/podman-server`.

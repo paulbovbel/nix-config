@@ -10,6 +10,4 @@ Configure the host's Tailscale IPv4 address as a restricted nameserver for the a
 
 ## Troubleshooting
 
-Inspect `ddns-update.service` and `ddns-update.timer`. Failures normally identify public-address lookup errors from `checkip.amazonaws.com`, unavailable credentials, an incorrect hosted zone, or a Route53 record update rejected by AWS.
-
-Inspect `ddns-tailscale-dns.service` for tailnet DNS failures. It retries until `tailscale ip --4` returns the host's address.
+Inspect `ddns-update.service` and `.timer` for public-address, credential, or Route53 failures. For tailnet DNS failures, inspect `ddns-tailscale-dns.service`; it retries until `tailscale ip --4` returns an address.

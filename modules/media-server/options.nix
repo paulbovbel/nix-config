@@ -3,13 +3,13 @@
     library.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable Plex, Jellyfin, and Tautulli services.";
+      description = "Run Plex, Jellyfin, Tautulli, and the supporting media-library services.";
     };
 
     downloads.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable download manager services.";
+      description = "Run the torrent, video, and book download automation services.";
     };
 
     downloads.popularVideos = let
@@ -17,18 +17,18 @@
         options = {
           channel = lib.mkOption {
             type = lib.types.str;
-            description = "YouTube channel handle, for example @natgeokids.";
+            description = "YouTube channel handle from which popular videos are selected, for example @natgeokids.";
           };
 
           count = lib.mkOption {
             type = lib.types.ints.positive;
-            description = "Number of popular videos to keep from this channel.";
+            description = "Number of the channel's most popular matching videos to retain.";
           };
 
           maxLength = lib.mkOption {
             type = lib.types.nullOr lib.types.ints.positive;
             default = null;
-            description = "Maximum video length in minutes. Null allows any length.";
+            description = "Maximum retained video length in minutes, or null for no limit.";
           };
         };
       };
@@ -43,20 +43,20 @@
             maxLength = 30;
           }
         ];
-        description = "YouTube channels whose most popular videos should be downloaded.";
+        description = "YouTube channels and retention limits processed by download-popular-videos.service.";
       };
 
       calendar = lib.mkOption {
         type = lib.types.str;
         default = "weekly";
-        description = "systemd OnCalendar schedule for downloading popular YouTube videos.";
+        description = "systemd OnCalendar schedule for download-popular-videos.timer.";
       };
     };
 
     upnp.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether media-server services declare their UPnP forwards.";
+      description = "Whether enabled media services request their public port forwards through the UPnP module.";
     };
   };
 }

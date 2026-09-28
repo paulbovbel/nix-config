@@ -2,9 +2,25 @@
 
 The game server module runs Abiotic Factor, Minecraft, and Valheim through the Podman server abstraction.
 
+## Abiotic Factor
+
+`gameServer.abiotic.enable` runs the dedicated server with its save data on persistent storage. Its password and other private settings come from the generated runtime environment file.
+
+## Minecraft
+
+`gameServer.minecraft.enable` runs the Minecraft server. The `users` and `ops` options generate its whitelist and operator files from Minecraft usernames.
+
+## Valheim
+
+`gameServer.valheim.enable` runs the Valheim server. Administrator and permitted-player maps associate readable names with SteamID64 values, while `gameServer.valheim.modifiers.*` controls world rules without editing server files manually. A null modifier leaves that rule at the game default.
+
+## Network Exposure
+
+`gameServer.upnp.enable` lets each enabled server declare its required UPnP forwards. Disable it when forwarding is managed outside this configuration.
+
 ## Requirements
 
-Game containers require the Podman server and shared storage. Secrets such as server passwords come from agenix, and optional public port mappings are declared through UPnP.
+Game containers require the Podman server and shared storage; passwords come from agenix.
 
 ## Persistence
 

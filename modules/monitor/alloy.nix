@@ -23,20 +23,20 @@ in {
     role = lib.mkOption {
       type = lib.types.enum ["desktop" "laptop" "server"];
       default = "desktop";
-      description = "Host role attached to metrics for dashboards and alert routing.";
+      description = "Host role attached to every exported metric for dashboard filtering and alert routing.";
     };
 
     prometheus = {
       url = lib.mkOption {
         type = lib.types.str;
         default = "https://prometheus-us-central1.grafana.net/api/prom/push";
-        description = "Grafana Cloud Prometheus remote-write endpoint.";
+        description = "HTTPS endpoint to which Alloy remotely writes Prometheus metrics.";
       };
 
       username = lib.mkOption {
         type = lib.types.str;
         default = "711583";
-        description = "Grafana Cloud Prometheus tenant ID.";
+        description = "Grafana Cloud Prometheus tenant ID used for remote-write basic authentication.";
       };
     };
 

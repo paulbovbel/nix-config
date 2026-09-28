@@ -4,14 +4,11 @@ The storage module declares a nested tree of shared ZFS datasets. Each declarati
 
 ## Requirements
 
-The configured ZFS pool must exist and be importable during boot. Dataset consumers should declare their requirements through this module rather than creating mountpoints independently.
-
-Consumers should use generated paths such as `config.storage.datasets.media.children.movies.path` instead of reconstructing `/storage/...` paths themselves.
+The ZFS pool must be importable at boot. Consumers should use generated paths such as `config.storage.datasets.media.children.movies.path` instead of constructing mountpoints themselves.
 
 ## Invariants
 
 - Child dataset mount paths are derived from their position in the declaration tree.
-- Dataset declarations describe shared persistent storage and should not be replaced with unmanaged host paths.
 - Snapshot settings inherit only through values explicitly assigned by module composition.
 
 ## Recovery

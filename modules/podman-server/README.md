@@ -2,11 +2,21 @@
 
 The Podman server module layers repository conventions over `quadlet-nix`. Service modules declare containers, shared paths, dependencies, secret inputs, and derived environment files without creating bespoke systemd or Podman units.
 
+## Host Identity
+
+`podmanServer.user.*` defines the host user and group that own rootless containers and shared application paths. The numeric IDs are also passed to containers that need ownership aligned with the host.
+
+## Containers And Paths
+
+`podmanServer.containers` contains named Quadlet declarations plus repository-specific dependency and environment-file settings. `podmanServer.paths` publishes named host paths so service modules can share generated storage locations without repeating them.
+
+## Derived Environment Files
+
+`podmanServer.derivedEnvFiles` declares runtime-generated files that combine public values, secret environment files, other derived files, and shell-expanded variables. Containers reference them by name through `derivedEnvironmentFiles`, which also establishes startup ordering.
+
 ## Requirements
 
-Container declarations require `quadlet-nix`. Stateful services also require declared storage datasets, while secret environment sources require agenix-managed files.
-
-Use `secretEnvironmentFiles` for agenix-managed values and `derivedEnvironmentFiles` when a runtime file must combine secrets, generated values, or shell-expanded variables.
+Use `secretEnvironmentFiles` for agenix-managed values and `derivedEnvironmentFiles` when a runtime file combines secrets or generated values.
 
 ## Invariants
 
@@ -20,4 +30,4 @@ The module persists `/var/lib/containers` and `/var/lib/podman-server` when cont
 
 ## Troubleshooting
 
-Inspect the generated `<container>.service` unit, `apps-network.service`, and `podman-auto-update.service` before debugging Podman directly. A missing `/run/podman-server/<name>.env` file points to `podman-server-<name>-env.service` or one of its agenix inputs. Container runtime state is persisted at `/var/lib/containers` and `/var/lib/podman-server`; empty application directories should instead be traced to the service-owned `/storage/app/<service>` dataset.
+Inspect `<container>.service` and `apps-network.service`; for update failures check `podman-auto-update.service`. A missing `/run/podman-server/<name>.env` points to `podman-server-<name>-env.service` or its agenix inputs. For empty application directories, check the service's storage dataset.

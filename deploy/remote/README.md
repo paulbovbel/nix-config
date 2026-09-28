@@ -2,11 +2,11 @@
 
 This runbook defines and installs a clean NixOS host with `nixos-anywhere` and the repository's Disko configuration.
 
-For a self-contained, host-selectable USB installer, see [Offline USB Installer](../usb/README.md).
+For offline installation, see [USB Deployment](../usb/README.md).
 
 ## Safety Warning
 
-> **Warning:** The installation phases repartition the target disk and destroy existing data. Confirm the host, target address, and disk configuration before running them. The procedure also changes the host's agenix recipient, so encrypted secrets must be rekeyed before installation.
+> **Warning:** Installation repartitions the target disk. Back up data and confirm the host, address, and disk layout. Rekey secrets after changing the agenix recipient.
 
 ## Define the Host
 
@@ -21,8 +21,6 @@ The host's agenix recipient is added after generating its identity below.
 
 - The target has booted into a NixOS live installer with network access.
 - The deploy machine has this repository checked out and can reach the target over SSH.
-- Existing data on the target disk has been backed up.
-- The target disk layout in the host configuration has been reviewed.
 
 ## Prepare the Installer
 
@@ -94,7 +92,7 @@ agenix -r
 
 ## Validate the Configuration
 
-Review the host recipient and rekeyed secrets, then verify the configuration before modifying the target disk:
+Review the recipient and rekeyed secrets before modifying the disk:
 
 ```bash
 git diff -- "$host_definition" secrets
@@ -184,7 +182,7 @@ Verify that both the TPM2 token and a recovery method are present before rebooti
 
 ## Recovery and Troubleshooting
 
-- If evaluation fails, fix `hosts/<host>/`, `secrets.nix`, or recipient declarations before running `nixos-anywhere`; do not bypass `just check`.
+- If evaluation fails, fix the host configuration or recipient declarations before installing.
 - If the installer cannot import store paths, confirm that `nix config show require-sigs` reports `false` in the live installer and that `nix-daemon.service` restarted successfully.
 - If Disko selects an unexpected device, stop before installation and correct the stable disk identifier or explicit partition paths in `rootFs`.
 - If agenix fails after reboot, verify `/etc/agenix/host.agekey`, the matching recipient in `secrets.nix`, and that secrets were rekeyed with `agenix -r`.

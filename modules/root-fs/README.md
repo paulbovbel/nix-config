@@ -4,7 +4,7 @@ The root filesystem module defines a shared Disko layout for Btrfs and ZFS hosts
 
 ## Requirements
 
-New layouts require a stable disk identifier and are applied through Disko. Existing layouts require explicit EFI, root, and optional swap partition paths. Encrypted installations also require the host's early-boot unlock strategy to be available before deployment.
+New layouts require a stable disk identifier; existing layouts require explicit partition paths. Encrypted installations need an early-boot unlock strategy.
 
 ## Minimal Configuration
 
@@ -22,7 +22,7 @@ Set `existingPartitions` instead of `diskId` when adopting partitions that must 
 ## Invariants
 
 - `diskId` and `existingPartitions` describe mutually exclusive provisioning modes.
-- Enabling impermanence requires every durable service path to be declared explicitly.
+- Impermanent hosts must declare every durable service path.
 - Changing the backend or disk layout is a storage migration, not a routine configuration switch.
 
 ## Recovery

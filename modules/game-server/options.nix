@@ -3,25 +3,25 @@
     abiotic.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Enable Abiotic Factor server.";
+      description = "Run the containerized Abiotic Factor dedicated server.";
     };
 
     minecraft = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable Minecraft server.";
+        description = "Run the containerized Minecraft dedicated server.";
       };
 
       ops = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
-        description = "Minecraft usernames granted operator privileges.";
+        description = "Minecraft usernames written to ops.json with operator privileges.";
       };
       users = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
-        description = "Minecraft usernames allowed to join the server.";
+        description = "Minecraft usernames written to whitelist.json and allowed to join.";
       };
     };
 
@@ -29,76 +29,76 @@
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Enable Valheim server.";
+        description = "Run the containerized Valheim dedicated server.";
       };
 
       admins = lib.mkOption {
         type = lib.types.attrsOf lib.types.str;
         default = {};
-        description = "Valheim administrator usernames mapped to SteamID64 values.";
+        description = "Valheim administrator display names mapped to SteamID64 values.";
       };
 
       permittedUsers = lib.mkOption {
         type = lib.types.attrsOf lib.types.str;
         default = {};
-        description = "Permitted Valheim usernames mapped to SteamID64 values.";
+        description = "Valheim permitted-player display names mapped to SteamID64 values.";
       };
 
       modifiers = {
         combat = lib.mkOption {
           type = lib.types.nullOr (lib.types.enum ["veryeasy" "easy" "hard" "veryhard"]);
           default = null;
-          description = "Valheim combat difficulty modifier.";
+          description = "Valheim combat difficulty, or null to use the game default.";
         };
 
         deathPenalty = lib.mkOption {
           type = lib.types.nullOr (lib.types.enum ["casual" "veryeasy" "easy" "hard" "hardcore"]);
           default = null;
-          description = "Valheim death penalty modifier.";
+          description = "Valheim death penalty, or null to use the game default.";
         };
 
         resources = lib.mkOption {
           type = lib.types.nullOr (lib.types.enum ["muchless" "less" "more" "muchmore" "most"]);
           default = null;
-          description = "Valheim resource rate modifier.";
+          description = "Valheim resource yield, or null to use the game default.";
         };
 
         raids = lib.mkOption {
           type = lib.types.nullOr (lib.types.enum ["none" "muchless" "less" "more" "muchmore"]);
           default = null;
-          description = "Valheim raid frequency modifier.";
+          description = "Valheim raid frequency, or null to use the game default.";
         };
 
         portals = lib.mkOption {
           type = lib.types.nullOr (lib.types.enum ["casual" "hard" "veryhard"]);
           default = null;
-          description = "Valheim portal restriction modifier.";
+          description = "Valheim portal restrictions, or null to use the game default.";
         };
 
         playerBasedRaids = lib.mkOption {
           type = lib.types.bool;
           default = false;
-          description = "Scale Valheim raids based on the participating players.";
+          description = "Use Valheim's player-based raid scaling.";
         };
       };
 
       serverName = lib.mkOption {
         type = lib.types.str;
         default = "bovbel";
-        description = "Name shown in the Valheim server browser.";
+        description = "Dedicated-server name shown in the Valheim server browser.";
       };
 
       worldName = lib.mkOption {
         type = lib.types.str;
         default = "Dedicated";
-        description = "Name of the Valheim world to load.";
+        description = "Valheim world name loaded from persistent server storage.";
       };
     };
 
     upnp.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Whether game-server services declare their UPnP forwards.";
+      description = "Whether enabled game servers request their public port forwards through the UPnP module.";
     };
   };
 }

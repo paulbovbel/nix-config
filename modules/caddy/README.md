@@ -2,8 +2,6 @@
 
 The Caddy module renders declarative sites and endpoints for public or Tailscale ingress. Service-owning modules should declare their routes; host configurations generally enable Caddy, define users and roles, and set host-specific site behavior.
 
-`options.nix` is the authoritative option reference.
-
 ## Requirements
 
 Caddy uses the Podman server for its container, storage datasets for runtime state, and agenix secrets for OAuth and basic-auth credentials. Public domains must resolve to the host before ACME certificate issuance can succeed.
@@ -61,7 +59,7 @@ Domain TLS can be `public` or `tailscale`; `listenPort` can override the default
 
 ## Persistence
 
-The module declares `storage.datasets.app.children.caddy` and mounts it into the container. Preserve that dataset when rebuilding or recovering the host; authentication state and certificates must not be redirected to an ephemeral root path.
+Preserve `storage.datasets.app.children.caddy` when rebuilding; it holds certificates and authentication state.
 
 ## Route Audit
 
@@ -69,4 +67,4 @@ Caddy hosts receive a generated route audit at `/etc/caddy/routes.md`. Use it to
 
 ## Troubleshooting
 
-Inspect `/etc/caddy/routes.md` for the effective routes and `caddy-render.service` for validation failures. The rendered configuration and state live under `/storage/app/caddy/{Caddyfile,data,config}`; check `caddy.service`, `apps-network.service`, and the container log when those paths are present but routing fails. Authentication environment failures are reported by `podman-server-caddy-token-secret-env.service` or `podman-server-caddy-basic-auth-env.service`, while bans are managed by `fail2ban.service`.
+Inspect `/etc/caddy/routes.md` and `caddy-render.service` first. For routing failures check `caddy.service`, `apps-network.service`, and the container log. For authentication environment failures check `podman-server-caddy-token-secret-env.service` or `podman-server-caddy-basic-auth-env.service`.

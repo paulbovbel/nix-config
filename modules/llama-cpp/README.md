@@ -25,8 +25,8 @@ The server host must provide sufficient memory and an NVIDIA GPU supported by th
 
 ## Persistence
 
-The module persists `/var/lib/llama-cpp`, including downloaded model and Hugging Face cache data, through `rootFs.persistDirectories`.
+Downloaded models and Hugging Face cache data persist under `/var/lib/llama-cpp`.
 
 ## Troubleshooting
 
-Inspect `llama-cpp-proxy.service`; the `llama-server` process runs as its child rather than as a separate unit. Check `/var/lib/llama-cpp` and `/var/lib/llama-cpp/hf-cache` for model and cache state. Probe `http://127.0.0.1:11434/_status` to distinguish proxy failures from the internal server on `127.0.0.1:18080`. Run `llama-client` without `--quiet` to see Wake-on-LAN and server startup stages.
+Inspect `llama-cpp-proxy.service`; `llama-server` runs as its child. Probe `http://127.0.0.1:11434/_status` to distinguish proxy failures from the internal server on port 18080. Run `llama-client` without `--quiet` to see Wake-on-LAN and startup stages.

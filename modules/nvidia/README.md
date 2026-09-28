@@ -1,10 +1,18 @@
 # NVIDIA
 
-The NVIDIA module configures the pinned proprietary driver, open or closed kernel modules, suspend support, hardware video acceleration, and optional PRIME render offload.
+The NVIDIA module configures the driver, suspend support, video acceleration, and optional PRIME render offload.
+
+## Driver
+
+`nvidia.open` selects open kernel modules. `nvidia.bleedingEdge` selects the unstable driver branch when the production branch is insufficient.
+
+## PRIME Hybrid Graphics
+
+`nvidia.prime.enable` configures a laptop with integrated and discrete GPUs. Set the bus ID for the integrated Intel or AMD GPU and for the NVIDIA GPU. Offload mode keeps the discrete GPU available on demand, and `enableOffloadCmd` installs the `nvidia-offload` launcher.
 
 ## Requirements
 
-Enable PRIME only on hybrid-graphics hosts and set the integrated and NVIDIA GPU bus IDs from `lspci`. The selected kernel must remain compatible with the pinned driver version.
+The selected kernel must be compatible with the driver.
 
 ## Troubleshooting
 

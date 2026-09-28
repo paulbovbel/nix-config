@@ -2,13 +2,29 @@
 
 The monitoring module exports host metrics to Grafana Cloud through Alloy, provides Cockpit for host administration, and runs Smokeping for network latency history.
 
+## Grafana Cloud
+
+`grafanaCloud.enable` runs Alloy and exports host metrics through Prometheus remote write. Set `grafanaCloud.role` to `desktop`, `laptop`, or `server` to label metrics. The username is the Grafana Cloud tenant ID; the API key comes from `grafana-cloud-env`.
+
+### SMART Metrics
+
+Enable `grafanaCloud.smartctl.enable` only where it can inspect physical disks.
+
+## Cockpit
+
+`cockpit.enable` exposes Cockpit on port 9090 with origins derived from the host and tailnet domains.
+
+## Smokeping
+
+`smokeping.enable` runs Smokeping as a container with persistent configuration and latency history in shared storage.
+
 ## Requirements
 
-Grafana Cloud monitoring requires the agenix-managed `grafana-cloud-env` secret containing `GRAFANA_CLOUD_API_KEY`. Set the host role to `desktop`, `laptop`, or `server`; optionally enable SMART metrics on hosts where `smartctl` can inspect the disks. Smokeping requires the Podman server and shared storage. Cockpit's configured web origins depend on the host name and tailnet domain.
+Grafana Cloud needs the agenix-managed `grafana-cloud-env` secret containing `GRAFANA_CLOUD_API_KEY`. Smokeping needs the Podman server and shared storage.
 
 ## Persistence
 
-Alloy state is persisted at `/var/lib/private/alloy` through the root filesystem persistence abstraction. Smokeping state is stored in `storage.datasets.app.children.smokeping`. Cockpit primarily exposes host state and does not declare a separate application dataset.
+Alloy persists `/var/lib/private/alloy`; Smokeping uses `storage.datasets.app.children.smokeping`.
 
 ## Troubleshooting
 

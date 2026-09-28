@@ -46,13 +46,24 @@ body {
 }
 
 .sidebar-brand {
-  display: block;
-  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   color: inherit;
   font-size: 1.35rem;
   font-weight: 750;
   letter-spacing: -0.03em;
   text-decoration: none;
+}
+
+.sidebar-logo {
+  border-radius: 50%;
+}
+
+.sidebar-repository {
+  display: block;
+  margin: 0.25rem 0 1.5rem;
+  font-size: 0.85rem;
 }
 
 .sidebar-heading {

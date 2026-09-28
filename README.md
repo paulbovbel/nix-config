@@ -1,6 +1,6 @@
 # nix-config
 
-Personal NixOS fleet configuration for desktops, a laptop, and a media server. The flake composes machine-specific settings, reusable NixOS modules, Home Manager profiles, encrypted secrets, and persistent state into one configuration per host.
+Personal NixOS configuration for desktops, laptops, and a media server.
 
 ## Quick Start
 
@@ -14,7 +14,7 @@ just dry-run <host>
 just switch <host>
 ```
 
-`just switch` activates locally when `<host>` matches the current hostname; otherwise it builds and activates through SSH. `just docs` builds the standalone module reference and prints its Nix store path. Open it with `xdg-open "$(just docs)/index.html"`; pushes to `main` publish the same site to [GitHub Pages](https://paulbovbel.github.io/nix-config/).
+`just switch` activates locally or through SSH, depending on the host. `just docs` prints the path to the [module reference](https://paulbovbel.github.io/nix-config/); open it with `xdg-open "$(just docs)/index.html"`.
 
 ## Fleet
 
@@ -26,23 +26,11 @@ just switch <host>
 | `becmac-pro` | Personal laptop | `pbovbel: graphical`, `rbovbel: graphical` |
 | `media` | Media, game, cache, ingress, and storage server | `pbovbel: headless` |
 
-Hosts are registered in `flake.nix`. Each `hosts/<host>/default.nix` declares its target system, public age recipient, and selected users and profiles, while `hosts/<host>/configuration.nix` contains machine settings and enables host-facing modules. Settings shared by the local site, including DNS domains, live in `hosts/site.nix`.
-
 ## Architecture
 
-Configuration is assembled from host definitions, user-selected profiles, and globally imported reusable modules:
+Hosts are registered in `flake.nix`. Each `hosts/<host>/default.nix` selects a system, age recipient, users, and profiles. `profiles/default.nix` maps those user-specific profiles to Home Manager and system modules. Reusable modules under `modules/` are imported globally and enabled from host configurations.
 
-```text
-flake.nix
-├── hosts/<host>/default.nix          target system, users, and profiles
-├── hosts/<host>/configuration.nix    machine policy and module enablement
-├── profiles/default.nix              user-specific profile mapping
-└── modules/                          reusable NixOS modules
-```
-
-Each profile entry in `profiles/default.nix` explicitly selects `homeModules` and `systemModules` for a user. Profile modules may import shared layers such as `common` or `graphical`; profile names are therefore user-specific selections rather than a global catalog.
-
-Modules under `modules/` are imported globally and generally expose an option namespace that a host enables or configures. Their `options.nix` files are the authoritative API. Major abstractions include:
+Key abstractions (see each module's `options.nix` for its API):
 
 - `rootFs` for ZFS or Btrfs root layouts, encryption, impermanence, snapshots, and persistent state
 - `podmanServer` for container, path, and derived environment-file declarations
@@ -51,27 +39,16 @@ Modules under `modules/` are imported globally and generally expose an option na
 - `backup` for scheduled pushes to remote targets
 - `mediaServer`, `gameServer`, and `atticCache` for server workloads
 
-The default package set is the pinned release nixpkgs. A host can intentionally select the pinned unstable package set with `useUnstablePackages`; modules and profiles can also receive `unstablePkgs` for localized use. Home Manager is evaluated as part of each NixOS configuration, and secrets are managed with agenix.
+Hosts use pinned release nixpkgs by default; `useUnstablePackages` selects unstable for a host, while `unstablePkgs` supports localized use. Home Manager is evaluated with NixOS; agenix manages secrets.
 
 ## Development
 
-The documentation site is built independently of any host configuration. Each module declares its display name and summary through the internal `moduleDocumentation` option in `modules/<name>/default.nix`; modules are listed alphabetically. The documentation evaluation rejects missing or stale metadata.
-
-Public options should provide descriptions and representative examples in the module's `options.nix`. Add `modules/<name>/README.md` when a module also needs usage guidance, invariants, or operational procedures. Module READMEs remain standalone documents with an H1 title; the site generator places their content under the page's Introduction section.
-
-The generated site and its internal links are built as part of the CI-only `just nix-test` flake checks.
-
-Run the full validation suite after every configuration change:
-
-```bash
-just check
-just dry-run <host>
-```
+Describe public options in `modules/<name>/options.nix`; use a module README for usage, invariants, or operations. Add display metadata in `modules/<name>/default.nix` for the generated documentation site. CI validates the site and its links with `just nix-test`.
 
 ## Repository Layout
 
-- Machine-specific policy, settings, and module enablement: `hosts/<host>/configuration.nix`
-- Physical hardware facts and enablement, including device modules, disk identities, GPU support, firmware, and host platform: `hosts/<host>/hardware-configuration.nix`
+- Machine policy and module enablement: `hosts/<host>/configuration.nix`
+- Hardware facts and device identities: `hosts/<host>/hardware-configuration.nix`
 - Host user and profile selection: `hosts/<host>/default.nix`
 - Shared site values: `hosts/site.nix`
 - Reusable NixOS behavior and public options: `modules/<name>/`
@@ -80,9 +57,7 @@ just dry-run <host>
 - Agenix-encrypted values: `secrets/`
 - Agenix recipient declarations: `secrets.nix`
 
-Keep intentional machine policy in `configuration.nix`, including bootloader and kernel selection, network identity and behavior, services, and `rootFs` behavior. Keep generated or hardware-bound values in `hardware-configuration.nix`; these files may be maintained manually after their initial generation.
-
-Do not add plaintext secrets. Stateful services on impermanent hosts must declare their persistent files or directories through `rootFs`. Server containers should use the `podmanServer` abstractions, HTTP exposure should use `caddy.sites`, and shared data should use `storage.datasets` rather than unmanaged paths.
+Keep machine policy in `configuration.nix` and hardware-bound values in `hardware-configuration.nix`. Never commit plaintext secrets; declare persistent state with `rootFs` and use `podmanServer`, `caddy`, and `storage` for server workloads.
 
 ## Runbooks
 

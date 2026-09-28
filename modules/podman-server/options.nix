@@ -113,35 +113,35 @@ in {
       name = lib.mkOption {
         type = lib.types.str;
         default = "pbovbel";
-        description = "Name of the host user that owns Podman server state.";
+        description = "Host user that owns rootless Podman containers and application paths.";
       };
       group = lib.mkOption {
         type = lib.types.str;
         default = "pbovbel";
-        description = "Name of the host group that owns Podman server state.";
+        description = "Host group that owns rootless Podman containers and application paths.";
       };
       uid = lib.mkOption {
         type = lib.types.int;
         default = 1000;
-        description = "Numeric ID of the Podman server host user.";
+        description = "Numeric host user ID mapped into Podman server containers.";
       };
       gid = lib.mkOption {
         type = lib.types.int;
         default = 1000;
-        description = "Numeric ID of the Podman server host group.";
+        description = "Numeric host group ID mapped into Podman server containers.";
       };
     };
 
     paths = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = {};
-      description = "Shared Podman server filesystem paths.";
+      description = "Named host filesystem paths shared with service modules and container declarations.";
     };
 
     networkInterface = lib.mkOption {
       type = lib.types.str;
       default = "podman-apps";
-      description = "Host bridge interface name for the shared Podman apps network.";
+      description = "Host interface name of the shared Podman applications network.";
     };
 
     containers = lib.mkOption {
@@ -158,13 +158,13 @@ in {
           };
         }
       '';
-      description = "Containers rendered as Podman Quadlet units.";
+      description = "Named container declarations rendered as Podman Quadlet systemd units.";
     };
 
     derivedEnvFiles = lib.mkOption {
       type = lib.types.attrsOf derivedEnvFileType;
       default = {};
-      description = "Runtime-rendered environment files declared by Podman server fragments.";
+      description = "Named environment files rendered at runtime from public and agenix-managed inputs.";
     };
   };
 }
