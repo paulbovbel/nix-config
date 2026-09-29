@@ -55,7 +55,7 @@ Describe public options in `modules/<name>/options.nix`; use a module README for
 - User and system profile behavior: `profiles/<profile>/`
 - Profile selection mapping: `profiles/default.nix`
 - Agenix-encrypted values: `secrets/`
-- Agenix recipient declarations: `secrets.nix`
+- Agenix recipient declarations: `agenix-rules.nix`
 
 Keep machine policy in `configuration.nix` and hardware-bound values in `hardware-configuration.nix`. Never commit plaintext secrets; declare persistent state with `rootFs` and use `podmanServer`, `caddy`, and `storage` for server workloads.
 

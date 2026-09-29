@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
 import hashlib
 import ipaddress
 import json
@@ -9,15 +10,19 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+import xml.etree.ElementTree as ET
 
 
 MAM_API = "https://t.myanonamouse.net/json/dynamicSeedbox.php"
 IP_CHECK_URL = "https://checkip.amazonaws.com"
 CONTAINER_CONFIG_DIR = "/config"
 AUTOBRR_API_URL = "http://127.0.0.1:7474/autobrr/api/indexer"
+PROWLARR_API_URL = "http://127.0.0.1:9696/prowlarr/api/v1/indexer"
+APP_FINGERPRINT_FILE = "mam.app-fingerprint.v2"
 API_RETRY_COUNT = 5
 API_RETRY_DELAY_SECONDS = 2
 CACHED_IP_TTL_SECONDS = 7 * 24 * 60 * 60
+MAM_RETRY_DELAY_SECONDS = 60 * 60
 
 
 @dataclass(frozen=True)
@@ -61,14 +66,19 @@ def curl(
     fail_with_body=True,
     cookie=None,
     cookie_jar=None,
+    response_metadata=False,
 ):
     args = [
-        "--fail-with-body" if fail_with_body else "--fail",
         "--silent",
         "--show-error",
         "--max-time",
         str(max_time),
     ]
+    if response_metadata:
+        # Keep HTTP errors available to the caller; transport errors still fail.
+        args.extend(["--write-out", "\n%{http_code}\n%header{retry-after}"])
+    else:
+        args.append("--fail-with-body" if fail_with_body else "--fail")
     if interface is not None:
         args.extend(["--interface", interface])
     if method is not None:
@@ -82,7 +92,7 @@ def curl(
     if cookie_jar is not None:
         args.extend(["--cookie-jar", cookie_jar])
     try:
-        return podman_exec(
+        response = podman_exec(
             container, ["curl", *args, url], input_text=input_text, user=user
         )
     except subprocess.CalledProcessError as error:
@@ -95,6 +105,13 @@ def curl(
         raise RuntimeError(
             f"{description} failed in container {container}: {detail}"
         ) from error
+    if response_metadata:
+        try:
+            body, status, retry_after = response.rsplit("\n", 2)
+            return body, int(status), retry_after.strip()
+        except ValueError as error:
+            raise RuntimeError(f"invalid HTTP metadata from {description}") from error
+    return response
 
 
 def fingerprint(value):
@@ -174,10 +191,23 @@ def wait_for_json(fetch, description):
     raise AssertionError("unreachable")
 
 
+def mam_retry_at(retry_after):
+    now = time.time()
+    if retry_after.isdigit():
+        return now + int(retry_after)
+    if retry_after:
+        try:
+            return max(now, parsedate_to_datetime(retry_after).timestamp())
+        except (ValueError, TypeError, OverflowError):
+            pass
+    return now + MAM_RETRY_DELAY_SECONDS
+
+
 def update_mam_ip(target, mam_id, mam_id_changed):
     cached_ip = target.config_dir / f"mam.ip.{target.interface}"
     cookie_jar = target.config_dir / f"mam.cookies.{target.interface}"
     cookie_fingerprint = mam_id_fingerprint_path(target)
+    retry_path = target.config_dir / f"mam.retry-after.{target.interface}"
     container_cookie_jar = f"{CONTAINER_CONFIG_DIR}/mam.cookies.{target.interface}"
 
     new_fingerprint = fingerprint(mam_id)
@@ -188,6 +218,9 @@ def update_mam_ip(target, mam_id, mam_id_changed):
         )
         remove_file(cached_ip)
         remove_file(cookie_jar)
+        # Track credential invalidation separately from successful IP registration.
+        # An absent cached IP keeps registration pending, including after a cooldown.
+        write_private(cookie_fingerprint, new_fingerprint)
     if file_older_than(cached_ip, CACHED_IP_TTL_SECONDS):
         print(f"{target.container} cached MAM IP expired; invalidating it")
         remove_file(cached_ip)
@@ -213,8 +246,13 @@ def update_mam_ip(target, mam_id, mam_id_changed):
         print(f"MAM IP unchanged for {target.interface}: {new_ip}")
         return
 
+    retry_at = read_text(retry_path)
+    if retry_at and time.time() < float(retry_at):
+        print(f"MAM IP update deferred for {target.interface}; cooldown still active")
+        return
+
     print(f"Updating MAM IP for {target.interface}: {old_ip or '<none>'} -> {new_ip}")
-    response = curl(
+    response, status, retry_after = curl(
         target.container,
         MAM_API,
         description=f"updating MAM dynamic seedbox IP for {target.interface}",
@@ -222,20 +260,35 @@ def update_mam_ip(target, mam_id, mam_id_changed):
         interface=target.interface,
         cookie=container_cookie_jar if cookie_jar.exists() else f"mam_id={mam_id}",
         cookie_jar=container_cookie_jar,
+        response_metadata=True,
     )
 
     try:
         body = json.loads(response)
     except json.JSONDecodeError:
         body = None
-    if isinstance(body, dict) and body.get("success") is False:
+    success = (
+        body.get("Success", body.get("success")) if isinstance(body, dict) else None
+    )
+    if (
+        status == 429
+        and success is False
+        and body.get("msg") == "Last change too recent"
+    ):
+        write_private(retry_path, str(mam_retry_at(retry_after)))
+        print(
+            f"MAM IP update deferred for {target.interface}: Last change too recent; "
+            "will retry on a scheduled run after the cooldown"
+        )
+        return
+    if not 200 <= status < 300 or success is not True:
         raise RuntimeError(
-            f"MAM API rejected update for {target.interface}: {response}"
+            f"MAM API rejected update for {target.interface} (HTTP {status}): {response}"
         )
 
     print(response.strip())
     write_private(cached_ip, new_ip)
-    write_private(cookie_fingerprint, new_fingerprint)
+    remove_file(retry_path)
     print(f"Updated MAM IP for {target.interface}: {old_ip} -> {new_ip}")
 
 
@@ -277,7 +330,7 @@ def update_jackett(target, mam_id):
     backup_path = config_path.with_suffix(config_path.suffix + ".bak")
     backup_path.write_text(old_config)
     replace_json_preserving_metadata(config_path, config)
-    run(["podman", "--events-backend=none", "restart", target.container])
+    run(["systemctl", "restart", f"{target.container}.service"])
     print("Updated Jackett MyAnonamouse mam_id")
 
 
@@ -337,8 +390,72 @@ def update_autobrr(mam_id):
     print("Updated autobrr MyAnonamouse mam_id")
 
 
-def update_indexer_apps(target, mam_id, mam_id_changed):
-    app_fingerprint = target.config_dir / "mam.app-fingerprint"
+def update_prowlarr(config_dir, mam_id):
+    config_path = config_dir / "config.xml"
+    try:
+        token = ET.parse(config_path).findtext("ApiKey", "").strip()
+    except (OSError, ET.ParseError) as error:
+        raise RuntimeError(f"cannot read Prowlarr config: {config_path}") from error
+    if not token:
+        raise RuntimeError("Prowlarr API key not found in config.xml")
+
+    def request(url, *, method=None, input_text=None):
+        return curl(
+            "prowlarr",
+            url,
+            description="calling Prowlarr indexer API",
+            method=method,
+            headers=[f"X-Api-Key: {token}", "Content-Type: application/json"],
+            input_text=input_text,
+        )
+
+    indexers = wait_for_json(lambda: request(PROWLARR_API_URL), "Prowlarr API")
+    if not isinstance(indexers, list):
+        raise RuntimeError("expected Prowlarr indexer list")
+    mam_indexers = [
+        indexer
+        for indexer in indexers
+        if isinstance(indexer, dict)
+        and str(indexer.get("implementation", "")).lower() == "myanonamouse"
+    ]
+    if not mam_indexers:
+        raise RuntimeError("Prowlarr MyAnonamouse indexer not found")
+    for indexer in mam_indexers:
+        fields = indexer.get("fields", [])
+        mam_field = next(
+            (field for field in fields if field.get("name") == "mamId"), None
+        )
+        if mam_field is None:
+            raise RuntimeError("mamId field not found in Prowlarr MyAnonamouse indexer")
+        mam_field["value"] = mam_id
+        indexer_id = indexer["id"]
+        print(f"Updating Prowlarr MyAnonamouse indexer {indexer_id}")
+        request(
+            f"{PROWLARR_API_URL}/{indexer_id}",
+            method="PUT",
+            input_text=json.dumps(indexer),
+        )
+    print("Updated Prowlarr MyAnonamouse mam_id")
+
+
+def update_shelfmark(config_dir, mam_id):
+    config_path = config_dir / "plugins" / "prowlarr_config.json"
+    if not config_path.exists():
+        raise RuntimeError(f"Shelfmark Prowlarr config not found: {config_path}")
+    config = json.loads(config_path.read_text())
+    if not isinstance(config, dict):
+        raise RuntimeError("expected Shelfmark Prowlarr config object")
+    config["PROWLARR_MAM_ID"] = mam_id
+    replace_json_preserving_metadata(config_path, config)
+    # Restart even on a retry: a previous run may have saved but failed to restart.
+    run(["systemctl", "restart", "shelfmark.service"])
+    print("Updated Shelfmark MyAnonamouse mam_id")
+
+
+def update_indexer_apps(
+    target, mam_id, mam_id_changed, *, shelfmark_config_dir, prowlarr_config_dir
+):
+    app_fingerprint = target.config_dir / APP_FINGERPRINT_FILE
     new_fingerprint = fingerprint(mam_id)
     if not mam_id_changed:
         print("MyAnonamouse app configs unchanged")
@@ -347,6 +464,8 @@ def update_indexer_apps(target, mam_id, mam_id_changed):
     print("Indexer MAM ID fingerprint changed; updating app configs")
     update_jackett(target, mam_id)
     update_autobrr(mam_id)
+    update_prowlarr(prowlarr_config_dir, mam_id)
+    update_shelfmark(shelfmark_config_dir, mam_id)
     write_private(app_fingerprint, new_fingerprint)
 
 
@@ -355,6 +474,8 @@ def parse_args():
     parser.add_argument("--container-user", required=True)
     parser.add_argument("--qbittorrent-config-dir", required=True)
     parser.add_argument("--jackett-config-dir", required=True)
+    parser.add_argument("--shelfmark-config-dir", required=True, type=Path)
+    parser.add_argument("--prowlarr-config-dir", required=True, type=Path)
     args = parser.parse_args()
 
     torrent = MamTarget(
@@ -369,11 +490,11 @@ def parse_args():
         interface="eth0",
         config_dir=Path(args.jackett_config_dir),
     )
-    return torrent, indexer
+    return torrent, indexer, args
 
 
 def main():
-    torrent, indexer = parse_args()
+    torrent, indexer, args = parse_args()
 
     try:
         torrent_mam_id = mam_id_from_env("MAM_ID_TORRENT")
@@ -381,7 +502,7 @@ def main():
 
         torrent_fingerprint = mam_id_fingerprint_path(torrent)
         indexer_fingerprint = mam_id_fingerprint_path(indexer)
-        app_fingerprint = indexer.config_dir / "mam.app-fingerprint"
+        app_fingerprint = indexer.config_dir / APP_FINGERPRINT_FILE
         torrent_mam_id_changed = read_text(torrent_fingerprint) != fingerprint(
             torrent_mam_id
         )
@@ -404,7 +525,13 @@ def main():
 
         update_mam_ip(torrent, torrent_mam_id, torrent_mam_id_changed)
         update_mam_ip(indexer, indexer_mam_id, indexer_mam_id_changed)
-        update_indexer_apps(indexer, indexer_mam_id, app_mam_id_changed)
+        update_indexer_apps(
+            indexer,
+            indexer_mam_id,
+            app_mam_id_changed,
+            shelfmark_config_dir=args.shelfmark_config_dir,
+            prowlarr_config_dir=args.prowlarr_config_dir,
+        )
     except (RuntimeError, subprocess.CalledProcessError) as error:
         if isinstance(error, subprocess.CalledProcessError):
             sys.stderr.write(error.stderr)

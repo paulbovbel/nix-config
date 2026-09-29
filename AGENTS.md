@@ -18,9 +18,10 @@ For repository layout, module composition, and structure recommendations, see [R
 
 ## Repo Rules
 
-- Do not add plaintext secrets. Use `secrets/` and `secrets.nix` for agenix-managed secrets.
+- Do not add plaintext secrets. Use `secrets/` and `agenix-rules.nix` for agenix-managed secrets.
 - When adding stateful services on impermanent hosts, persist required state with `rootFs.persistDirectories` or `rootFs.persistFiles`.
 - Server containers should generally use `podmanServer.containers`, `podmanServer.paths`, and `podmanServer.derivedEnvFiles` rather than bespoke Podman/systemd plumbing.
+- Never use `podman restart`; restart containers through their owning systemd service with `systemctl restart <name>.service`.
 - Public or authenticated HTTP exposure should generally declare `caddy.endpoints` or `caddy.domains` rather than editing generated Caddyfile internals directly.
 - Shared storage should use `storage.datasets` and generated storage paths instead of unmanaged hard-coded ZFS paths.
 - Default packages come from the host's selected nixpkgs release; use `unstablePkgs` only intentionally and locally.

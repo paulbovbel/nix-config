@@ -95,6 +95,7 @@ python-test:
     python3 -m unittest discover -s docs -p 'test_*.py'
     python3 -m unittest discover -s modules/accounts -p 'test_*.py'
     python3 -m unittest discover -s modules/auto-upgrade -p 'test_*.py'
+    python3 -m unittest discover -s modules/media-server/download -p 'test_*.py'
     python3 -m unittest discover -s modules/media-server/library -p 'test_*.py'
 
 # Lint and format-check shell scripts.

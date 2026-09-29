@@ -13,6 +13,8 @@
     "qbittorrent.service"
     "jackett.service"
     "autobrr.service"
+    "shelfmark.service"
+    "prowlarr.service"
   ];
   mamUpdate = pkgs.writeTextFile {
     name = "mam-update.py";
@@ -28,6 +30,10 @@
     config.storage.datasets.app.children.qbittorrent.path
     "--jackett-config-dir"
     config.storage.datasets.app.children.jackett.path
+    "--shelfmark-config-dir"
+    datasets.app.children.shelfmark.path
+    "--prowlarr-config-dir"
+    datasets.app.children.prowlarr.path
   ];
 in {
   config = lib.mkIf cfg.downloads.enable {
@@ -50,7 +56,7 @@ in {
           wants = mamUpdateDeps;
           after = mamUpdateDeps;
           restartTriggers = [config.age.secrets.mam-id-env.file];
-          path = [pkgs.podman];
+          path = [pkgs.podman pkgs.systemd];
           serviceConfig = {
             Type = "oneshot";
             EnvironmentFile = config.age.secrets.mam-id-env.path;

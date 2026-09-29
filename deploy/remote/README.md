@@ -185,5 +185,5 @@ Verify that both the TPM2 token and a recovery method are present before rebooti
 - If evaluation fails, fix the host configuration or recipient declarations before installing.
 - If the installer cannot import store paths, confirm that `nix config show require-sigs` reports `false` in the live installer and that `nix-daemon.service` restarted successfully.
 - If Disko selects an unexpected device, stop before installation and correct the stable disk identifier or explicit partition paths in `rootFs`.
-- If agenix fails after reboot, verify `/etc/agenix/host.agekey`, the matching recipient in `secrets.nix`, and that secrets were rekeyed with `agenix -r`.
+- If agenix fails after reboot, verify `/etc/agenix/host.agekey`, the matching recipient in `agenix-rules.nix`, and that secrets were rekeyed with `agenix -r`.
 - If the installed system does not boot, use the live installer to unlock encrypted devices and mount or import the configured `rootFs` backend before repairing the system profile.
