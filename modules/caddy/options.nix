@@ -42,7 +42,7 @@
       handlePath = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Whether to use Caddy's handle_path directive.";
+        description = "Whether to strip the matched path prefix after authentication, equivalent to handle_path for the upstream.";
       };
       spoofBasic = lib.mkOption {
         type = lib.types.bool;
@@ -127,7 +127,7 @@ in {
     roles = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = ["admin" "user"];
-      description = "Roles recognized by the authentication portal.";
+      description = "Authentik groups recognized by Caddy's per-route authorization checks.";
     };
 
     users = lib.mkOption {
@@ -144,25 +144,13 @@ in {
         };
       });
       default = [];
-      description = "Users authorized through the Caddy authentication portal.";
+      description = "Users and group memberships provisioned in Authentik; also the application login allowlist.";
     };
 
     email = lib.mkOption {
       type = lib.types.str;
       default = "paul@bovbel.com";
       description = "ACME contact email for Caddy.";
-    };
-
-    tokenLifetime = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 3600;
-      description = "OAuth token lifetime in seconds.";
-    };
-
-    cookieLifetime = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 3600;
-      description = "OAuth cookie lifetime in seconds.";
     };
 
     sites = lib.mkOption {

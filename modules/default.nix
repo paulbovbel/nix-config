@@ -11,6 +11,7 @@ in {
     ./attic-cache
     ./upnp
     ./caddy
+    ./authentik
     ./storage
     ./monitor
     ./podman-server

@@ -11,7 +11,6 @@ from pathlib import Path
 
 MODULE_PATH = Path(__file__).with_name("container.nix")
 REPOSITORIES = {
-    "github.com/greenpau/caddy-security": "greenpau/caddy-security",
     "github.com/caddy-dns/route53": "caddy-dns/route53",
 }
 

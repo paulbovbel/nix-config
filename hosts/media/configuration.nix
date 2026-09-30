@@ -83,6 +83,7 @@ in {
     zone = "bovbel.com";
     records = [
       "media.bovbel.com"
+      "auth.bovbel.com"
       "nix-cache.bovbel.com"
     ];
   };
@@ -147,6 +148,12 @@ in {
         roles = ["user"];
       }
     ];
+  };
+
+  authentik = {
+    enable = true;
+    domain = "auth.bovbel.com";
+    adminUsers = ["paul@bovbel.com"];
   };
 
   storage.enable = true;

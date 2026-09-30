@@ -24,6 +24,10 @@ in {
 
       children = {
         audiobooks.options.recordsize = "1M";
+        devisualized = {
+          autoSnapshot.enable = false;
+          options.recordsize = "1M";
+        };
         books = {};
         comics = {};
         movies.options.recordsize = "1M";

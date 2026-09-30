@@ -11,6 +11,23 @@ in {
   config = lib.mkIf cfg.library.enable {
     age.secrets.web-credentials-env.file = ../../../secrets/server/web-credentials-env.age;
 
+    authentik.applications = let
+      baseUrl = "https://${config.networking.hostName}.${config.networking.domain}";
+    in {
+      audiobookshelf = {
+        name = "Audiobookshelf";
+        redirectUris = map (path: "${baseUrl}/audiobookshelf/auth/openid/${path}") ["callback" "mobile-redirect"];
+      };
+      grimmory = {
+        name = "Grimmory";
+        clientType = "public";
+        generateClientSecret = false;
+        redirectUris = ["${baseUrl}/grimmory/oauth2-callback"];
+        scopes = ["openid" "email" "profile" "offline_access" "groups"];
+        includeClaimsInIdToken = true;
+      };
+    };
+
     storage.datasets = {
       downloads = {};
       app.children = {
@@ -59,6 +76,7 @@ in {
               "${audiobookshelfPath}/config:/config"
               "${audiobookshelfPath}/metadata:/metadata"
               "${datasets.media.children.audiobooks.path}:/audiobooks"
+              "${datasets.media.children.devisualized.path}:/devisualized"
             ];
           };
         };
@@ -87,13 +105,8 @@ in {
               TZ = config.time.timeZone;
               DATABASE_URL = "jdbc:mariadb://grimmory-db:3306/booklore";
               FORCE_DISABLE_OIDC = "false";
-              REMOTE_AUTH_ENABLED = "true";
-              REMOTE_AUTH_CREATE_NEW_USERS = "true";
-              REMOTE_AUTH_HEADER_USER = "X-Token-User-Email";
-              REMOTE_AUTH_HEADER_NAME = "X-Token-User-Name";
-              REMOTE_AUTH_HEADER_EMAIL = "X-Token-User-Email";
-              REMOTE_AUTH_HEADER_GROUPS = "X-Token-User-Roles";
-              REMOTE_AUTH_ADMIN_GROUP = "admin";
+              OIDC_ALLOW_UNSAFE_HOSTS = "true";
+              REMOTE_AUTH_ENABLED = "false";
               BASE_PATH = "/grimmory";
             };
             volumes = [
@@ -134,20 +147,19 @@ in {
         media.endpoints.audiobookshelf = {
           type = "proxy";
           # Use the application's login so native streaming clients can authenticate.
-          auth = "oauth";
+          auth = null;
           path = "/audiobookshelf";
           host = "audiobookshelf";
           port = 8000;
-          role = "user";
         };
 
         media.endpoints.grimmory = {
           type = "proxy";
-          auth = "oauth";
+          # Native OIDC and application tokens also work for API/mobile clients.
+          auth = null;
           path = "/grimmory";
           host = "grimmory";
           port = 6060;
-          role = "user";
         };
       };
     };

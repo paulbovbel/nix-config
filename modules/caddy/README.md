@@ -4,7 +4,7 @@ The Caddy module renders declarative sites and endpoints for public or Tailscale
 
 ## Requirements
 
-Caddy uses the Podman server for its container, storage datasets for runtime state, and agenix secrets for OAuth and basic-auth credentials. Public domains must resolve to the host before ACME certificate issuance can succeed.
+Caddy uses the Podman server for its container, storage datasets for runtime state, and agenix secrets for DNS and basic-auth credentials. OAuth routes require the Authentik module; it owns Google credentials, identities, and the embedded forward-auth outpost. Public domains must resolve to the host before ACME certificate issuance can succeed.
 
 ## Endpoints
 
@@ -20,7 +20,7 @@ caddy.sites.media.endpoints.example = {
 };
 ```
 
-Proxy endpoints require `host` and `port`. Authentication defaults to OAuth; set `auth = null` only for an intentionally public endpoint.
+Proxy endpoints require `host` and `port`. Authentication defaults to Authentik forward auth (`auth = "oauth"`); `role` selects the required Authentik group. Use `auth = null` for public endpoints or applications enforcing their own authentication, including native OIDC clients.
 
 Useful endpoint settings include:
 
@@ -67,4 +67,4 @@ Caddy hosts receive a generated route audit at `/etc/caddy/routes.md`. Use it to
 
 ## Troubleshooting
 
-Inspect `/etc/caddy/routes.md` and `caddy-render.service` first. For routing failures check `caddy.service`, `apps-network.service`, and the container log. For authentication environment failures check `podman-server-caddy-token-secret-env.service` or `podman-server-caddy-basic-auth-env.service`.
+Inspect `/etc/caddy/routes.md` and `caddy-render.service` first. For routing failures check `caddy.service`, `apps-network.service`, and the container log. For authentication failures check `authentik.service`, `authentik-worker.service`, or `podman-server-caddy-basic-auth-env.service`.

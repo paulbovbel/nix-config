@@ -1,0 +1,182 @@
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  cfg = config.authentik;
+  # JSON-style YAML with explicit Authentik tags; no credentials enter the store.
+  tag = name: value: {
+    __tag = name;
+    inherit value;
+  };
+  key = tag "KeyOf";
+  find = model: field: value: tag "Find" [model [field value]];
+  flow = slug: find "authentik_flows.flow" "slug" slug;
+  render = value:
+    if lib.isAttrs value && value ? __tag
+    then "!${value.__tag} ${render value.value}"
+    else if lib.isAttrs value
+    then "{${lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${builtins.toJSON k}: ${render v}") value)}}"
+    else if lib.isList value
+    then "[${lib.concatStringsSep ", " (map render value)}]"
+    else builtins.toJSON value;
+  entry = model: id: identifiers: attrs: {inherit model id identifiers attrs;};
+  domains = lib.unique (lib.concatMap (site:
+    if lib.any (endpoint: endpoint.auth == "oauth") (lib.attrValues site.endpoints)
+    then map (domain: domain.host + lib.optionalString (domain.listenPort != null) ":${toString domain.listenPort}") site.domains
+    else []) (lib.attrValues config.caddy.sites));
+  providerId = domain: "proxy-${builtins.substring 0 12 (builtins.hashString "sha256" domain)}";
+  allowed = builtins.toJSON (map (user: user.email) config.caddy.users);
+  authorization = flow "default-provider-authorization-implicit-consent";
+  invalidation = flow "default-provider-invalidation-flow";
+  clientSecretEnvironment = application: "AUTHENTIK_${lib.toUpper (lib.replaceStrings ["-"] ["_"] application.clientId)}_CLIENT_SECRET";
+  usesGroupsScope = lib.any (application: lib.elem "groups" application.scopes) (lib.attrValues cfg.applications);
+  managedScope = scope: find "authentik_providers_oauth2.scopemapping" "managed" "goauthentik.io/providers/oauth2/scope-${scope}";
+  applicationEntries = lib.concatMap (slug: let
+    application = cfg.applications.${slug};
+    providerId = "${slug}-provider";
+    propertyMappings = map (scope:
+      if scope == "groups"
+      then key "groups-scope"
+      else managedScope scope)
+    application.scopes;
+  in [
+    (entry "authentik_providers_oauth2.oauth2provider" providerId {inherit (application) name;} ({
+        client_id = application.clientId;
+        client_type = application.clientType;
+        grant_types = application.grantTypes;
+        authorization_flow = authorization;
+        invalidation_flow = invalidation;
+        signing_key = find "authentik_crypto.certificatekeypair" "name" "authentik Self-signed Certificate";
+        include_claims_in_id_token = application.includeClaimsInIdToken;
+        property_mappings = propertyMappings;
+        redirect_uris =
+          map (url: {
+            matching_mode = "strict";
+            inherit url;
+          })
+          application.redirectUris;
+      }
+      // lib.optionalAttrs (application.clientType == "confidential" && application.generateClientSecret) {
+        client_secret = tag "Env" (clientSecretEnvironment application);
+      }))
+    (entry "authentik_core.application" slug {inherit slug;} {
+      inherit (application) name;
+      provider = key providerId;
+    })
+    (entry "authentik_policies.policybinding" "${slug}-binding" {
+        target = key slug;
+        order = 0;
+      } {
+        policy = key "allowed-users";
+      })
+  ]) (lib.attrNames cfg.applications);
+  entries =
+    map (name: {
+      model = "authentik_blueprints.metaapplyblueprint";
+      attrs = {
+        identifiers = {inherit name;};
+        required = true;
+      };
+    }) [
+      "Default - Authentication flow"
+      "Default - Source authentication flow"
+      "Default - Provider authorization flow (implicit consent)"
+      "Default - Provider invalidation flow"
+    ]
+    ++ map (role: entry "authentik_core.group" "group-${role}" {name = role;} {})
+    config.caddy.roles
+    ++ [
+      (entry "authentik_core.group" "authentik-admins" {name = "nix-config Authentik Admins";} {
+        is_superuser = true;
+      })
+    ]
+    ++ map (user:
+      entry "authentik_core.user" "user-${user.email}" {username = user.email;} {
+        inherit (user) email;
+        name = user.email;
+        groups =
+          map (role: key "group-${role}") user.roles
+          ++ lib.optional (lib.elem user.email cfg.adminUsers) (key "authentik-admins");
+        is_active = true;
+      })
+    config.caddy.users
+    ++ [
+      (entry "authentik_sources_oauth.oauthsource" "google" {slug = "google";} {
+        name = "Google";
+        provider_type = "google";
+        consumer_key = tag "Env" "GOOGLE_OAUTH2_CLIENT_ID";
+        consumer_secret = tag "Env" "GOOGLE_OAUTH2_CLIENT_SECRET";
+        authentication_flow = flow "default-source-authentication";
+        enrollment_flow = null;
+        user_matching_mode = "email_link";
+      })
+      (entry "authentik_stages_identification.identificationstage" "login" {name = "default-authentication-identification";} {
+        user_fields = [];
+        sources = [(key "google")];
+      })
+      (entry "authentik_policies_expression.expressionpolicy" "allowed-users" {name = "nix-config-allowed-users";} {
+        expression = "return request.user.is_active and request.user.email in ${allowed}";
+      })
+      (entry "authentik_policies_expression.expressionpolicy" "allowed-source-users" {name = "nix-config-allowed-source-users";} {
+        expression = ''
+          email = request.context.get("oauth_userinfo", {}).get("email", "").lower()
+          return email in ${allowed}
+        '';
+      })
+      (entry "authentik_policies.policybinding" "google-allowlist" {
+          target = key "google";
+          order = 0;
+        } {
+          policy = key "allowed-source-users";
+        })
+    ]
+    ++ lib.concatMap (domain: let
+      id = providerId domain;
+    in [
+      (entry "authentik_providers_proxy.proxyprovider" id {name = "Caddy ${domain}";} {
+        mode = "forward_single";
+        external_host = "https://${domain}";
+        authorization_flow = authorization;
+        invalidation_flow = invalidation;
+        intercept_header_auth = false;
+      })
+      (entry "authentik_core.application" "app-${id}" {slug = id;} {
+        name = "Caddy ${domain}";
+        provider = key id;
+      })
+      (entry "authentik_policies.policybinding" "binding-${id}" {
+          target = key "app-${id}";
+          order = 0;
+        } {
+          policy = key "allowed-users";
+        })
+    ])
+    domains
+    ++ [
+      (entry "authentik_outposts.outpost" "outpost" {name = "authentik Embedded Outpost";} {
+        type = "proxy";
+        providers = map (domain: key (providerId domain)) domains;
+        config = {authentik_host = "https://${cfg.domain}/";};
+      })
+    ]
+    ++ lib.optional usesGroupsScope (entry "authentik_providers_oauth2.scopemapping" "groups-scope" {name = "nix-config groups";} {
+      scope_name = "groups";
+      expression = ''return {"groups": list(request.user.groups.values_list("name", flat=True))}'';
+    })
+    ++ [
+      (entry "authentik_providers_oauth2.scopemapping" "email-scope" {managed = "goauthentik.io/providers/oauth2/scope-email";} {
+        expression = ''return {"email": request.user.email, "email_verified": True}'';
+      })
+    ]
+    ++ applicationEntries;
+in {
+  config = lib.mkIf cfg.enable {
+    authentik.blueprint = pkgs.writeText "authentik-blueprint.yaml" (render {
+      version = 1;
+      metadata.name = "nix-config identity and applications";
+      inherit entries;
+    });
+  };
+}

@@ -11,24 +11,20 @@
   domainPublishPorts = map (port: "${toString port}:${toString port}") domainListenPorts;
   caddyfilePath = "${datasets.app.children.caddy.path}/Caddyfile";
   caddyEnvFiles = [
-    config.age.secrets.google-oauth-env.path
     config.age.secrets.aws-access-env.path
     config.age.secrets.web-credentials-env.path
-    config.podmanServer.derivedEnvFiles.caddy-token-secret.path
     config.podmanServer.derivedEnvFiles.caddy-basic-auth.path
   ];
   caddyEnvFileArgs = lib.escapeShellArgs (lib.concatMap (file: ["--env-file" file]) caddyEnvFiles);
   caddyEnvUnits = [
-    "podman-server-caddy-token-secret-env.service"
     "podman-server-caddy-basic-auth-env.service"
   ];
   caddyPlugins = [
-    "github.com/greenpau/caddy-security@v1.2.2"
     "github.com/caddy-dns/route53@v1.6.2"
   ];
   caddyPackage = pkgs.caddy.withPlugins {
     plugins = caddyPlugins;
-    hash = "sha256-cofEVMOovDDIzo3VoVktTK8C2+uYKLvnslTPkUua6Jc=";
+    hash = "sha256-Vzp4Y9mARJrAHZ1C3x6+5zTSGiYY1l3FxIPkqK1RI30=";
   };
   caddyImageTag = builtins.hashString "sha256" (builtins.toJSON caddyPlugins);
   caddyImage = pkgs.dockerTools.buildLayeredImage {
@@ -50,7 +46,6 @@
 in {
   config = lib.mkIf cfg.enable {
     age.secrets = {
-      google-oauth-env.file = ../../secrets/server/google-oauth-env.age;
       aws-access-env.file = ../../secrets/server/aws-access-env.age;
       web-credentials-env.file = ../../secrets/server/web-credentials-env.age;
     };
@@ -72,8 +67,8 @@ in {
             TZ = config.time.timeZone;
           };
         };
-        secretEnvironmentFiles = lib.take 3 caddyEnvFiles;
-        derivedEnvironmentFiles = ["caddy-token-secret" "caddy-basic-auth"];
+        secretEnvironmentFiles = lib.take 2 caddyEnvFiles;
+        derivedEnvironmentFiles = ["caddy-basic-auth"];
         quadlet.unitConfig = {
           ConditionPathExists = [caddyfilePath];
           Requires = ["caddy-render.service"];
@@ -90,13 +85,6 @@ in {
             BASIC_AUTH_HEADER = ''$(printf '%s:%s' "$WEB_USER" "$WEB_PASSWORD" | base64 -w0)'';
           };
         };
-
-        caddy-token-secret = {
-          packages = [pkgs.util-linux];
-          createIfMissing = true;
-          directoryMode = "0700";
-          variables.CADDY_TOKEN_SECRET = ''$(uuidgen)'';
-        };
       };
     };
 
@@ -108,7 +96,6 @@ in {
       services = {
         caddy.restartTriggers = [
           config.caddy.caddyfile
-          config.age.secrets.google-oauth-env.file
           config.age.secrets.aws-access-env.file
           config.age.secrets.web-credentials-env.file
         ];

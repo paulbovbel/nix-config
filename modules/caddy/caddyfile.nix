@@ -29,19 +29,19 @@
     ${indent 1 body}}
   '';
 
-  renderUser = user:
-    renderBlock "transform user" (''
-        match realm google
-        match email ${user.email}
-      ''
-      + concatMapStrings (role: "action add role authp/${role}\n") user.roles);
-
   authBlock = route:
     if route.auth == "oauth"
-    then "authorize with ${route.role}\n"
+    then let
+      matcher = "role-${builtins.substring 0 12 (builtins.hashString "sha256" "${route.path}:${route.role}")}";
+    in
+      "import authentik-forward-auth\n"
+      + renderBlock "@${matcher}" ''
+        not header_regexp X-Authentik-Groups `(^|\|)${route.role}(\||$)`
+      ''
+      + "respond @${matcher} 403\n"
     else if route.auth == "basic"
     then
-      renderBlock "basicauth" ''
+      renderBlock "basic_auth" ''
         {$WEB_USER} {$BASIC_AUTH_HASH}
       ''
     else if route.auth == null
@@ -53,6 +53,7 @@
 
   headerLines = endpoint:
     concatMapStrings (header: "header_up ${header}\n") endpoint.headerUp
+    + optionalString (endpoint.auth != "oauth") "header_up -X-Authentik-*\n"
     + optionalString endpoint.spoofBasic "header_up Authorization \"Basic {$BASIC_AUTH_HEADER}\"\n";
 
   reverseProxy = endpoint:
@@ -73,26 +74,19 @@
       hide .*
     '';
 
-  renderPathEndpoint = endpoint:
-    if endpoint.type == "proxy" && endpoint.handlePath
-    then ''
-      redir ${endpoint.path} ${endpoint.path}/
+  renderPathEndpoint = endpoint: ''
+    redir ${endpoint.path} ${endpoint.path}/
 
-      ${renderBlock "handle_path ${endpoint.path}*" (authBlock endpoint + reverseProxy endpoint)}
-    ''
-    else ''
-      redir ${endpoint.path} ${endpoint.path}/
-
-      ${renderBlock "route ${endpoint.path}*" (authBlock endpoint
-        + optionalString (endpoint.type == "share" || endpoint.stripPrefix) "uri strip_prefix ${endpoint.path}\n"
-        + (
-          if endpoint.type == "proxy"
-          then reverseProxy endpoint
-          else if endpoint.type == "share"
-          then renderShareEndpoint endpoint
-          else throw "Unsupported Caddy endpoint type: ${endpoint.type}"
-        ))}
-    '';
+    ${renderBlock "route ${endpoint.path}*" (authBlock endpoint
+      + optionalString (endpoint.type == "share" || endpoint.stripPrefix || endpoint.handlePath) "uri strip_prefix ${endpoint.path}\n"
+      + (
+        if endpoint.type == "proxy"
+        then reverseProxy endpoint
+        else if endpoint.type == "share"
+        then renderShareEndpoint endpoint
+        else throw "Unsupported Caddy endpoint type: ${endpoint.type}"
+      ))}
+  '';
 
   renderEndpoint = endpoint:
     if endpoint.path == "/"
@@ -114,7 +108,15 @@
   renderRedirect = redirect:
     renderBlock "route /" "redir / ${redirect}\n";
 
-  renderAuthRoute = renderBlock "route /auth*" "authenticate with defaultportal\n";
+  renderAuthRoute = renderBlock "route /outpost.goauthentik.io/*" "reverse_proxy http://authentik:9000\n";
+
+  authentikForwardAuth = renderBlock "(authentik-forward-auth)" (''
+      request_header -X-Authentik-*
+    ''
+    + renderBlock "forward_auth http://authentik:9000" ''
+      uri /outpost.goauthentik.io/auth/caddy
+      copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid
+    '');
 
   renderTls = domain:
     if domain.tls == "public"
@@ -145,45 +147,6 @@
 
   renderSite = site: concatMapStrings (renderDomain site) site.domains;
 
-  oauthDomains = lib.unique (lib.concatMap (site:
-    if lib.any (endpoint: endpoint.auth == "oauth") (lib.attrValues site.endpoints)
-    then map (domain: domain.host) site.domains
-    else []) (lib.attrValues cfg.sites));
-
-  renderSecurity = renderBlock "security" (
-    renderBlock "oauth identity provider google" ''
-      realm google
-      driver google
-      client_id {$GOOGLE_OAUTH2_CLIENT_ID}
-      client_secret {$GOOGLE_OAUTH2_CLIENT_SECRET}
-      scopes openid email profile
-    ''
-    + "\n"
-    + renderBlock "authentication portal defaultportal" (''
-        crypto default token lifetime ${toString cfg.tokenLifetime}
-        crypto key sign-verify {$CADDY_TOKEN_SECRET}
-         enable identity provider google
-         cookie lifetime ${toString cfg.cookieLifetime}
-
-      ''
-      + concatMapStrings (domain: "trust login redirect uri domain exact ${domain} path prefix /\n") oauthDomains
-      + "\n"
-      + concatMapStrings renderUser cfg.users)
-    + "\n"
-    + concatMapStrings (role:
-      renderBlock "authorization policy ${role}" ''
-        set auth url /auth/oauth2/google
-        set access_token cookie name AUTHP_ACCESS_TOKEN
-        set token sources cookie
-        crypto key verify {$CADDY_TOKEN_SECRET}
-        allow roles authp/${role}
-        inject headers with claims
-        enable strip token
-        enable js redirect
-      '')
-    cfg.roles
-  );
-
   publicTls = renderBlock "(public-tls)" (renderBlock "tls" (''
       propagation_delay 60s
       propagation_timeout 5m
@@ -211,18 +174,13 @@
   '';
 
   caddyfile = pkgs.writeText "Caddyfile.template" (
-    renderGlobalBlock (''
-        email ${cfg.email}
-
-        order authenticate before respond
-        order authorize before basicauth
-
-      ''
-      + renderSecurity)
+    renderGlobalBlock "email ${cfg.email}\n"
     + "\n"
     + publicTls
     + "\n"
     + notFound
+    + "\n"
+    + authentikForwardAuth
     + "\n"
     + wildcardSite
     + "\n"
@@ -307,6 +265,8 @@
       duplicatePaths)
       [
         (mkAssertion (! duplicateDomains) "Caddy sites contain duplicate domain/listen-port combinations.")
+        (mkAssertion (lib.all (role: builtins.match "[a-zA-Z0-9_-]+" role != null) cfg.roles) "Caddy role names must contain only letters, digits, underscores, or hyphens.")
+        (mkAssertion (config.authentik.enable || lib.all (row: row.endpoint.auth != "oauth") endpointRows) "Caddy OAuth endpoints require authentik.enable.")
       ]
     ];
 in {

@@ -12,6 +12,10 @@ Audiobookshelf is available at `/audiobookshelf` on the media site and uses its 
 
 The container mounts `storage.datasets.media.children.audiobooks` at `/audiobooks`. Configuration and metadata live in `config` and `metadata` beneath `storage.datasets.app.children.audiobookshelf`, which is included in the media host's application backups. Manage the container with `audiobookshelf.service`.
 
+### Application SSO
+
+Audiobookshelf and Grimmory use native OIDC against Authentik; Caddy passes their browser and API traffic directly to the applications. Grimmory remote-header authentication is disabled. The Authentik module README documents provider URLs, application-side settings, and linking existing Grimmory accounts. Configure those settings before relying on Google login after migration.
+
 ## Download Automation
 
 `mediaServer.downloads.enable` runs the torrent, video, and book download stack. Download managers write to shared download datasets, while automation services move completed content into the appropriate libraries.
