@@ -50,6 +50,10 @@
             default = name;
             description = "Display name for the application and provider.";
           };
+          launchUrl = lib.mkOption {
+            type = lib.types.str;
+            description = "HTTPS application front-page URL opened from the Authentik dashboard.";
+          };
           clientId = lib.mkOption {
             type = lib.types.str;
             default = name;

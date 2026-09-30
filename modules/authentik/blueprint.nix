@@ -63,6 +63,7 @@
       }))
     (entry "authentik_core.application" slug {inherit slug;} {
       inherit (application) name;
+      meta_launch_url = application.launchUrl;
       provider = key providerId;
     })
     (entry "authentik_policies.policybinding" "${slug}-binding" {
@@ -144,6 +145,7 @@
       })
       (entry "authentik_core.application" "app-${id}" {slug = id;} {
         name = "Caddy ${domain}";
+        meta_launch_url = "https://${domain}/";
         provider = key id;
       })
       (entry "authentik_policies.policybinding" "binding-${id}" {

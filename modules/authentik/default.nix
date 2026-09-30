@@ -74,6 +74,10 @@ in {
         application = cfg.applications.${name};
       in [
         {
+          assertion = lib.hasPrefix "https://" application.launchUrl;
+          message = "authentik.applications.${name}.launchUrl must be an HTTPS URL.";
+        }
+        {
           assertion = application.redirectUris != [];
           message = "authentik.applications.${name}.redirectUris must not be empty.";
         }

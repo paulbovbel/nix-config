@@ -16,10 +16,12 @@ in {
     in {
       audiobookshelf = {
         name = "Audiobookshelf";
+        launchUrl = "${baseUrl}${config.caddy.sites.media.endpoints.audiobookshelf.path}/";
         redirectUris = map (path: "${baseUrl}/audiobookshelf/auth/openid/${path}") ["callback" "mobile-redirect"];
       };
       grimmory = {
         name = "Grimmory";
+        launchUrl = "${baseUrl}${config.caddy.sites.media.endpoints.grimmory.path}/";
         clientType = "public";
         redirectUris = ["${baseUrl}/grimmory/oauth2-callback"];
         scopes = ["openid" "email" "profile" "offline_access" "groups"];
