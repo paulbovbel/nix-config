@@ -10,10 +10,10 @@
   applications = lib.attrValues cfg.applications;
   confidentialApplications = lib.filter (application: application.clientType == "confidential") applications;
   generatedSecretApplications = lib.filter (application: application.generateClientSecret) confidentialApplications;
-  applicationSecretName = application: "AUTHENTIK_${lib.toUpper (lib.replaceStrings ["-"] ["_"] application.clientId)}_CLIENT_SECRET";
-  generatedSecrets = builtins.listToAttrs (map (application: lib.nameValuePair (applicationSecretName application) "$(openssl rand -hex 32)") generatedSecretApplications);
+  inherit (import ./lib.nix {inherit lib;}) clientSecretEnvironment;
+  generatedSecrets = builtins.listToAttrs (map (application: lib.nameValuePair (clientSecretEnvironment application) "$(openssl rand -hex 32)") generatedSecretApplications);
   propagatedSecrets = builtins.mapAttrs (name: _: "$" + name) generatedSecrets;
-  declaredUsers = map (user: user.email) config.caddy.users;
+  declaredUsers = map (user: user.email) cfg.users;
   inherit (config.podmanServer) user;
   mkContainer = command: {
     dependsOn = ["authentik-db"];
@@ -59,7 +59,15 @@ in {
         }
         {
           assertion = lib.all (email: lib.elem email declaredUsers) cfg.adminUsers;
-          message = "authentik.adminUsers must only contain emails declared in caddy.users.";
+          message = "authentik.adminUsers must only contain emails declared in authentik.users.";
+        }
+        {
+          assertion = lib.all (role: builtins.match "[a-zA-Z0-9_-]+" role != null) cfg.roles;
+          message = "Authentik role names must contain only letters, digits, underscores, or hyphens.";
+        }
+        {
+          assertion = lib.all (role: lib.elem role cfg.roles) (lib.concatMap (user: user.roles) cfg.users);
+          message = "Authentik user roles must be declared in authentik.roles.";
         }
       ]
       ++ lib.concatMap (name: let

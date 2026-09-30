@@ -109,7 +109,12 @@ in {
   caddy = {
     enable = true;
     share.enable = true;
+  };
 
+  authentik = {
+    enable = true;
+    domain = "auth.bovbel.com";
+    adminUsers = ["paul@bovbel.com"];
     users = [
       {
         email = "paul@bovbel.com";
@@ -148,12 +153,6 @@ in {
         roles = ["user"];
       }
     ];
-  };
-
-  authentik = {
-    enable = true;
-    domain = "auth.bovbel.com";
-    adminUsers = ["paul@bovbel.com"];
   };
 
   storage.enable = true;

@@ -37,6 +37,9 @@ jobs:
       - name: Run NixOS integration tests
         run: nix develop --command just nix-test
 
+      - name: Test Authentik blueprint in containers
+        run: nix develop --command just authentik-test
+
   build:
     needs: [check, test]
     runs-on: [self-hosted, nix-media]

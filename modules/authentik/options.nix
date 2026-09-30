@@ -15,10 +15,35 @@
       default = [];
       description = "Provisioned user emails granted Authentik superuser access.";
     };
+    roles = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = ["admin" "user"];
+      description = "Provisioned Authentik groups available to applications and Caddy authorization.";
+    };
+    users = lib.mkOption {
+      type = lib.types.listOf (lib.types.submodule {
+        options = {
+          email = lib.mkOption {
+            type = lib.types.str;
+            description = "Email address identifying the user.";
+          };
+          roles = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            description = "Roles granted to the user.";
+          };
+        };
+      });
+      default = [];
+      description = "Users and group memberships provisioned in Authentik; also the application login allowlist.";
+    };
     applications = lib.mkOption {
       default = {};
       description = "Native OIDC applications provisioned in Authentik.";
-      type = lib.types.attrsOf (lib.types.submodule ({name, ...}: {
+      type = lib.types.attrsOf (lib.types.submodule ({
+        name,
+        config,
+        ...
+      }: {
         options = {
           name = lib.mkOption {
             type = lib.types.str;
@@ -37,7 +62,7 @@
           };
           generateClientSecret = lib.mkOption {
             type = lib.types.bool;
-            default = true;
+            default = config.clientType == "confidential";
             description = "Generate and persist a client secret for confidential clients.";
           };
           grantTypes = lib.mkOption {

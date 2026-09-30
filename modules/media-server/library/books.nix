@@ -21,7 +21,6 @@ in {
       grimmory = {
         name = "Grimmory";
         clientType = "public";
-        generateClientSecret = false;
         redirectUris = ["${baseUrl}/grimmory/oauth2-callback"];
         scopes = ["openid" "email" "profile" "offline_access" "groups"];
         includeClaimsInIdToken = true;

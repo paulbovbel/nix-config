@@ -5,6 +5,7 @@
   ...
 }: let
   cfg = config.authentik;
+  integration = import ./lib.nix {inherit lib;};
   # JSON-style YAML with explicit Authentik tags; no credentials enter the store.
   tag = name: value: {
     __tag = name;
@@ -22,15 +23,12 @@
     then "[${lib.concatStringsSep ", " (map render value)}]"
     else builtins.toJSON value;
   entry = model: id: identifiers: attrs: {inherit model id identifiers attrs;};
-  domains = lib.unique (lib.concatMap (site:
-    if lib.any (endpoint: endpoint.auth == "oauth") (lib.attrValues site.endpoints)
-    then map (domain: domain.host + lib.optionalString (domain.listenPort != null) ":${toString domain.listenPort}") site.domains
-    else []) (lib.attrValues config.caddy.sites));
+  domains = integration.protectedDomains config.caddy.sites;
   providerId = domain: "proxy-${builtins.substring 0 12 (builtins.hashString "sha256" domain)}";
-  allowed = builtins.toJSON (map (user: user.email) config.caddy.users);
+  allowed = builtins.toJSON (map (user: user.email) cfg.users);
   authorization = flow "default-provider-authorization-implicit-consent";
   invalidation = flow "default-provider-invalidation-flow";
-  clientSecretEnvironment = application: "AUTHENTIK_${lib.toUpper (lib.replaceStrings ["-"] ["_"] application.clientId)}_CLIENT_SECRET";
+  inherit (integration) clientSecretEnvironment;
   usesGroupsScope = lib.any (application: lib.elem "groups" application.scopes) (lib.attrValues cfg.applications);
   managedScope = scope: find "authentik_providers_oauth2.scopemapping" "managed" "goauthentik.io/providers/oauth2/scope-${scope}";
   applicationEntries = lib.concatMap (slug: let
@@ -39,6 +37,8 @@
     propertyMappings = map (scope:
       if scope == "groups"
       then key "groups-scope"
+      else if scope == "email"
+      then key "email-scope"
       else managedScope scope)
     application.scopes;
   in [
@@ -86,7 +86,7 @@
       "Default - Provider invalidation flow"
     ]
     ++ map (role: entry "authentik_core.group" "group-${role}" {name = role;} {})
-    config.caddy.roles
+    cfg.roles
     ++ [
       (entry "authentik_core.group" "authentik-admins" {name = "nix-config Authentik Admins";} {
         is_superuser = true;
@@ -101,7 +101,7 @@
           ++ lib.optional (lib.elem user.email cfg.adminUsers) (key "authentik-admins");
         is_active = true;
       })
-    config.caddy.users
+    cfg.users
     ++ [
       (entry "authentik_sources_oauth.oauthsource" "google" {slug = "google";} {
         name = "Google";
@@ -166,7 +166,8 @@
       expression = ''return {"groups": list(request.user.groups.values_list("name", flat=True))}'';
     })
     ++ [
-      (entry "authentik_providers_oauth2.scopemapping" "email-scope" {managed = "goauthentik.io/providers/oauth2/scope-email";} {
+      (entry "authentik_providers_oauth2.scopemapping" "email-scope" {name = "nix-config email";} {
+        scope_name = "email";
         expression = ''return {"email": request.user.email, "email_verified": True}'';
       })
     ]

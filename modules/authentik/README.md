@@ -9,10 +9,10 @@ The pinned server and worker share PostgreSQL and use the embedded proxy outpost
 1. Add `https://auth.bovbel.com/source/oauth/callback/google/` to the existing Google OAuth client's authorized redirect URIs. The host's DDNS configuration publishes `auth.bovbel.com`.
 2. While still signed into Grimmory as an administrator, configure its OIDC settings below and retain that browser session or establish a local administrator login before switching off remote auth.
 3. Deploy the media host. The worker applies the `nix-config identity and applications` blueprint after its default flows. Initial database migration can take several minutes. Check the blueprint status in **Customization → Blueprints**.
-4. Open `https://auth.bovbel.com/`. The Google source links only existing users by email; public enrollment is disabled. `caddy.users` provisions these users and their role groups. The local `akadmin` account uses the generated bootstrap password; retrieve it over an administrative SSH session from the root-only runtime environment file when needed.
+4. Open `https://auth.bovbel.com/`. The Google source links only existing users by email; public enrollment is disabled. `authentik.users` provisions these users and their role groups, declared in `authentik.roles`. The local `akadmin` account uses the generated bootstrap password; retrieve it over an administrative SSH session from the root-only runtime environment file when needed.
 5. Complete the application's own authentication settings as below. These settings are stored by the applications in their databases, not exposed as container environment variables. The Authentik providers are provisioned automatically, but application-side settings must be saved through their admin interfaces.
 
-The blueprint owns the listed users' memberships and provider configuration. Update them in Nix rather than the UI. `authentik.adminUsers` controls membership in a dedicated Authentik superuser group; application `admin` roles do not grant identity-provider administration. Removing a user from `caddy.users` denies Google source authentication and new application authorization; revoke existing Authentik/outpost sessions and application sessions when removing access. OIDC applications issue their own sessions, so identity-provider logout or removal does not automatically revoke every application token.
+The blueprint owns the listed users' memberships and provider configuration. Update them in Nix rather than the UI. `authentik.adminUsers` controls membership in a dedicated Authentik superuser group; application `admin` roles do not grant identity-provider administration. Removing a user from `authentik.users` denies Google source authentication and new application authorization; revoke existing Authentik/outpost sessions and application sessions when removing access. OIDC applications issue their own sessions, so identity-provider logout or removal does not automatically revoke every application token.
 
 ## Caddy
 
@@ -29,7 +29,7 @@ In **Settings → Authentication**, enable OpenID Connect:
 | Issuer | `https://auth.bovbel.com/application/o/audiobookshelf/` |
 | Discovery URL | `https://auth.bovbel.com/application/o/audiobookshelf/.well-known/openid-configuration` |
 | Client ID | `audiobookshelf` |
-| Client secret | `AUDIOBOOKSHELF_CLIENT_SECRET` from the protected runtime environment file, or the Authentik provider UI |
+| Client secret | `AUTHENTIK_AUDIOBOOKSHELF_CLIENT_SECRET` from the protected runtime environment file, or the Authentik provider UI |
 | Scopes | `openid profile email` |
 | Signing algorithm | `RS256` |
 | Match existing users by | Email |
@@ -39,6 +39,8 @@ Registered redirects are `https://media.bovbel.com/audiobookshelf/auth/openid/ca
 ## Grimmory
 
 Grimmory uses Authorization Code with PKCE as a public client, without a client secret. The callback for the pinned Grimmory version is `/grimmory/oauth2-callback`, not the older BookLore `/api/oidc` callback.
+
+For declarative clients, `generateClientSecret` defaults to true for confidential clients and false for public clients.
 
 In **Settings → Authentication**, configure and enable OIDC:
 
@@ -59,6 +61,10 @@ The registered redirect is `https://media.bovbel.com/grimmory/oauth2-callback`. 
 If the issuer resolves to a private address from inside Grimmory, its OIDC SSRF filter may reject discovery. Prefer public DNS/routing; enable `OIDC_ALLOW_UNSAFE_HOSTS` only intentionally for a private issuer deployment.
 
 ## Operations
+
+Run `nix develop --command just authentik-test` to validate the generated media-host blueprint using disposable PostgreSQL and Authentik containers. This requires working Podman (rootless is supported), publishes no ports, uses test-only credentials, and removes its containers, anonymous volumes, and network on exit. It runs migrations and packaged blueprints without starting an Authentik web server or worker, then verifies email claims and reconciliation after a stale default email mapping is attached. CI runs this separately from the NixOS VM checks.
+
+Native OIDC providers use the custom `nix-config email` mapping; Authentik's managed email mapping is left unchanged. The custom mapping treats provisioned, allowlisted users' email addresses as verified, matching this deployment's Google-backed identity policy.
 
 Inspect `authentik.service`, `authentik-worker.service`, `authentik-db.service`, and `podman-server-authentik-env.service`. Restart containers through their owning systemd services. Authentik images are pinned and automatic updates disabled so server and worker upgrade together.
 

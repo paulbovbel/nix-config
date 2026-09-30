@@ -1,6 +1,6 @@
 # Caddy
 
-The Caddy module renders declarative sites and endpoints for public or Tailscale ingress. Service-owning modules should declare their routes; host configurations generally enable Caddy, define users and roles, and set host-specific site behavior.
+The Caddy module renders declarative sites and endpoints for public or Tailscale ingress. Service-owning modules should declare their routes; host configurations generally enable Caddy and set host-specific site behavior. Declare identities and role groups through `authentik.users` and `authentik.roles`.
 
 ## Requirements
 
@@ -21,6 +21,8 @@ caddy.sites.media.endpoints.example = {
 ```
 
 Proxy endpoints require `host` and `port`. Authentication defaults to Authentik forward auth (`auth = "oauth"`); `role` selects the required Authentik group. Use `auth = null` for public endpoints or applications enforcing their own authentication, including native OIDC clients.
+
+Protected domains automatically provision Authentik proxy providers. Shared helpers in `modules/authentik/lib.nix` keep domain selection/formatting, the outpost upstream, and identity-header handling consistent. The generated `authentik-auth` snippet performs authentication and per-route role checks before path-prefix stripping; application upstreams do not receive identity headers, while protocol headers such as `X-Authentik-CSRF` are preserved.
 
 Useful endpoint settings include:
 

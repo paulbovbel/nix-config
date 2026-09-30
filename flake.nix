@@ -395,7 +395,6 @@
     });
     checks = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
-      mediaConfig = nixosConfigurations.media.config;
       rootFsImpermanenceTest = backend:
         import ./tests/root-fs-impermanence.nix {
           inherit backend disko disko-zfs impermanence nixpkgs pkgs;
@@ -404,10 +403,6 @@
     in
       {
         inherit (mkDocs system) module-docs-check;
-        authentik-blueprint = import ./tests/authentik-blueprint.nix {
-          inherit pkgs;
-          inherit (mediaConfig.authentik) blueprint image;
-        };
       }
       // lib.optionalAttrs (system == "x86_64-linux") {
         # TODO: Add end-to-end Btrfs and ZFS USB installer state-migration tests.

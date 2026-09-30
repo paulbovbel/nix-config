@@ -5,6 +5,8 @@
   ...
 }: let
   cfg = config.caddy;
+  integration = import ../authentik/lib.nix {inherit lib;};
+  inherit (integration) identityHeaders;
   inherit (lib) concatLists concatMapStrings optional optionalString;
 
   indent = level: text: let
@@ -33,12 +35,7 @@
     if route.auth == "oauth"
     then let
       matcher = "role-${builtins.substring 0 12 (builtins.hashString "sha256" "${route.path}:${route.role}")}";
-    in
-      "import authentik-forward-auth\n"
-      + renderBlock "@${matcher}" ''
-        not header_regexp X-Authentik-Groups `(^|\|)${route.role}(\||$)`
-      ''
-      + "respond @${matcher} 403\n"
+    in "import authentik-auth ${route.role} ${matcher}\n"
     else if route.auth == "basic"
     then
       renderBlock "basic_auth" ''
@@ -53,7 +50,7 @@
 
   headerLines = endpoint:
     concatMapStrings (header: "header_up ${header}\n") endpoint.headerUp
-    + optionalString (endpoint.auth != "oauth") "header_up -X-Authentik-*\n"
+    + concatMapStrings (header: "header_up -${header}\n") identityHeaders
     + optionalString endpoint.spoofBasic "header_up Authorization \"Basic {$BASIC_AUTH_HEADER}\"\n";
 
   reverseProxy = endpoint:
@@ -108,15 +105,18 @@
   renderRedirect = redirect:
     renderBlock "route /" "redir / ${redirect}\n";
 
-  renderAuthRoute = renderBlock "route /outpost.goauthentik.io/*" "reverse_proxy http://authentik:9000\n";
+  renderAuthRoute = renderBlock "route /outpost.goauthentik.io/*" "reverse_proxy ${integration.upstream}\n";
 
-  authentikForwardAuth = renderBlock "(authentik-forward-auth)" (''
-      request_header -X-Authentik-*
-    ''
-    + renderBlock "forward_auth http://authentik:9000" ''
+  # The second argument keeps role matchers unique across paths in a site.
+  authentikAuth = renderBlock "(authentik-auth)" (concatMapStrings (header: "request_header -${header}\n") identityHeaders
+    + renderBlock "forward_auth ${integration.upstream}" ''
       uri /outpost.goauthentik.io/auth/caddy
-      copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid
-    '');
+      copy_headers X-Authentik-Groups
+    ''
+    + renderBlock "@{args[1]}" ''
+      not header_regexp X-Authentik-Groups `(^|\|){args[0]}(\||$)`
+    ''
+    + "respond @{args[1]} 403\n");
 
   renderTls = domain:
     if domain.tls == "public"
@@ -127,11 +127,8 @@
 
   renderDomain = site: domain: let
     endpoints = lib.sort (a: b: lib.stringLength a.path > lib.stringLength b.path) (lib.attrValues site.endpoints);
-    hasOauth = lib.any (endpoint: endpoint.auth == "oauth") endpoints;
-    siteAddress =
-      if domain.listenPort == null
-      then domain.host
-      else "${domain.host}:${toString domain.listenPort}";
+    hasOauth = integration.siteHasForwardAuth site;
+    siteAddress = integration.domainAddress domain;
   in
     renderBlock siteAddress (
       optionalString site.log renderLog
@@ -180,7 +177,7 @@
     + "\n"
     + notFound
     + "\n"
-    + authentikForwardAuth
+    + authentikAuth
     + "\n"
     + wildcardSite
     + "\n"
@@ -242,9 +239,6 @@
       lib.length keys != lib.length (lib.unique keys);
   in
     concatLists [
-      (map (role:
-        mkAssertion (lib.elem role cfg.roles) "Caddy user role '${role}' is not declared in caddy.roles.")
-      (lib.flatten (map (user: user.roles) cfg.users)))
       (map (row:
         mkAssertion (lib.hasPrefix "/" row.endpoint.path) "Caddy endpoint ${row.siteName}.${row.endpointName} path must start with '/'.")
       endpointRows)
@@ -258,14 +252,13 @@
         mkAssertion (row.endpoint.auth != "oauth" || row.endpoint.role != null) "Caddy OAuth endpoint ${row.siteName}.${row.endpointName} must set role.")
       endpointRows)
       (map (row:
-        mkAssertion (row.endpoint.auth != "oauth" || lib.elem row.endpoint.role cfg.roles) "Caddy OAuth endpoint ${row.siteName}.${row.endpointName} uses undeclared role '${row.endpoint.role}'.")
+        mkAssertion (row.endpoint.auth != "oauth" || lib.elem row.endpoint.role config.authentik.roles) "Caddy OAuth endpoint ${row.siteName}.${row.endpointName} uses undeclared role '${row.endpoint.role}'.")
       endpointRows)
       (map (siteName:
         mkAssertion false "Caddy site '${siteName}' has duplicate endpoint paths.")
       duplicatePaths)
       [
         (mkAssertion (! duplicateDomains) "Caddy sites contain duplicate domain/listen-port combinations.")
-        (mkAssertion (lib.all (role: builtins.match "[a-zA-Z0-9_-]+" role != null) cfg.roles) "Caddy role names must contain only letters, digits, underscores, or hyphens.")
         (mkAssertion (config.authentik.enable || lib.all (row: row.endpoint.auth != "oauth") endpointRows) "Caddy OAuth endpoints require authentik.enable.")
       ]
     ];
