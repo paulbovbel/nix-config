@@ -10,6 +10,11 @@
   containerUser = "${toString user.uid}:${toString user.gid}";
   qbittorrentConfigFile = "${datasets.app.children.qbittorrent.path}/qBittorrent/config/qBittorrent.conf";
   qbittorrentConfigScript = pkgs.writeShellScript "qbittorrent-config" (builtins.readFile ./qbittorrent-config.sh);
+  # Temporary overlay until the image includes https://github.com/binhex/arch-int-vpn/pull/57.
+  qbittorrentVpnTools = pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/binhex/arch-int-vpn/3f6f0f83a11db712a3781035f9644af789b3f568/run/local/tools.sh";
+    hash = "sha256-uutaKIXEF/+2Seu0gfoArPIt0/GMm+NO2CcFpaoo2OU=";
+  };
   cleanupDownloadsAgeDays = 60;
   cleanupDownloadsCalendar = "04:30";
 in {
@@ -112,6 +117,7 @@ in {
             addCapabilities = ["NET_ADMIN"];
             volumes = [
               "/etc/localtime:/etc/localtime:ro"
+              "${qbittorrentVpnTools}:/usr/local/bin/tools.sh:ro"
               "${datasets.app.children.qbittorrent.path}:/config"
               "${datasets.downloads.path}:/downloads"
             ];

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Register container egress IPs with MAM and synchronize indexer credentials."""
+
 import argparse
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
@@ -12,6 +14,9 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
+from tenacity import Retrying, retry_if_exception, retry_if_exception_type
+from tenacity import stop_after_attempt, wait_fixed
+
 
 MAM_API = "https://t.myanonamouse.net/json/dynamicSeedbox.php"
 IP_CHECK_URL = "https://checkip.amazonaws.com"
@@ -23,14 +28,108 @@ API_RETRY_COUNT = 5
 API_RETRY_DELAY_SECONDS = 2
 CACHED_IP_TTL_SECONDS = 7 * 24 * 60 * 60
 MAM_RETRY_DELAY_SECONDS = 60 * 60
+EGRESS_RETRY_COUNT = 6
+EGRESS_RETRY_DELAY_SECONDS = 5
+EGRESS_RETRY_CURL_CODES = {6, 7, 28, 45, 52, 55, 56}
 
 
 @dataclass(frozen=True)
 class MamTarget:
+    """Pair a container's egress interface with its host-mounted config directory."""
+
     container: str
     container_user: str
     interface: str
     config_dir: Path
+
+    @property
+    def http(self):
+        return ContainerHttpClient(self.container, self.container_user, self.interface)
+
+    @property
+    def state(self):
+        return MamState(self.config_dir, self.interface)
+
+
+@dataclass(frozen=True)
+class MamState:
+    """Existing on-disk state paths; credential and app fingerprints are independent."""
+
+    config_dir: Path
+    interface: str
+
+    @property
+    def cached_ip(self):
+        return self.config_dir / f"mam.ip.{self.interface}"
+
+    @property
+    def cookie_jar(self):
+        return self.config_dir / f"mam.cookies.{self.interface}"
+
+    @property
+    def cookie_fingerprint(self):
+        return self.config_dir / f"mam.cookie-fingerprint.{self.interface}"
+
+    @property
+    def retry_path(self):
+        return self.config_dir / f"mam.retry-after.{self.interface}"
+
+    @property
+    def container_cookie_jar(self):
+        return f"{CONTAINER_CONFIG_DIR}/{self.cookie_jar.name}"
+
+    @property
+    def app_fingerprint(self):
+        return self.config_dir / APP_FINGERPRINT_FILE
+
+
+@dataclass(frozen=True)
+class HttpResponse:
+    body: str
+    status: int
+    retry_after: str = ""
+
+    def json(self):
+        return json.loads(self.body)
+
+
+class ContainerRequestError(RuntimeError):
+    def __init__(self, message, exit_code):
+        super().__init__(message)
+        self.exit_code = exit_code
+
+
+@dataclass(frozen=True)
+class ContainerHttpClient:
+    """Bind requests to one container, identity, interface, and set of auth headers."""
+
+    container: str
+    user: str | None = None
+    interface: str | None = None
+    headers: tuple[str, ...] = ()
+
+    def request(self, method, url, *, description=None, headers=(), **kwargs):
+        return container_request(
+            self.container,
+            url,
+            description=description or f"{method} {url}",
+            user=self.user,
+            interface=self.interface,
+            headers=(*self.headers, *headers),
+            method=method,
+            **kwargs,
+        )
+
+    def get(self, url, **kwargs):
+        return self.request("GET", url, **kwargs)
+
+    def put_json(self, url, value):
+        return self.request(
+            "PUT",
+            url,
+            headers=("Content-Type: application/json",),
+            input_text=json.dumps(value),
+        )
 
 
 def run(args, *, input_text=None):
@@ -52,7 +151,7 @@ def podman_exec(container, args, *, input_text=None, user=None):
     return run([*command, container, *args], input_text=input_text)
 
 
-def curl(
+def container_request(
     container,
     url,
     *,
@@ -63,22 +162,24 @@ def curl(
     input_text=None,
     interface=None,
     max_time=30,
-    fail_with_body=True,
     cookie=None,
     cookie_jar=None,
-    response_metadata=False,
+    check_status=True,
 ):
+    """Run curl inside the container and decode its body/status/header trailer.
+
+    Transport failures carry curl's exit code for selective readiness retries.
+    Disable status checking only when the caller handles HTTP errors, such as
+    MAM's persistent 429 cooldown. This transport never retries requests itself.
+    """
     args = [
         "--silent",
         "--show-error",
         "--max-time",
         str(max_time),
+        "--write-out",
+        "\n%{http_code}\n%header{retry-after}",
     ]
-    if response_metadata:
-        # Keep HTTP errors available to the caller; transport errors still fail.
-        args.extend(["--write-out", "\n%{http_code}\n%header{retry-after}"])
-    else:
-        args.append("--fail-with-body" if fail_with_body else "--fail")
     if interface is not None:
         args.extend(["--interface", interface])
     if method is not None:
@@ -101,25 +202,25 @@ def curl(
             details.append(f"stderr: {error.stderr.strip()}")
         if error.stdout and error.stdout.strip():
             details.append(f"response body: {error.stdout.strip()}")
-        detail = "; ".join(details) or str(error)
-        raise RuntimeError(
-            f"{description} failed in container {container}: {detail}"
+        detail = "; ".join(details) or f"exit status {error.returncode}"
+        raise ContainerRequestError(
+            f"{description} failed in container {container}: {detail}",
+            error.returncode,
         ) from error
-    if response_metadata:
-        try:
-            body, status, retry_after = response.rsplit("\n", 2)
-            return body, int(status), retry_after.strip()
-        except ValueError as error:
-            raise RuntimeError(f"invalid HTTP metadata from {description}") from error
+    try:
+        body, status, retry_after = response.rsplit("\n", 2)
+        response = HttpResponse(body, int(status), retry_after.strip())
+    except ValueError as error:
+        raise RuntimeError(f"invalid HTTP metadata from {description}") from error
+    if check_status and not 200 <= response.status < 300:
+        raise RuntimeError(
+            f"{description} failed in container {container} (HTTP {response.status})"
+        )
     return response
 
 
 def fingerprint(value):
     return hashlib.sha256(value.encode()).hexdigest()
-
-
-def mam_id_fingerprint_path(target):
-    return target.config_dir / f"mam.cookie-fingerprint.{target.interface}"
 
 
 def read_text(path):
@@ -136,6 +237,7 @@ def write_private(path, value):
 
 
 def replace_json_preserving_metadata(path, value):
+    """Replace an app config through a sibling file, retaining ownership and mode."""
     stat = path.stat()
     temp_path = path.with_suffix(path.suffix + ".tmp")
     temp_path.write_text(json.dumps(value, indent=2))
@@ -166,32 +268,43 @@ def mam_id_from_env(name):
     return value
 
 
+def wait_for(fetch, description, *, attempts, delay, retry):
+    """Retry selected readiness failures with bounded attempts and journal messages."""
+
+    def log_retry(state):
+        print(
+            f"Waiting for {description} (attempt {state.attempt_number}/{attempts}); "
+            f"retrying in {delay}s: {state.outcome.exception()}",
+            flush=True,
+        )
+
+    def exhausted(state):
+        error = state.outcome.exception()
+        raise RuntimeError(f"timed out waiting for {description}: {error}") from error
+
+    return Retrying(
+        stop=stop_after_attempt(attempts),
+        wait=wait_fixed(delay),
+        retry=retry,
+        before_sleep=log_retry,
+        retry_error_callback=exhausted,
+        sleep=time.sleep,
+    )(fetch)
+
+
 def wait_for_json(fetch, description):
-    last_error = None
-    for attempt in range(API_RETRY_COUNT):
-        try:
-            response = fetch()
-            if not response.strip():
-                raise RuntimeError("empty response")
-            return json.loads(response)
-        except (
-            RuntimeError,
-            subprocess.CalledProcessError,
-            json.JSONDecodeError,
-        ) as error:
-            last_error = error
-            if attempt == API_RETRY_COUNT - 1:
-                detail = str(last_error)
-                if isinstance(last_error, subprocess.CalledProcessError):
-                    detail = (last_error.stderr or last_error.stdout or detail).strip()
-                raise RuntimeError(
-                    f"timed out waiting for {description}: {detail}"
-                ) from last_error
-            time.sleep(API_RETRY_DELAY_SECONDS)
-    raise AssertionError("unreachable")
+    """Wait for an app API to return valid JSON, including during container startup."""
+    return wait_for(
+        lambda: fetch().json(),
+        description,
+        attempts=API_RETRY_COUNT,
+        delay=API_RETRY_DELAY_SECONDS,
+        retry=retry_if_exception_type((RuntimeError, json.JSONDecodeError)),
+    )
 
 
 def mam_retry_at(retry_after):
+    """Convert Retry-After seconds or an HTTP date to a persisted retry timestamp."""
     now = time.time()
     if retry_after.isdigit():
         return now + int(retry_after)
@@ -203,96 +316,120 @@ def mam_retry_at(retry_after):
     return now + MAM_RETRY_DELAY_SECONDS
 
 
-def update_mam_ip(target, mam_id, mam_id_changed):
-    cached_ip = target.config_dir / f"mam.ip.{target.interface}"
-    cookie_jar = target.config_dir / f"mam.cookies.{target.interface}"
-    cookie_fingerprint = mam_id_fingerprint_path(target)
-    retry_path = target.config_dir / f"mam.retry-after.{target.interface}"
-    container_cookie_jar = f"{CONTAINER_CONFIG_DIR}/mam.cookies.{target.interface}"
+def wait_for_egress_ip(target):
+    """Wait for interface-bound connectivity and return a validated public IP.
 
+    Only transient curl failures are retried; HTTP errors and invalid IPs fail
+    immediately. Every attempt uses the target's configured interface.
+    """
+
+    def fetch():
+        response = target.http.get(
+            IP_CHECK_URL,
+            description=f"checking egress IP for {target.interface}",
+            max_time=10,
+        )
+        new_ip = response.body.strip()
+        try:
+            ipaddress.ip_address(new_ip)
+        except ValueError as error:
+            raise RuntimeError(
+                f"invalid IP from check service for {target.interface}: {new_ip}"
+            ) from error
+        return new_ip
+
+    return wait_for(
+        fetch,
+        f"egress on {target.container}/{target.interface}",
+        attempts=EGRESS_RETRY_COUNT,
+        delay=EGRESS_RETRY_DELAY_SECONDS,
+        retry=retry_if_exception(
+            lambda error: (
+                isinstance(error, ContainerRequestError)
+                and error.exit_code in EGRESS_RETRY_CURL_CODES
+            )
+        ),
+    )
+
+
+def update_mam_ip(target, mam_id):
+    """Register changed or expired egress IPs while respecting MAM's cooldown.
+
+    Credential rotation invalidates cookies and the cached IP before probing.
+    Only successful registration caches the IP; a deferred update stays pending
+    across runs using the retry timestamp and absence of a cached IP.
+    """
+    state = target.state
     new_fingerprint = fingerprint(mam_id)
-    if mam_id_changed:
+    if read_text(state.cookie_fingerprint) != new_fingerprint:
         print(
             f"{target.container} MAM ID fingerprint changed; "
             f"invalidating cached credentials and IP"
         )
-        remove_file(cached_ip)
-        remove_file(cookie_jar)
+        remove_file(state.cached_ip)
+        remove_file(state.cookie_jar)
         # Track credential invalidation separately from successful IP registration.
         # An absent cached IP keeps registration pending, including after a cooldown.
-        write_private(cookie_fingerprint, new_fingerprint)
-    if file_older_than(cached_ip, CACHED_IP_TTL_SECONDS):
+        write_private(state.cookie_fingerprint, new_fingerprint)
+    if file_older_than(state.cached_ip, CACHED_IP_TTL_SECONDS):
         print(f"{target.container} cached MAM IP expired; invalidating it")
-        remove_file(cached_ip)
+        remove_file(state.cached_ip)
 
-    new_ip = curl(
-        target.container,
-        IP_CHECK_URL,
-        description=f"checking egress IP for {target.interface}",
-        user=target.container_user,
-        interface=target.interface,
-        max_time=10,
-        fail_with_body=False,
-    ).strip()
-    try:
-        ipaddress.ip_address(new_ip)
-    except ValueError as error:
-        raise RuntimeError(
-            f"invalid IP from check service for {target.interface}: {new_ip}"
-        ) from error
+    new_ip = wait_for_egress_ip(target)
 
-    old_ip = read_text(cached_ip)
+    old_ip = read_text(state.cached_ip)
     if new_ip == old_ip:
         print(f"MAM IP unchanged for {target.interface}: {new_ip}")
         return
 
-    retry_at = read_text(retry_path)
+    retry_at = read_text(state.retry_path)
     if retry_at and time.time() < float(retry_at):
         print(f"MAM IP update deferred for {target.interface}; cooldown still active")
         return
 
     print(f"Updating MAM IP for {target.interface}: {old_ip or '<none>'} -> {new_ip}")
-    response, status, retry_after = curl(
-        target.container,
+    response = target.http.get(
         MAM_API,
         description=f"updating MAM dynamic seedbox IP for {target.interface}",
-        user=target.container_user,
-        interface=target.interface,
-        cookie=container_cookie_jar if cookie_jar.exists() else f"mam_id={mam_id}",
-        cookie_jar=container_cookie_jar,
-        response_metadata=True,
+        cookie=state.container_cookie_jar
+        if state.cookie_jar.exists()
+        else f"mam_id={mam_id}",
+        cookie_jar=state.container_cookie_jar,
+        check_status=False,
     )
 
     try:
-        body = json.loads(response)
+        body = response.json()
     except json.JSONDecodeError:
         body = None
     success = (
         body.get("Success", body.get("success")) if isinstance(body, dict) else None
     )
     if (
-        status == 429
+        response.status == 429
         and success is False
         and body.get("msg") == "Last change too recent"
     ):
-        write_private(retry_path, str(mam_retry_at(retry_after)))
+        write_private(state.retry_path, str(mam_retry_at(response.retry_after)))
         print(
             f"MAM IP update deferred for {target.interface}: Last change too recent; "
             "will retry on a scheduled run after the cooldown"
         )
         return
-    if not 200 <= status < 300 or success is not True:
+    if not 200 <= response.status < 300 or success is not True:
         raise RuntimeError(
-            f"MAM API rejected update for {target.interface} (HTTP {status}): {response}"
+            f"MAM API rejected update for {target.interface} "
+            f"(HTTP {response.status}): {response.body}"
         )
 
-    print(response.strip())
-    write_private(cached_ip, new_ip)
-    remove_file(retry_path)
+    print(response.body.strip())
+    write_private(state.cached_ip, new_ip)
+    remove_file(state.retry_path)
     print(f"Updated MAM IP for {target.interface}: {old_ip} -> {new_ip}")
 
 
 def replace_jackett_mam_id(value, mam_id):
+    """Update both Jackett credential fields in place and report whether they changed."""
     if not isinstance(value, list):
         raise RuntimeError("expected Jackett MyAnonamouse config array")
 
@@ -316,6 +453,7 @@ def replace_jackett_mam_id(value, mam_id):
 
 
 def update_jackett(target, mam_id):
+    """Back up and update Jackett's indexer file, restarting it when fields change."""
     config_path = target.config_dir / "Jackett" / "Indexers" / "myanonamouse.json"
     if not config_path.exists():
         raise RuntimeError(f"Jackett MyAnonamouse config not found: {config_path}")
@@ -334,26 +472,12 @@ def update_jackett(target, mam_id):
     print("Updated Jackett MyAnonamouse mam_id")
 
 
-def autobrr_curl(token, url, *, method="GET", input_text=None):
-    headers = ["X-API-Token: {token}".format(token=token)]
-    if input_text is not None:
-        headers.append("Content-Type: application/json")
-    return curl(
-        "autobrr",
-        url,
-        description=f"calling autobrr API {method} {url}",
-        method=None if method == "GET" else method,
-        headers=headers,
-        input_text=input_text,
-    )
-
-
 def update_autobrr(mam_id):
+    """Find the MAM indexer and update its cookie while retaining other API settings."""
     token = mam_id_from_env("AUTOBRR_API_TOKEN")
+    http = ContainerHttpClient("autobrr", headers=(f"X-API-Token: {token}",))
     print("Fetching autobrr indexers")
-    indexers = wait_for_json(
-        lambda: autobrr_curl(token, AUTOBRR_API_URL), "autobrr API"
-    )
+    indexers = wait_for_json(lambda: http.get(AUTOBRR_API_URL), "autobrr API")
     if not isinstance(indexers, list):
         raise RuntimeError("expected autobrr indexer list")
 
@@ -373,24 +497,19 @@ def update_autobrr(mam_id):
         raise RuntimeError("autobrr MyAnonamouse indexer not found")
 
     print(f"Updating autobrr MyAnonamouse indexer {indexer_id}")
-    indexer = json.loads(autobrr_curl(token, f"{AUTOBRR_API_URL}/{indexer_id}"))
+    indexer = http.get(f"{AUTOBRR_API_URL}/{indexer_id}").json()
     settings = indexer.get("settings")
     if not isinstance(settings, dict):
         settings = {}
         indexer["settings"] = settings
     settings["cookie"] = f"mam_id={mam_id};"
 
-    response = autobrr_curl(
-        token,
-        f"{AUTOBRR_API_URL}/{indexer_id}",
-        method="PUT",
-        input_text=json.dumps(indexer),
-    )
-    print(response.strip())
+    http.put_json(f"{AUTOBRR_API_URL}/{indexer_id}", indexer)
     print("Updated autobrr MyAnonamouse mam_id")
 
 
 def update_prowlarr(config_dir, mam_id):
+    """Read Prowlarr's local API key and update every MyAnonamouse indexer via its API."""
     config_path = config_dir / "config.xml"
     try:
         token = ET.parse(config_path).findtext("ApiKey", "").strip()
@@ -399,17 +518,8 @@ def update_prowlarr(config_dir, mam_id):
     if not token:
         raise RuntimeError("Prowlarr API key not found in config.xml")
 
-    def request(url, *, method=None, input_text=None):
-        return curl(
-            "prowlarr",
-            url,
-            description="calling Prowlarr indexer API",
-            method=method,
-            headers=[f"X-Api-Key: {token}", "Content-Type: application/json"],
-            input_text=input_text,
-        )
-
-    indexers = wait_for_json(lambda: request(PROWLARR_API_URL), "Prowlarr API")
+    http = ContainerHttpClient("prowlarr", headers=(f"X-Api-Key: {token}",))
+    indexers = wait_for_json(lambda: http.get(PROWLARR_API_URL), "Prowlarr API")
     if not isinstance(indexers, list):
         raise RuntimeError("expected Prowlarr indexer list")
     mam_indexers = [
@@ -430,15 +540,12 @@ def update_prowlarr(config_dir, mam_id):
         mam_field["value"] = mam_id
         indexer_id = indexer["id"]
         print(f"Updating Prowlarr MyAnonamouse indexer {indexer_id}")
-        request(
-            f"{PROWLARR_API_URL}/{indexer_id}",
-            method="PUT",
-            input_text=json.dumps(indexer),
-        )
+        http.put_json(f"{PROWLARR_API_URL}/{indexer_id}", indexer)
     print("Updated Prowlarr MyAnonamouse mam_id")
 
 
 def update_shelfmark(config_dir, mam_id):
+    """Save Shelfmark's MAM credential and restart it to load the new configuration."""
     config_path = config_dir / "plugins" / "prowlarr_config.json"
     if not config_path.exists():
         raise RuntimeError(f"Shelfmark Prowlarr config not found: {config_path}")
@@ -452,12 +559,15 @@ def update_shelfmark(config_dir, mam_id):
     print("Updated Shelfmark MyAnonamouse mam_id")
 
 
-def update_indexer_apps(
-    target, mam_id, mam_id_changed, *, shelfmark_config_dir, prowlarr_config_dir
-):
-    app_fingerprint = target.config_dir / APP_FINGERPRINT_FILE
+def update_indexer_apps(target, mam_id, *, shelfmark_config_dir, prowlarr_config_dir):
+    """Synchronize app credentials only when their shared fingerprint changes.
+
+    Commit the fingerprint after all integrations succeed, so a partial failure
+    retries the group on the next run independently of IP-registration state.
+    """
+    app_fingerprint = target.state.app_fingerprint
     new_fingerprint = fingerprint(mam_id)
-    if not mam_id_changed:
+    if read_text(app_fingerprint) == new_fingerprint:
         print("MyAnonamouse app configs unchanged")
         return
 
@@ -494,41 +604,23 @@ def parse_args():
 
 
 def main():
+    """Update VPN and direct egress registrations, then synchronize indexer apps.
+
+    Each operation owns its persisted change detection. A MAM cooldown defers
+    only that registration; other failures stop the run with a nonzero status
+    for systemd and leave incomplete work pending for the next invocation.
+    """
     torrent, indexer, args = parse_args()
 
     try:
         torrent_mam_id = mam_id_from_env("MAM_ID_TORRENT")
         indexer_mam_id = mam_id_from_env("MAM_ID_INDEXER")
 
-        torrent_fingerprint = mam_id_fingerprint_path(torrent)
-        indexer_fingerprint = mam_id_fingerprint_path(indexer)
-        app_fingerprint = indexer.config_dir / APP_FINGERPRINT_FILE
-        torrent_mam_id_changed = read_text(torrent_fingerprint) != fingerprint(
-            torrent_mam_id
-        )
-        indexer_mam_id_changed = read_text(indexer_fingerprint) != fingerprint(
-            indexer_mam_id
-        )
-        app_mam_id_changed = read_text(app_fingerprint) != fingerprint(indexer_mam_id)
-
-        changed = []
-        if torrent_mam_id_changed:
-            changed.append("torrent MAM ID")
-        if indexer_mam_id_changed:
-            changed.append("indexer MAM ID")
-        if app_mam_id_changed and not indexer_mam_id_changed:
-            changed.append("indexer app configuration")
-        if changed:
-            print(f"Triggered by changed state: {', '.join(changed)}")
-        else:
-            print("Triggered with unchanged fingerprints; checking scheduled IP state")
-
-        update_mam_ip(torrent, torrent_mam_id, torrent_mam_id_changed)
-        update_mam_ip(indexer, indexer_mam_id, indexer_mam_id_changed)
+        update_mam_ip(torrent, torrent_mam_id)
+        update_mam_ip(indexer, indexer_mam_id)
         update_indexer_apps(
             indexer,
             indexer_mam_id,
-            app_mam_id_changed,
             shelfmark_config_dir=args.shelfmark_config_dir,
             prowlarr_config_dir=args.prowlarr_config_dir,
         )

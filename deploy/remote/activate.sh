@@ -32,5 +32,5 @@ if [[ "$target_system" == aarch64-* ]]; then
   exit 1
 fi
 
-exec nixos-rebuild "$action" --impure --flake "$repo#$host" \
+exec nixos-rebuild "$action" --impure --show-trace --flake "$repo#$host" \
   --target-host "$host" --build-host "$host" --sudo --ask-sudo-password -L

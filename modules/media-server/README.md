@@ -4,11 +4,19 @@ The media server module composes library services, download automation, storage 
 
 ## Library Services
 
-`mediaServer.library.enable` runs Plex, Jellyfin, Tautulli, and supporting library services against the shared media datasets. The service modules declare their own containers, routes, and persistent application directories.
+`mediaServer.library.enable` runs Plex, Jellyfin, Audiobookshelf, Tautulli, and supporting library services against the shared media datasets. The service modules declare their own containers, routes, and persistent application directories.
+
+### Audiobookshelf
+
+Audiobookshelf is available at `/audiobookshelf` on the media site and uses its own accounts for browser and native-client access. After deployment, open that URL, create the initial administrator account, and add an audiobook library with folder `/audiobooks`. Use the same server URL in streaming clients.
+
+The container mounts `storage.datasets.media.children.audiobooks` at `/audiobooks`. Configuration and metadata live in `config` and `metadata` beneath `storage.datasets.app.children.audiobookshelf`, which is included in the media host's application backups. Manage the container with `audiobookshelf.service`.
 
 ## Download Automation
 
 `mediaServer.downloads.enable` runs the torrent, video, and book download stack. Download managers write to shared download datasets, while automation services move completed content into the appropriate libraries.
+
+qBittorrent temporarily overlays `/usr/local/bin/tools.sh` with the pinned version from [Binhex PR #57](https://github.com/binhex/arch-int-vpn/pull/57) at commit `3f6f0f83a11db712a3781035f9644af789b3f568`. This adds PIA's v2 token API, request timeouts, and working endpoint fallback/retries. The read-only mount survives container recreation; remove the overlay once the upstream image includes the fix.
 
 ### Popular Videos
 

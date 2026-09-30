@@ -3,7 +3,7 @@
     library.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Run Plex, Jellyfin, Tautulli, and the supporting media-library services.";
+      description = "Run Plex, Jellyfin, Audiobookshelf, Tautulli, and the supporting media-library services.";
     };
 
     downloads.enable = lib.mkOption {

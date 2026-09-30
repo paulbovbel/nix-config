@@ -420,7 +420,7 @@
           fd
           gcx
           just
-          python3
+          (python3.withPackages (ps: [ps.tenacity]))
           ruff
           shellcheck
           shfmt

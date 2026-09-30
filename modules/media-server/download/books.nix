@@ -8,6 +8,7 @@
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
   containerUser = "${toString user.uid}:${toString user.gid}";
+  mamPython = pkgs.python3.withPackages (ps: [ps.tenacity]);
   mamUpdateDeps = [
     "network-online.target"
     "qbittorrent.service"
@@ -22,7 +23,7 @@
     text = builtins.readFile ./mam-update.py;
   };
   mamUpdateCommand = lib.escapeShellArgs [
-    "${pkgs.python3}/bin/python3"
+    "${mamPython}/bin/python3"
     mamUpdate
     "--container-user"
     containerUser
@@ -105,7 +106,9 @@ in {
             TZ = config.time.timeZone;
           };
           volumes = [
-            "${datasets.downloads.path}/bookdrop:/cwa-book-ingest"
+            "${datasets.media.children.audiobooks.path}:/audiobooks"
+            "${datasets.downloads.path}/torrents:/downloads/torrents"
+            "${datasets.downloads.path}/bookdrop:/bookdrop"
             "${datasets.app.children.shelfmark.path}:/config"
           ];
         };

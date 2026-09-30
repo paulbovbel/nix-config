@@ -5,6 +5,7 @@
 }: let
   cfg = config.mediaServer;
   datasets = config.storage.datasets;
+  audiobookshelfPath = datasets.app.children.audiobookshelf.path;
   inherit (config.podmanServer) user;
 in {
   config = lib.mkIf cfg.library.enable {
@@ -13,12 +14,15 @@ in {
     storage.datasets = {
       downloads = {};
       app.children = {
+        audiobookshelf = {};
         grimmory = {};
         grimmory-db = {};
       };
     };
 
     systemd.tmpfiles.rules = [
+      "d ${audiobookshelfPath}/config 0755 ${user.name} ${user.group} - -"
+      "d ${audiobookshelfPath}/metadata 0755 ${user.name} ${user.group} - -"
       "d ${datasets.downloads.path}/bookdrop 0775 ${user.name} ${user.group} - -"
     ];
 
@@ -43,6 +47,22 @@ in {
       };
 
       containers = {
+        audiobookshelf = {
+          quadlet.containerConfig = {
+            image = "ghcr.io/advplyr/audiobookshelf:latest";
+            podmanArgs = ["--user=${toString user.uid}:${toString user.gid}"];
+            environments = {
+              PORT = "8000";
+              TZ = config.time.timeZone;
+            };
+            volumes = [
+              "${audiobookshelfPath}/config:/config"
+              "${audiobookshelfPath}/metadata:/metadata"
+              "${datasets.media.children.audiobooks.path}:/audiobooks"
+            ];
+          };
+        };
+
         grimmory-db = {
           quadlet.containerConfig = {
             image = "lscr.io/linuxserver/mariadb:11.4.8";
@@ -109,6 +129,16 @@ in {
               "X-Forwarded-Port 8443"
             ];
           };
+        };
+
+        media.endpoints.audiobookshelf = {
+          type = "proxy";
+          # Use the application's login so native streaming clients can authenticate.
+          auth = "oauth";
+          path = "/audiobookshelf";
+          host = "audiobookshelf";
+          port = 8000;
+          role = "user";
         };
 
         media.endpoints.grimmory = {
