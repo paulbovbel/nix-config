@@ -43,7 +43,7 @@ Hosts use pinned release nixpkgs by default; `useUnstablePackages` selects unsta
 
 ## Development
 
-Describe public options in `modules/<name>/options.nix`; use a module README for usage, invariants, or operations. Add display metadata in `modules/<name>/default.nix` for the generated documentation site. CI validates the site and its links with `just nix-test`.
+Describe public options in `modules/<name>/options.nix`; use a module README for usage, invariants, or operations. Add display metadata in `modules/<name>/default.nix` for the generated documentation site. Keep non-Nix scripts in `modules/<name>/scripts/` and tests, including NixOS VM tests and test helpers, in `modules/<name>/tests/`. CI validates the site and its links with `just nix-test`.
 
 ## Repository Layout
 
@@ -52,6 +52,12 @@ Describe public options in `modules/<name>/options.nix`; use a module README for
 - Host user and profile selection: `hosts/<host>/default.nix`
 - Shared site values: `hosts/site.nix`
 - Reusable NixOS behavior and public options: `modules/<name>/`
+- Module scripts, tests, and static assets: `modules/<name>/{scripts,tests,assets}/`
+- Composite-module scripts and tests: `modules/<name>/<submodule>/{scripts,tests}/`
+- Profile-only Home Manager scripts: `profiles/<profile>/home/scripts/`
+- Documentation builder and templates: `modules/documentation/`
+- Deployment tooling and runbooks: `modules/deployment/`
+- Monitoring services and Grafana dashboards: `modules/monitor/`
 - User and system profile behavior: `profiles/<profile>/`
 - Profile selection mapping: `profiles/default.nix`
 - Agenix-encrypted values: `secrets/`
@@ -61,8 +67,8 @@ Keep machine policy in `configuration.nix` and hardware-bound values in `hardwar
 
 ## Runbooks
 
-- [Install and deploy a host remotely](deploy/remote/README.md)
-- [Build an offline USB installer](deploy/usb/README.md)
-- [Manage Grafana dashboards](monitoring/README.md)
+- [Install and deploy a host remotely](modules/deployment/remote/README.md)
+- [Build an offline USB installer](modules/deployment/usb/README.md)
+- [Manage Grafana dashboards](modules/monitor/README.md)
 - [Caddy site and endpoint declarations](modules/caddy/README.md)
 - [Attic cache initialization](modules/attic-cache/README.md)

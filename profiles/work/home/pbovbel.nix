@@ -16,7 +16,7 @@
       pythonWithPsutil
     ];
     text = ''
-      exec python3 ${./kitty-distrobox-split.py} "$@"
+      exec python3 ${./scripts/kitty-distrobox-split.py} "$@"
     '';
   };
   kittyDistroboxSplitBinding = location: "launch --type=background --allow-remote-control ${lib.getExe kittyDistroboxSplit} ${location}";

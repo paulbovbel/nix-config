@@ -20,7 +20,7 @@
   mamUpdate = pkgs.writeTextFile {
     name = "mam-update.py";
     executable = true;
-    text = builtins.readFile ./mam-update.py;
+    text = builtins.readFile ./scripts/mam-update.py;
   };
   mamUpdateCommand = lib.escapeShellArgs [
     "${mamPython}/bin/python3"

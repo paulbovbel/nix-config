@@ -15,10 +15,10 @@
       unstablePkgs.opencode
     ];
     text = ''
-      exec python ${./llama-client.py} "$@"
+      exec python ${./scripts/llama-client.py} "$@"
     '';
   };
-  llamaProxy = ./llama-proxy.py;
+  llamaProxy = ./scripts/llama-proxy.py;
 in {
   options.moduleDocumentation.llama-cpp = lib.mkOption {
     internal = true;

@@ -27,3 +27,5 @@ For repository layout, module composition, and structure recommendations, see [R
 - Default packages come from the host's selected nixpkgs release; use `unstablePkgs` only intentionally and locally.
 - Keep `system.stateVersion` unchanged unless the user explicitly asks to migrate it.
 - Prefer to write longer scripts to sh/py files so that they're linted.
+- Keep non-Nix scripts in `modules/<name>/scripts/` and all tests and test helpers in `modules/<name>/tests/`. Documentation, deployment, and monitoring tooling also belong under their owning module directories.
+- For composite modules, keep scripts and tests under the owning submodule (for example, `modules/media-server/download/{scripts,tests}/`). Profile-only Home Manager scripts may live in `profiles/<profile>/home/scripts/`.

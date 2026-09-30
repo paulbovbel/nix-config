@@ -27,7 +27,7 @@ jobs:
         run: nix flake update
 
       - name: Update Caddy plugins
-        run: nix develop --command python3 modules/caddy/update.py
+        run: nix develop --command python3 modules/caddy/scripts/update.py
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

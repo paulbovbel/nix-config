@@ -9,7 +9,7 @@
   inherit (config.podmanServer) user;
   containerUser = "${toString user.uid}:${toString user.gid}";
   qbittorrentConfigFile = "${datasets.app.children.qbittorrent.path}/qBittorrent/config/qBittorrent.conf";
-  qbittorrentConfigScript = pkgs.writeShellScript "qbittorrent-config" (builtins.readFile ./qbittorrent-config.sh);
+  qbittorrentConfigScript = pkgs.writeShellScript "qbittorrent-config" (builtins.readFile ./scripts/qbittorrent-config.sh);
   # Temporary overlay until the image includes https://github.com/binhex/arch-int-vpn/pull/57.
   qbittorrentVpnTools = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/binhex/arch-int-vpn/3f6f0f83a11db712a3781035f9644af789b3f568/run/local/tools.sh";

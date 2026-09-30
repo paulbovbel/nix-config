@@ -2,6 +2,8 @@
 
 The media server module composes library services, download automation, storage datasets, ingress, and optional UPnP forwards. It is intended to run on a host that also enables the storage, Podman server, and Caddy abstractions.
 
+Scripts and tests are owned by their submodules: `download/{scripts,tests}/` contains download automation, while `library/{scripts,tests}/` contains library processing and Plex tooling. `just check` runs both test suites.
+
 ## Library Services
 
 `mediaServer.library.enable` runs Plex, Jellyfin, Audiobookshelf, Tautulli, and supporting library services against the shared media datasets. The service modules declare their own containers, routes, and persistent application directories.
@@ -14,7 +16,7 @@ The container mounts `storage.datasets.media.children.audiobooks` at `/audiobook
 
 ### Application SSO
 
-Audiobookshelf and Grimmory use native OIDC against Authentik; Caddy passes their browser and API traffic directly to the applications. Grimmory remote-header authentication is disabled. The Authentik module README documents provider URLs, application-side settings, and linking existing Grimmory accounts. Configure those settings before relying on Google login after migration.
+Audiobookshelf and Grimmory use native OIDC against Authentik; Caddy passes their browser and API traffic directly to the applications. Grimmory remote-header authentication is disabled. The Authentik module README describes identity provisioning and SSO integration. Configure application-side OIDC settings before relying on Google login.
 
 ## Download Automation
 

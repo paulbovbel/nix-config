@@ -11,13 +11,13 @@
     name = "devisualize";
     destination = "/bin/devisualize";
     executable = true;
-    text = builtins.readFile ./devisualize.py;
+    text = builtins.readFile ./scripts/devisualize.py;
   };
   shufflePlexCollectionsScript = pkgs.writeTextFile {
     name = "shuffle-plex-collections";
     destination = "/bin/shuffle-plex-collections";
     executable = true;
-    text = builtins.readFile ./shuffle-plex-collections.py;
+    text = builtins.readFile ./scripts/shuffle-plex-collections.py;
   };
   python = pkgs.python3.withPackages (ps: [ps.plexapi]);
   devisualizeConfig = {

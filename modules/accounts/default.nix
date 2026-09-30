@@ -7,7 +7,7 @@
     name = "graphical-sessions";
     runtimeInputs = [pkgs.coreutils pkgs.glib pkgs.sudo pkgs.systemd];
     text = ''
-      exec ${pkgs.python3}/bin/python ${./graphical_sessions.py} "$@"
+      exec ${pkgs.python3}/bin/python ${./scripts/graphical_sessions.py} "$@"
     '';
   };
 in {

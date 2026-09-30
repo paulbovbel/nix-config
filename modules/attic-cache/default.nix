@@ -10,7 +10,7 @@
   watchStore = pkgs.writeShellApplication {
     name = "attic-watch-store";
     runtimeInputs = [pkgs.attic-client pkgs.coreutils];
-    text = builtins.readFile ./attic-watch-store.sh;
+    text = builtins.readFile ./scripts/attic-watch-store.sh;
   };
 in {
   options.moduleDocumentation.attic-cache = lib.mkOption {

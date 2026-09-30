@@ -29,3 +29,27 @@ Alloy persists `/var/lib/private/alloy`; Smokeping uses `storage.datasets.app.ch
 ## Troubleshooting
 
 For Grafana Cloud, inspect `alloy.service`, `/etc/alloy/config.alloy`, `/run/agenix/grafana-cloud-env`, and persisted state at `/var/lib/private/alloy`. If SMART metrics are missing, check `prometheus-smartctl-exporter.service` and its loopback listener. Smokeping uses `smokeping.service`, `apps-network.service`, and `/storage/app/smokeping/{config,data}`; Cockpit uses `cockpit.socket` and `cockpit.service` on port 9090.
+
+## Grafana dashboards
+
+Dashboards under `grafana/` are managed resources for `https://bovbel.grafana.net`.
+Changes made in the Grafana UI will be overwritten by the next deployment.
+
+Create a Grafana service account with the Editor role, then store its token in
+`secrets/management/grafana-cloud-env.age`:
+
+```text
+GRAFANA_TOKEN=glsa_...
+```
+
+Validate and preview changes before applying them:
+
+```bash
+just dashboards-check
+just dashboards-dry-run
+just dashboards-apply
+```
+
+The management secret is encrypted only to the `pbovbel` recipient and is not
+deployed to monitored hosts. The metrics publishing token remains separately
+managed in `secrets/common/grafana-cloud-env.age`.

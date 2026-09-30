@@ -27,43 +27,43 @@ docs:
 # Activate a host configuration on the next boot.
 [group('deployment')]
 boot host=`hostname`:
-    deploy/remote/activate.sh boot "{{ host }}"
+    modules/deployment/scripts/remote/activate.sh boot "{{ host }}"
 
 # Build and activate a host configuration immediately.
 [group('deployment')]
 switch host=`hostname`:
-    deploy/remote/activate.sh switch "{{ host }}"
+    modules/deployment/scripts/remote/activate.sh switch "{{ host }}"
 
 # Build an offline installer ISO with a reused or new host identity.
 [group('deployment')]
 installer-iso host key_mode *args:
-    deploy/usb/build-iso.sh "{{ host }}" "{{ key_mode }}" {{ args }}
+    modules/deployment/scripts/usb/build-iso.sh "{{ host }}" "{{ key_mode }}" {{ args }}
 
 # Interactively select or explicitly provide a USB drive to write.
 [group('deployment')]
 installer-write image device="":
-    deploy/usb/write-usb.sh "{{ image }}" "{{ device }}"
+    modules/deployment/scripts/usb/write-usb.sh "{{ image }}" "{{ device }}"
 
 # Apply Grafana dashboards.
 [confirm]
 [group('grafana')]
 dashboards-apply:
-    monitoring/grafana-dashboards.sh
+    modules/monitor/scripts/grafana-dashboards.sh
 
 # Lint Grafana dashboards.
 [group('grafana')]
 dashboards-check:
-    gcx dev lint run monitoring/grafana
+    gcx dev lint run modules/monitor/grafana
 
 # Preview Grafana dashboard changes.
 [group('grafana')]
 dashboards-dry-run:
-    monitoring/grafana-dashboards.sh --dry-run
+    modules/monitor/scripts/grafana-dashboards.sh --dry-run
 
 # Update generated Caddy configuration.
 [group('maintenance')]
 update-caddy:
-    nix develop --command python3 modules/caddy/update.py
+    nix develop --command python3 modules/caddy/scripts/update.py
 
 # Check justfile formatting.
 [group('checks')]
@@ -86,7 +86,7 @@ nix-test:
 # Test the Authentik blueprint and mapping reconciliation in disposable containers.
 [group('checks')]
 authentik-test:
-    bash tests/authentik-containers.sh
+    bash modules/authentik/tests/authentik-containers.sh
 
 # Lint and format-check Python files.
 [group('checks')]
@@ -97,11 +97,11 @@ python-lint:
 # Run Python unit tests.
 [group('checks')]
 python-test:
-    python3 -m unittest discover -s docs -p 'test_*.py'
-    python3 -m unittest discover -s modules/accounts -p 'test_*.py'
-    python3 -m unittest discover -s modules/auto-upgrade -p 'test_*.py'
-    python3 -m unittest discover -s modules/media-server/download -p 'test_*.py'
-    python3 -m unittest discover -s modules/media-server/library -p 'test_*.py'
+    PYTHONPATH=modules/documentation/scripts python3 -m unittest discover -s modules/documentation/tests -p 'test_*.py'
+    PYTHONPATH=modules/accounts/scripts python3 -m unittest discover -s modules/accounts/tests -p 'test_*.py'
+    PYTHONPATH=modules/auto-upgrade/scripts python3 -m unittest discover -s modules/auto-upgrade/tests -p 'test_*.py'
+    python3 -m unittest discover -s modules/media-server/download/tests -p 'test_*.py'
+    python3 -m unittest discover -s modules/media-server/library/tests -p 'test_*.py'
 
 # Lint and format-check shell scripts.
 [group('checks')]

@@ -24,7 +24,7 @@ sys.modules.setdefault("plexapi", plexapi)
 sys.modules.setdefault("plexapi.exceptions", plexapi_exceptions)
 sys.modules.setdefault("plexapi.server", plexapi_server)
 
-SCRIPT_PATH = Path(__file__).with_name("devisualize.py")
+SCRIPT_PATH = Path(__file__).parents[1] / "scripts" / "devisualize.py"
 SPEC = importlib.util.spec_from_file_location("devisualize", SCRIPT_PATH)
 devisualize = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = devisualize

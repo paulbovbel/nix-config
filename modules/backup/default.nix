@@ -19,7 +19,7 @@
   backupScript = pkgs.writeShellApplication {
     name = "backup";
     runtimeInputs = [pkgs.coreutils pkgs.jq pkgs.openssh pkgs.rsync];
-    text = builtins.readFile ./backup.sh;
+    text = builtins.readFile ./scripts/backup.sh;
   };
 
   targetService = target: targetCfg: let

@@ -20,7 +20,7 @@
     name = "download-popular-videos";
     runtimeInputs = [pkgs.ffmpeg popularVideosPython];
     text = ''
-      exec ${lib.getExe popularVideosPython} ${./download-popular-videos.py} "$@"
+      exec ${lib.getExe popularVideosPython} ${./scripts/download-popular-videos.py} "$@"
     '';
   };
 in {

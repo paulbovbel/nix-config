@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 
 
-MODULE_PATH = Path(__file__).with_name("container.nix")
+MODULE_PATH = Path(__file__).resolve().parents[1] / "container.nix"
 REPOSITORIES = {
     "github.com/caddy-dns/route53": "caddy-dns/route53",
 }

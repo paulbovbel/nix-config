@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 if (($# < 2)); then
   printf 'Usage: %s <host> <reuse|new> [nix build options...]\n' "$0" >&2
   exit 2
@@ -55,7 +55,7 @@ if [[ "$target_system" == aarch64-linux ]]; then
   export NIXOS_INSTALLER_FIRMWARE="$firmware_directory"
 fi
 
-"$repo/deploy/usb/prepare-key.py" "$host" "$key_mode"
+"$repo/modules/deployment/scripts/usb/prepare-key.py" "$host" "$key_mode"
 installer_recipient="$(<"$installer_recipient_path")"
 
 if [[ "$host" == "$(hostname)" ]]; then
@@ -65,7 +65,7 @@ if [[ "$host" == "$(hostname)" ]]; then
     printf 'Close other graphical applications before archiving? [y/N] '
     close_apps=""
     if read -r close_apps && [[ "$close_apps" == y || "$close_apps" == Y ]]; then
-      "$repo/deploy/usb/close-graphical-apps.sh"
+      "$repo/modules/deployment/scripts/usb/close-graphical-apps.sh"
     fi
     mapfile -t home_users < <(
       nix eval --impure --raw \
@@ -73,7 +73,7 @@ if [[ "$host" == "$(hostname)" ]]; then
         --apply 'builtins.concatStringsSep "\n"'
     )
     state_backup="$temporary_directory/state.tar.zst.age"
-    "$repo/deploy/usb/prepare-state.sh" \
+    "$repo/modules/deployment/scripts/usb/prepare-state.sh" \
       "$state_backup" \
       "$installer_recipient" \
       "${home_users[@]}"
@@ -121,5 +121,5 @@ printf '  %s\n' "$repo"/result/iso/*.iso
 printf '\nWrite this image to a USB disk now? [y/N] '
 write_usb=""
 if read -r write_usb && [[ "$write_usb" == y || "$write_usb" == Y ]]; then
-  "$repo/deploy/usb/write-usb.sh" "$repo"/result/iso/*.iso
+  "$repo/modules/deployment/scripts/usb/write-usb.sh" "$repo"/result/iso/*.iso
 fi

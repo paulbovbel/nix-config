@@ -10,7 +10,7 @@
     name = "auto-upgrade";
     runtimeInputs = [config.nix.package graphicalSessions pkgs.gitMinimal pkgs.mailutils pkgs.systemd];
     text = ''
-      exec ${pkgs.python3}/bin/python ${./auto_upgrade.py} "$@"
+      exec ${pkgs.python3}/bin/python ${./scripts/auto_upgrade.py} "$@"
     '';
   };
   identityFile = config.age.secrets.nix-config-auto-upgrade-key.path;

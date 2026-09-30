@@ -26,7 +26,7 @@ def main() -> None:
             "reuse mode requires the selected host to match the running hostname"
         )
 
-    repo = Path(__file__).resolve().parents[2]
+    repo = Path(__file__).resolve().parents[4]
     host_path = repo / "hosts" / args.host / "default.nix"
     payload_dir = repo / "secrets" / "installer"
     payload_path = payload_dir / f"{args.host}-host.agekey.age"

@@ -66,7 +66,7 @@
     name,
   }:
     pkgs.runCommand "${name}.md" {nativeBuildInputs = [pkgs.python3];} ''
-      python ${./transform_markdown.py} \
+      python ${./scripts/transform_markdown.py} \
         ${lib.optionalString dropTitle "--drop-title"} \
         ${markdown} > "$out"
     '';
@@ -86,7 +86,7 @@
     inherit (metadata) summary title;
     inherit hasIntroduction;
     heading = pkgs.writeText "${name}-title.md" (
-      builtins.replaceStrings ["@moduleTitle@"] [metadata.title] (builtins.readFile ./module.md)
+      builtins.replaceStrings ["@moduleTitle@"] [metadata.title] (builtins.readFile ./templates/module.md)
     );
     introduction = lib.optional hasIntroduction (prepareIntroduction name readme);
   });
@@ -104,9 +104,9 @@
   landingReadme =
     builtins.replaceStrings
     [
-      "(deploy/remote/README.md)"
-      "(deploy/usb/README.md)"
-      "(monitoring/README.md)"
+      "(modules/deployment/remote/README.md)"
+      "(modules/deployment/usb/README.md)"
+      "(modules/monitor/README.md)"
       "(modules/caddy/README.md)"
       "(modules/attic-cache/README.md)"
     ]
@@ -121,14 +121,14 @@
   index = pkgs.writeText "module-index.md" (
     landingReadme
     + "\n\n"
-    + builtins.replaceStrings ["@modules@"] [moduleLinks] (builtins.readFile ./index.md)
+    + builtins.replaceStrings ["@modules@"] [moduleLinks] (builtins.readFile ./templates/index.md)
   );
-  sidebar = builtins.replaceStrings ["@modules@"] [sidebarModuleLinks] (builtins.readFile ./sidebar.html);
+  sidebar = builtins.replaceStrings ["@modules@"] [sidebarModuleLinks] (builtins.readFile ./assets/sidebar.html);
   pageTemplate = pkgs.writeText "page.html" (
-    builtins.replaceStrings ["@sidebar@"] [sidebar] (builtins.readFile ./page.html)
+    builtins.replaceStrings ["@sidebar@"] [sidebar] (builtins.readFile ./assets/page.html)
   );
-  introductionHeading = pkgs.writeText "introduction-heading.md" (builtins.readFile ./introduction.md);
-  optionsHeading = pkgs.writeText "options-heading.md" (builtins.readFile ./options.md);
+  introductionHeading = pkgs.writeText "introduction-heading.md" (builtins.readFile ./templates/introduction.md);
+  optionsHeading = pkgs.writeText "options-heading.md" (builtins.readFile ./templates/options.md);
   guides = map (guide:
     guide
     // {
@@ -142,21 +142,21 @@
     {
       name = "remote-deployment";
       title = "Remote deployment";
-      source = "deploy/remote/README.md";
+      source = "modules/deployment/remote/README.md";
       linkSources = ["(../usb/README.md)"];
       linkTargets = ["(usb-deployment.html)"];
     }
     {
       name = "usb-deployment";
       title = "USB deployment";
-      source = "deploy/usb/README.md";
+      source = "modules/deployment/usb/README.md";
       linkSources = ["(../remote/README.md)"];
       linkTargets = ["(remote-deployment.html)"];
     }
     {
       name = "monitoring";
       title = "Grafana dashboards";
-      source = "monitoring/README.md";
+      source = "modules/monitor/README.md";
       linkSources = [];
       linkTargets = [];
     }
@@ -189,7 +189,7 @@ in rec {
       mkdir -p "$out"
       options_dir="$TMPDIR/module-options"
       mkdir -p "$options_dir"
-      python ${./split_options.py} \
+      python ${./scripts/split_options.py} \
         ${allOptionsDoc.optionsJSON}/share/doc/nixos/options.json \
         "$options_dir" \
         ${lib.escapeShellArgs moduleNames}
@@ -215,7 +215,7 @@ in rec {
             --revision ${lib.escapeShellArg revision} \
             "$options_dir/${name}.json" \
             "$options_dir/${name}-raw.md"
-          python ${./transform_markdown.py} \
+          python ${./scripts/transform_markdown.py} \
             "$options_dir/${name}-raw.md" \
             > "$options_dir/${name}.md"
           ${renderPage {
@@ -230,17 +230,17 @@ in rec {
           }}
         '')
         moduleNames}
-      cp ${./style.css} "$out/style.css"
-      cp ${./site.js} "$out/site.js"
-      python ${./build_search.py} \
+      cp ${./assets/style.css} "$out/style.css"
+      cp ${./scripts/site.js} "$out/site.js"
+      python ${./scripts/build_search.py} \
         "$out" \
         "$out/search.json" \
         ${lib.escapeShellArgs moduleNames}
     '';
 
   module-docs-check = pkgs.runCommand "module-docs-check" {nativeBuildInputs = [pkgs.python3];} ''
-    PYTHONPATH=${./.} python ${./test_docs.py}
-    python ${./check_links.py} ${module-docs}
+    PYTHONPATH=${./scripts} python ${./tests/test_docs.py}
+    python ${./scripts/check_links.py} ${module-docs}
     touch "$out"
   '';
 }

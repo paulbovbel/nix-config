@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 
 spec = importlib.util.spec_from_file_location(
-    "mam_update", Path(__file__).with_name("mam-update.py")
+    "mam_update", Path(__file__).parents[1] / "scripts" / "mam-update.py"
 )
 mam = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = mam

@@ -329,7 +329,7 @@
             else [(nixpkgs + "/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix")]
           )
           ++ [
-            ./deploy/usb
+            ./modules/deployment/usb
             {
               nixpkgs.hostPlatform.system = system;
             }
@@ -373,7 +373,7 @@
       revision = self.shortRev or (self.dirtyShortRev or "dirty");
       sourceRevision = self.rev or "main";
     in
-      import ./docs {
+      import ./modules/documentation/build.nix {
         inherit pkgs revision sourceRevision;
         inherit (nixpkgs) lib;
         inherit (evaluation) config options;
@@ -396,7 +396,7 @@
     checks = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
       rootFsImpermanenceTest = backend:
-        import ./tests/root-fs-impermanence.nix {
+        import ./modules/root-fs/tests/root-fs-impermanence.nix {
           inherit backend disko disko-zfs impermanence nixpkgs pkgs;
           root = ./.;
         };

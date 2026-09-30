@@ -8,7 +8,7 @@ fi
 
 action="$1"
 host="$2"
-repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 configuration_branch="$(git -C "$repo" branch --show-current)"
 if [[ -z "$configuration_branch" ]]; then
   printf 'Cannot activate from a detached HEAD; check out the intended branch first.\n' >&2

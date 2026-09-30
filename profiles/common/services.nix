@@ -3,7 +3,7 @@
   pkgs,
   ...
 }: let
-  inhibitSleepWhileSshScript = ./inhibit-sleep-while-ssh.sh;
+  inhibitSleepWhileSshScript = ../../modules/accounts/scripts/inhibit-sleep-while-ssh.sh;
 in {
   systemd.services = {
     inhibit-sleep-while-ssh = {

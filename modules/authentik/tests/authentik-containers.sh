@@ -47,6 +47,6 @@ podman run --name "$name-app" --network "$name" \
   -e GOOGLE_OAUTH2_CLIENT_SECRET=google-test \
   -e AUTHENTIK_AUDIOBOOKSHELF_CLIENT_SECRET=audiobookshelf-test \
   -v "$blueprint:/blueprints/custom/nix-config.yaml:ro" \
-  -v "$root/tests:/tests:ro" \
+  -v "$root/modules/authentik/tests:/tests:ro" \
   --entrypoint /bin/bash "$image" -ec \
   'python -m lifecycle.migrate; ak shell -c "exec(open(\"/tests/authentik-container-init.py\").read())"; ak shell -c "exec(open(\"/tests/authentik-email-mapping.py\").read())"'

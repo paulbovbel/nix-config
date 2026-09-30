@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 secret_file="secrets/management/grafana-cloud-env.age"
 
 cd "$repo_root"
@@ -20,4 +20,4 @@ set +a
 : "${GRAFANA_TOKEN:?GRAFANA_TOKEN is missing from $secret_file}"
 export GRAFANA_SERVER="https://bovbel.grafana.net"
 
-exec gcx resources push --path "$repo_root/monitoring/grafana" --on-error abort "$@"
+exec gcx resources push --path "$repo_root/modules/monitor/grafana" --on-error abort "$@"

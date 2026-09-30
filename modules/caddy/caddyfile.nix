@@ -155,7 +155,7 @@
       hosted_zone_id "{$AWS_HOSTED_ZONE}"
     ''));
 
-  notFoundHtml = builtins.readFile ./404.html;
+  notFoundHtml = builtins.readFile ./assets/404.html;
 
   notFound = renderBlock "(not-found)" (renderBlock "route" (''
       header Content-Type text/html
