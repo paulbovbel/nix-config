@@ -5,8 +5,46 @@
 }: let
   quadletContainerType = options.virtualisation.quadlet.containers.type.nestedTypes.elemType;
   quadletBuildType = options.virtualisation.quadlet.builds.type.nestedTypes.elemType;
+  portType = lib.types.submodule ({config, ...}: {
+    options = {
+      hostPort = lib.mkOption {
+        type = lib.types.port;
+        description = "First port to bind on the host.";
+      };
+      containerPort = lib.mkOption {
+        type = lib.types.port;
+        default = config.hostPort;
+        description = "First destination port in the container.";
+      };
+      count = lib.mkOption {
+        type = lib.types.ints.between 1 65535;
+        default = 1;
+        description = "Number of consecutive host and container ports to publish.";
+      };
+      bindAddress = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Host IP address to bind, or null for all interfaces. Write IPv6 addresses without brackets.";
+      };
+      protocol = lib.mkOption {
+        type = lib.types.enum ["tcp" "udp"];
+        default = "tcp";
+        description = "Transport protocol to publish.";
+      };
+      openFirewall = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Open these host ports in the global firewall. Independent of the bind address.";
+      };
+    };
+  });
   containerType = lib.types.submodule {
     options = {
+      ports = lib.mkOption {
+        type = lib.types.listOf portType;
+        default = [];
+        description = "Structured published ports with explicit firewall policy. Raw quadlet.containerConfig.publishPorts remain supported but do not generate firewall rules.";
+      };
       build = lib.mkOption {
         type = lib.types.nullOr quadletBuildType;
         default = null;
@@ -150,9 +188,9 @@ in {
       example = lib.literalExpression ''
         {
           example = {
+            ports = [{ hostPort = 8080; containerPort = 80; openFirewall = true; }];
             quadlet.containerConfig = {
               image = "docker.io/library/nginx:latest";
-              publishPorts = [ "8080:80" ];
             };
             dependsOn = [ "database" ];
           };

@@ -12,5 +12,6 @@
     ./options.nix
     ./base.nix
     ./runtime.nix
+    ./validation.nix
   ];
 }

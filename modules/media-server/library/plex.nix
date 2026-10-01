@@ -45,9 +45,14 @@ in {
 
       containers = {
         plex = {
+          ports = [
+            {
+              hostPort = 32400;
+              openFirewall = true;
+            }
+          ];
           quadlet.containerConfig = {
             image = "docker.io/plexinc/pms-docker:plexpass";
-            publishPorts = ["32400:32400"];
             volumes = [
               "${datasets.app.children.plex.path}:/config"
               "${datasets.media.path}:/mnt/storage/share:ro"
@@ -80,11 +85,16 @@ in {
         };
 
         plex-mcp = {
+          ports = [
+            {
+              hostPort = 3001;
+              openFirewall = true;
+            }
+          ];
           dependsOn = ["plex"];
           secretEnvironmentFiles = [config.age.secrets.plex-token-env.path];
           quadlet.containerConfig = {
             image = "ghcr.io/astral-sh/uv:python3.13-bookworm";
-            publishPorts = ["3001:3001"];
             environments = {
               PLEX_URL = "http://plex:32400";
               UV_LINK_MODE = "copy";

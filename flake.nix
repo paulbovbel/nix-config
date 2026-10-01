@@ -403,6 +403,7 @@
     in
       {
         inherit (mkDocs system) module-docs-check;
+        podman-server-contracts = import ./modules/podman-server/tests/contracts.nix {inherit pkgs nixpkgs quadlet-nix agenix;};
       }
       // lib.optionalAttrs (system == "x86_64-linux") {
         authentik-blueprint = import ./modules/authentik/tests/blueprint.nix {inherit pkgs quadlet-nix;};
