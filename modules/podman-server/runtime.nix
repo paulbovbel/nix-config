@@ -8,26 +8,12 @@
   active = cfg.containers != {};
 
   derivedEnvUnits = names: map (name: "podman-server-${name}-env.service") names;
-  derivedEnvFiles = names: map (name: cfg.derivedEnvFiles.${name}.path) names;
-  derivedEnvDefinitions = names:
-    builtins.listToAttrs (lib.concatMap (name:
-      [
-        {
-          inherit name;
-          value = cfg.derivedEnvFiles.${name};
-        }
-      ]
-      ++ lib.mapAttrsToList (name: value: {inherit name value;}) (derivedEnvDefinitions cfg.derivedEnvFiles.${name}.derivedEnvironmentFiles))
-    names);
+  envGraph = (import ./graph.nix {inherit lib;}) (lib.mapAttrs (_: env: env.derivedEnvironmentFiles) cfg.derivedEnvFiles);
+  derivedEnvFiles = names: map (name: cfg.derivedEnvFiles.${name}.path) (builtins.filter (name: builtins.hasAttr name cfg.derivedEnvFiles) names);
+  derivedEnvDefinitions = names: lib.genAttrs (envGraph.closure names) (name: cfg.derivedEnvFiles.${name});
   ageSecretFilesByPath = lib.mapAttrs' (_: secret: lib.nameValuePair secret.path secret.file) config.age.secrets;
   derivedEnvSecretPaths = names:
-    lib.concatMap (
-      name: let
-        envFile = cfg.derivedEnvFiles.${name};
-      in
-        envFile.secretEnvironmentFiles ++ derivedEnvSecretPaths envFile.derivedEnvironmentFiles
-    )
-    names;
+    lib.concatMap (name: cfg.derivedEnvFiles.${name}.secretEnvironmentFiles) (envGraph.closure names);
   secretRestartTriggers = container:
     map
     (path: ageSecretFilesByPath.${path})
@@ -73,6 +59,7 @@
           );
           networks = lib.mkBefore [config.virtualisation.quadlet.networks.apps.ref];
           environmentFiles = lib.mkAfter (container.secretEnvironmentFiles ++ derivedEnvFilePaths);
+          publishPorts = lib.mkAfter (map renderPort container.ports);
           podmanArgs = lib.mkBefore ["--no-healthcheck"];
         };
 
@@ -98,32 +85,24 @@
       ++ secretRestartTriggers container;
   };
 
-  parsePublishPort = publishPort: let
-    protoParts = lib.splitString "/" publishPort;
-    address = builtins.elemAt protoParts 0;
-    proto =
-      if builtins.length protoParts > 1
-      then builtins.elemAt protoParts 1
-      else "tcp";
-    addressParts = lib.splitString ":" address;
-    addressPartCount = builtins.length addressParts;
-    hostPort =
-      if addressPartCount > 1
-      then builtins.elemAt addressParts (addressPartCount - 2)
-      else builtins.elemAt addressParts 0;
-  in {
-    inherit proto;
-    port = builtins.fromJSON hostPort;
-  };
-
-  publishedFirewallPorts = let
-    publishPorts = lib.concatLists (lib.mapAttrsToList (_: container: container.quadlet.containerConfig.publishPorts or []) cfg.containers);
-    parsedPorts = map parsePublishPort publishPorts;
-    portsFor = proto: map (port: port.port) (builtins.filter (port: port.proto == proto) parsedPorts);
-  in {
-    tcp = lib.unique (portsFor "tcp");
-    udp = lib.unique (portsFor "udp");
-  };
+  renderPort = port: let
+    range = start: toString start + lib.optionalString (port.count > 1) "-${toString (start + port.count - 1)}";
+    address =
+      if port.bindAddress == null
+      then ""
+      else if lib.hasInfix ":" port.bindAddress
+      then "[${port.bindAddress}]:"
+      else "${port.bindAddress}:";
+  in "${address}${range port.hostPort}:${range port.containerPort}/${port.protocol}";
+  firewallPorts = protocol:
+    builtins.filter (port: port.openFirewall && port.protocol == protocol)
+    (lib.concatMap (container: container.ports) (lib.attrValues cfg.containers));
+  firewallSingles = protocol: lib.unique (map (port: port.hostPort) (builtins.filter (port: port.count == 1) (firewallPorts protocol)));
+  firewallRanges = protocol:
+    lib.unique (map (port: {
+      from = port.hostPort;
+      to = port.hostPort + port.count - 1;
+    }) (builtins.filter (port: port.count > 1) (firewallPorts protocol)));
 
   renderDerivedEnvFile = name: envFile: let
     derivedEnvUnitNames = derivedEnvUnits envFile.derivedEnvironmentFiles;
@@ -170,8 +149,10 @@ in {
     };
 
     networking.firewall = {
-      allowedTCPPorts = publishedFirewallPorts.tcp;
-      allowedUDPPorts = publishedFirewallPorts.udp;
+      allowedTCPPorts = firewallSingles "tcp";
+      allowedUDPPorts = firewallSingles "udp";
+      allowedTCPPortRanges = firewallRanges "tcp";
+      allowedUDPPortRanges = firewallRanges "udp";
     };
 
     systemd.services = lib.mkMerge [

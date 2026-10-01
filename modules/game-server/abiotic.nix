@@ -20,10 +20,14 @@ in {
     };
 
     podmanServer.containers.abiotic = {
+      ports = map (port: {
+        hostPort = port;
+        protocol = "udp";
+        openFirewall = true;
+      }) [7777 27015];
       quadlet.containerConfig = {
         image = "ghcr.io/pleut/abiotic-factor-linux-docker:latest";
         user = containerUser;
-        publishPorts = ["7777:7777/udp" "27015:27015/udp"];
         volumes = [
           "${datasets.app.children.abiotic.path}/gamefiles:/server"
           "${datasets.app.children.abiotic.path}/data:/server/AbioticFactor/Saved"

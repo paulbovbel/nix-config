@@ -8,7 +8,6 @@
   datasets = config.storage.datasets;
   tailscaleSocket = "/run/tailscale/tailscaled.sock";
   domainListenPorts = lib.unique (lib.filter (port: port != null) (lib.concatMap (site: map (domain: domain.listenPort) site.domains) (lib.attrValues cfg.sites)));
-  domainPublishPorts = map (port: "${toString port}:${toString port}") domainListenPorts;
   caddyfilePath = "${datasets.app.children.caddy.path}/Caddyfile";
   caddyEnvFiles = [
     config.age.secrets.aws-access-env.path
@@ -54,9 +53,12 @@ in {
 
     podmanServer = {
       containers.caddy = {
+        ports = map (port: {
+          hostPort = port;
+          openFirewall = true;
+        }) (lib.unique ([80 443] ++ domainListenPorts));
         quadlet.containerConfig = {
           image = caddyImageRef;
-          publishPorts = ["80:80" "443:443"] ++ domainPublishPorts;
           volumes = [
             "${caddyfilePath}:/etc/caddy/Caddyfile:ro"
             "${datasets.app.children.caddy.path}/data:/data"

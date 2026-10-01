@@ -30,6 +30,11 @@ in {
     };
 
     podmanServer.containers.valheim = {
+      ports = map (port: {
+        hostPort = port;
+        protocol = "udp";
+        openFirewall = true;
+      }) [2456 2457];
       quadlet.serviceConfig = {
         ExecStartPre = [
           "${pkgs.coreutils}/bin/install -d -m 0755 -o ${user.name} -g ${user.group} ${datasets.app.children.valheim.path}/config ${datasets.app.children.valheim.path}/data"
@@ -39,7 +44,6 @@ in {
       quadlet.containerConfig = {
         image = "ghcr.io/community-valheim-tools/valheim-server:latest";
         addCapabilities = ["SYS_NICE"];
-        publishPorts = ["2456:2456/udp" "2457:2457/udp"];
         volumes = [
           "${datasets.app.children.valheim.path}/config:/config"
           "${datasets.app.children.valheim.path}/data:/opt/valheim"

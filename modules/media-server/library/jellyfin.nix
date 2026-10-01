@@ -11,9 +11,14 @@ in {
     storage.datasets.app.children.jellyfin = {};
 
     podmanServer.containers.jellyfin = {
+      ports = [
+        {
+          hostPort = 8096;
+          openFirewall = true;
+        }
+      ];
       quadlet.containerConfig = {
         image = "lscr.io/linuxserver/jellyfin:latest";
-        publishPorts = ["8096:8096"];
         environments = {
           PUID = toString user.uid;
           PGID = toString user.gid;

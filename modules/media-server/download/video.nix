@@ -74,9 +74,14 @@ in {
     podmanServer.containers =
       lib.optionalAttrs popularVideosEnabled {
         bgutil-ytdlp-pot-provider = {
+          ports = [
+            {
+              hostPort = 4416;
+              bindAddress = "127.0.0.1";
+            }
+          ];
           quadlet.containerConfig = {
             image = "docker.io/brainicism/bgutil-ytdlp-pot-provider:latest";
-            publishPorts = ["127.0.0.1:4416:4416"];
           };
         };
       }

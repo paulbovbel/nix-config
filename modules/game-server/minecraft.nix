@@ -19,9 +19,14 @@ in {
       };
 
       containers.minecraft = {
+        ports = [
+          {
+            hostPort = 25565;
+            openFirewall = true;
+          }
+        ];
         quadlet.containerConfig = {
           image = "ghcr.io/itzg/minecraft-server:java21";
-          publishPorts = ["25565:25565"];
           volumes = ["${datasets.app.children.minecraft.path}:/data"];
           environments = {
             UID = toString user.uid;
