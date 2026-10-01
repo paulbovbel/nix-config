@@ -4,8 +4,6 @@
   ...
 }: let
   cfg = config.storage;
-  baseDatasets = {};
-  allDatasets = lib.recursiveUpdate baseDatasets cfg.datasets;
   renderAutoSnapshot = autoSnapshot:
     lib.mapAttrs' (
       name: value:
@@ -40,7 +38,7 @@
         // flattenDatasetTree datasetName dataset.children
     )
     tree;
-  datasetAttrs = flattenDatasetTree "" allDatasets;
+  datasetAttrs = flattenDatasetTree "" cfg.datasets;
   renderDataset = dataset: {
     properties =
       {

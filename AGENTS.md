@@ -13,7 +13,7 @@ For repository layout, module composition, and structure recommendations, see [R
 - Host-specific enablement and machine settings belong in `hosts/<host>/configuration.nix`.
 - Reusable NixOS behavior belongs in `modules/<name>/`, with options exposed from `options.nix` when appropriate.
 - User profile changes belong under `profiles/<profile>/`; update `profiles/default.nix` when adding or changing selectable profiles.
-- System profile behavior belongs under `profiles/`; profiles are selected indirectly from `hosts/default.nix` through user profile declarations.
+- System profile behavior belongs under `profiles/`; `flake.nix` composes profiles from user declarations in `hosts/<host>/default.nix`.
 - Globally imported modules should generally be enabled from host configs through their option namespace, not imported ad hoc.
 
 ## Repo Rules
@@ -22,7 +22,7 @@ For repository layout, module composition, and structure recommendations, see [R
 - When adding stateful services on impermanent hosts, persist required state with `rootFs.persistDirectories` or `rootFs.persistFiles`.
 - Server containers should generally use `podmanServer.containers`, `podmanServer.paths`, and `podmanServer.derivedEnvFiles` rather than bespoke Podman/systemd plumbing.
 - Never use `podman restart`; restart containers through their owning systemd service with `systemctl restart <name>.service`.
-- Public or authenticated HTTP exposure should generally declare `caddy.endpoints` or `caddy.domains` rather than editing generated Caddyfile internals directly.
+- Public or authenticated HTTP exposure should generally declare `caddy.sites.<name>.endpoints` or `caddy.sites.<name>.domains` rather than editing generated Caddyfile internals directly.
 - Shared storage should use `storage.datasets` and generated storage paths instead of unmanaged hard-coded ZFS paths.
 - Default packages come from the host's selected nixpkgs release; use `unstablePkgs` only intentionally and locally.
 - Keep `system.stateVersion` unchanged unless the user explicitly asks to migrate it.
