@@ -4,7 +4,7 @@ import sys
 import tempfile
 import types
 import unittest
-from datetime import date, datetime, timezone
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -38,11 +38,7 @@ class ProcessingManifestTests(unittest.TestCase):
         self.infile = self.root / "source.mkv"
         self.infile.write_bytes(b"source")
         self.item = SimpleNamespace(
-            ratingKey="42",
-            title="Example",
-            thumb="/thumb/42",
-            grandparentThumb=None,
-            _server=SimpleNamespace(machineIdentifier="server-id"),
+            ratingKey="42", title="Example", thumb="/thumb/42", grandparentThumb=None
         )
 
     def tearDown(self):
@@ -55,7 +51,6 @@ class ProcessingManifestTests(unittest.TestCase):
             output_root=self.root,
             source_id="42:0",
             item=self.item,
-            output_library="Music",
             metadata=metadata or devisualize.AudioMetadata("Artist", "Album", "Track"),
         )
 
@@ -63,23 +58,22 @@ class ProcessingManifestTests(unittest.TestCase):
         conversion = self.conversion()
         conversion.outfile.write_bytes(b"output")
         manifest = devisualize.ProcessingManifest([conversion])
-
         self.assertTrue(manifest.needs_processing(conversion))
         manifest.mark_processed(conversion)
         self.assertFalse(manifest.needs_processing(conversion))
-
         reloaded = devisualize.ProcessingManifest([conversion])
         self.assertFalse(reloaded.needs_processing(conversion))
+        self.assertNotIn(
+            "plex_url", reloaded.entries[reloaded._path(conversion)]["42:0"]
+        )
 
     def test_source_and_metadata_changes_trigger_processing(self):
         conversion = self.conversion()
         conversion.outfile.write_bytes(b"output")
         manifest = devisualize.ProcessingManifest([conversion])
         manifest.mark_processed(conversion)
-
         self.infile.write_bytes(b"changed source")
         self.assertTrue(manifest.needs_processing(conversion))
-
         manifest.mark_processed(conversion)
         changed_metadata = self.conversion(
             metadata=devisualize.AudioMetadata("Artist", "Album", "Renamed")
@@ -91,7 +85,6 @@ class ProcessingManifestTests(unittest.TestCase):
         conversion.outfile.write_bytes(b"output")
         manifest = devisualize.ProcessingManifest([conversion])
         manifest.mark_processed(conversion)
-
         with mock.patch.object(
             devisualize, "PROCESSING_VERSION", devisualize.PROCESSING_VERSION + 1
         ):
@@ -103,11 +96,9 @@ class ProcessingManifestTests(unittest.TestCase):
         old_conversion = self.conversion(outfile=old_output)
         manifest = devisualize.ProcessingManifest([old_conversion])
         manifest.mark_processed(old_conversion)
-
         new_output = self.root / "new.m4a"
         new_output.write_bytes(b"new")
         manifest.mark_processed(self.conversion(outfile=new_output))
-
         self.assertFalse(old_output.exists())
         self.assertTrue(new_output.exists())
 
@@ -115,29 +106,92 @@ class ProcessingManifestTests(unittest.TestCase):
         (self.root / devisualize.MANIFEST_FILENAME).write_text("not json")
         conversion = self.conversion()
         conversion.outfile.write_bytes(b"output")
-
         manifest = devisualize.ProcessingManifest([conversion])
-
         self.assertTrue(manifest.needs_processing(conversion))
 
 
 class MetadataTests(unittest.TestCase):
-    def test_movies_are_grouped_as_comedy_specials(self):
-        self.assertEqual(
-            devisualize.movie_metadata("John Mulaney: Baby J", "2023-04-25"),
-            devisualize.AudioMetadata(
-                artist="John Mulaney",
-                album="Baby J (2023)",
-                track="Baby J",
+    def test_each_special_has_its_own_podcast(self):
+        root = Path("podcasts")
+        outputs = []
+        for title, released, podcast in [
+            ("John Mulaney: Baby J", "2023-04-25", "John Mulaney - Baby J (2023)"),
+            (
+                "John Mulaney - Kid Gorgeous",
+                "2018-05-01",
+                "John Mulaney - Kid Gorgeous (2018)",
             ),
+        ]:
+            metadata = devisualize.movie_metadata(title, released)
+            output = devisualize.output_path(root, metadata)
+            outputs.append(output)
+            self.assertEqual(output.parent, root / podcast)
+            self.assertTrue(output.name.startswith(released))
+            self.assertEqual(metadata.album, podcast.removeprefix("John Mulaney - "))
+            self.assertEqual(metadata.artist, "John Mulaney")
+        self.assertNotEqual(outputs[0].parent, outputs[1].parent)
+
+    def test_special_without_title_prefix_uses_lead_performer(self):
+        item = SimpleNamespace(
+            TYPE="movie",
+            title="Old Baby",
+            roles=[SimpleNamespace(tag="Maria Bamford")],
+            originallyAvailableAt=date(2017, 5, 2),
         )
+        metadata = devisualize.item_metadata(item)
+        self.assertEqual(metadata.artist, "Maria Bamford")
         self.assertEqual(
-            devisualize.movie_metadata("Unstructured Special"),
-            devisualize.AudioMetadata(
-                artist="Unstructured Special",
-                album="Unstructured Special",
-                track="Unstructured Special",
-            ),
+            devisualize.output_path(Path("podcasts"), metadata),
+            Path("podcasts/Maria Bamford - Old Baby (2017)/2017-05-02 - Old Baby.m4a"),
+        )
+
+    def test_each_jeopardy_season_has_its_own_date_ordered_podcast(self):
+        outputs = []
+        for season, released in [
+            (40, date(2024, 7, 25)),
+            (40, date(2024, 7, 26)),
+            (41, date(2024, 9, 9)),
+        ]:
+            item = SimpleNamespace(
+                TYPE="episode",
+                title="Contestants",
+                grandparentTitle="Jeopardy!",
+                parentTitle=f"Season {season}",
+                parentIndex=season,
+                index=1,
+                originallyAvailableAt=released,
+            )
+            metadata = devisualize.item_metadata(item)
+            outputs.append(devisualize.output_path(Path("podcasts"), metadata))
+            self.assertEqual(metadata.album, f"Season {season}")
+            self.assertEqual(metadata.track_number, 1)
+            self.assertEqual(metadata.season_number, season)
+        self.assertEqual(outputs[0].parent, outputs[1].parent)
+        self.assertNotEqual(outputs[1].parent, outputs[2].parent)
+        self.assertEqual(outputs, sorted(outputs))
+        self.assertTrue(outputs[0].name.startswith("2024-07-25"))
+
+    def test_season_number_is_used_when_season_title_is_missing(self):
+        metadata = devisualize.episode_metadata(
+            SimpleNamespace(title="Episode", grandparentTitle="Show", parentIndex=2)
+        )
+        self.assertEqual(metadata.album, "Season 2")
+
+    def test_podcast_title_does_not_repeat_author(self):
+        metadata = devisualize.movie_metadata(
+            "Bill Burr: You People Are All the Same.", "2012-08-16"
+        )
+        self.assertEqual(metadata.album, "You People Are All the Same. (2012)")
+        self.assertEqual(metadata.artist, "Bill Burr")
+
+    def test_identical_titles_from_different_authors_have_separate_folders(self):
+        root = Path("podcasts")
+        first = devisualize.movie_metadata("First Comedian: Special", "2020")
+        second = devisualize.movie_metadata("Second Comedian: Special", "2020")
+        self.assertEqual(first.album, second.album)
+        self.assertNotEqual(
+            devisualize.output_path(root, first).parent,
+            devisualize.output_path(root, second).parent,
         )
 
     def test_release_date_prefers_full_date_and_falls_back_to_year(self):
@@ -154,102 +208,84 @@ class MetadataTests(unittest.TestCase):
             "2019",
         )
 
+    def test_summaries_are_preserved_without_plex_links(self):
+        for item_type in ["movie", "episode"]:
+            item = SimpleNamespace(
+                TYPE=item_type,
+                title="Example",
+                summary="Contestant details or a special summary.",
+            )
+            self.assertEqual(devisualize.item_metadata(item).description, item.summary)
+        item.summary += " https://app.plex.tv/desktop/#!/server/id/details?key=42"
+        self.assertEqual(
+            devisualize.item_metadata(item).description,
+            "Contestant details or a special summary.",
+        )
+        self.assertIsNone(devisualize.item_description(SimpleNamespace()))
+
+    def test_local_plex_and_native_links_are_removed(self):
+        self.assertEqual(
+            devisualize.item_description(
+                SimpleNamespace(
+                    summary="Summary https://plex:32400/library/metadata/42 plex://42"
+                )
+            ),
+            "Summary",
+        )
+
     def test_path_segments_cannot_traverse_or_exceed_component_limit(self):
         self.assertEqual(devisualize.path_segment(".."), "Unknown")
         self.assertEqual(devisualize.path_segment("a/b"), "a_b")
         self.assertLessEqual(len(devisualize.path_segment("x" * 300).encode()), 200)
 
-    def test_plex_url_encodes_identifiers(self):
-        item = SimpleNamespace(
-            ratingKey="42/extra",
-            _server=SimpleNamespace(machineIdentifier="server id"),
-        )
-
-        self.assertEqual(
-            devisualize.item_plex_url(item),
-            "https://app.plex.tv/desktop/#!/server/"
-            "server%20id/details?key=%2Flibrary%2Fmetadata%2F42%2Fextra",
-        )
-
-    def test_artist_artwork_uses_matching_movie_role(self):
-        server = SimpleNamespace(url=mock.Mock(return_value="https://plex/artist.jpg"))
+    def test_collection_discovery_only_reads_source_libraries(self):
         item = SimpleNamespace(
             TYPE="movie",
-            _server=server,
-            roles=[
-                SimpleNamespace(tag="Someone Else", thumb="/someone"),
-                SimpleNamespace(tag="Maria Bamford", thumb="/maria"),
+            title="John Mulaney: Baby J",
+            ratingKey="42",
+            originallyAvailableAt=date(2023, 4, 25),
+            media=[
+                SimpleNamespace(parts=[SimpleNamespace(file="/plex/movies/baby.mkv")])
             ],
         )
-
-        self.assertEqual(
-            devisualize.item_artist_artwork_url(item, "maria bamford"),
-            "https://plex/artist.jpg",
+        section = SimpleNamespace(
+            collection=mock.Mock(return_value=SimpleNamespace(items=lambda: [item]))
         )
-        server.url.assert_called_once_with("/maria", includeToken=True)
-
-    def test_artist_artwork_ignores_non_movies(self):
-        item = SimpleNamespace(
-            TYPE="episode",
-            roles=[SimpleNamespace(tag="Host", thumb="/host")],
-        )
-
-        self.assertIsNone(devisualize.item_artist_artwork_url(item, "Host"))
-
-    def test_artist_artwork_is_only_uploaded_when_missing(self):
-        source_server = SimpleNamespace(
-            url=mock.Mock(return_value="https://plex/maria")
-        )
-        source_item = SimpleNamespace(
-            TYPE="movie",
-            _server=source_server,
-            roles=[SimpleNamespace(tag="Maria Bamford", thumb="/maria")],
-        )
-        conversion = devisualize.Conversion(
-            infile=Path("source.mkv"),
-            outfile=Path("output.m4a"),
-            output_root=Path("output"),
-            source_id="42:0",
-            item=source_item,
-            output_library="Devisualized",
-            metadata=devisualize.AudioMetadata(
-                "Maria Bamford", "Old Baby (2017)", "Old Baby"
-            ),
-        )
-        plex_artist = SimpleNamespace(thumb=None, uploadPoster=mock.Mock())
-        section = SimpleNamespace(get=mock.Mock(return_value=plex_artist))
         plex = SimpleNamespace(
             library=SimpleNamespace(section=mock.Mock(return_value=section))
         )
-
-        devisualize.ensure_artist_artwork(plex, [conversion])
-        plex_artist.uploadPoster.assert_called_once_with(url="https://plex/maria")
-
-        plex_artist.thumb = "/existing"
-        plex_artist.uploadPoster.reset_mock()
-        devisualize.ensure_artist_artwork(plex, [conversion])
-        plex_artist.uploadPoster.assert_not_called()
+        runtime = devisualize.RuntimeConfig(
+            Path("/media"), Path("/plex"), Path("/podcasts"), "http://plex", False
+        )
+        conversions = devisualize.collect_conversions(
+            plex, runtime, [devisualize.CONFIG[0]]
+        )
+        plex.library.section.assert_called_once_with("Movies")
+        self.assertEqual(conversions[0].infile, Path("/media/movies/baby.mkv"))
+        self.assertEqual(
+            conversions[0].outfile,
+            Path("/podcasts/John Mulaney - Baby J (2023)/2023-04-25 - Baby J.m4a"),
+        )
 
 
 class ProcessingTests(unittest.TestCase):
+    def conversion(self, root):
+        return devisualize.Conversion(
+            infile=root / "source.mkv",
+            outfile=root / "output.m4a",
+            output_root=root,
+            source_id="42:0",
+            item=SimpleNamespace(title="Example"),
+            metadata=devisualize.AudioMetadata("Artist", "Album", "Track"),
+        )
+
     def test_failed_stream_copy_retries_with_transcoding(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            conversion = devisualize.Conversion(
-                infile=root / "source.mkv",
-                outfile=root / "output.m4a",
-                output_root=root,
-                source_id="42:0",
-                item=SimpleNamespace(title="Example"),
-                output_library="Music",
-                metadata=devisualize.AudioMetadata("Artist", "Album", "Track"),
-            )
-
+            conversion = self.conversion(root)
             with (
                 mock.patch.object(
-                    devisualize,
-                    "artwork_for",
-                    mock.AsyncMock(return_value=None),
+                    devisualize, "artwork_for", mock.AsyncMock(return_value=None)
                 ),
                 mock.patch.object(
                     devisualize,
@@ -262,7 +298,6 @@ class ProcessingTests(unittest.TestCase):
                 processed = asyncio.run(
                     devisualize.process_conversion(conversion, root / "artwork")
                 )
-
             self.assertIs(processed, conversion)
             self.assertEqual(write_audio.await_count, 2)
             self.assertFalse(
@@ -270,52 +305,175 @@ class ProcessingTests(unittest.TestCase):
             )
             self.assertTrue(write_audio.await_args_list[1].kwargs["transcode"])
 
+    def test_audio_metadata_does_not_include_source_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            conversion = self.conversion(Path(directory))
+            process = SimpleNamespace(
+                returncode=0, communicate=mock.AsyncMock(return_value=(b"", b""))
+            )
+            with (
+                mock.patch.object(
+                    asyncio,
+                    "create_subprocess_exec",
+                    mock.AsyncMock(return_value=process),
+                ) as spawn,
+                mock.patch.object(devisualize.os, "replace"),
+            ):
+                asyncio.run(devisualize.write_audio(conversion))
+            args = spawn.call_args.args
+            self.assertIn("-map_metadata", args)
+            self.assertFalse(
+                any("plex" in arg or arg.startswith("comment=") for arg in args)
+            )
 
-class ProgressSyncTests(unittest.TestCase):
-    @staticmethod
-    def item(offset, last_viewed_at=None, played=False, duration=100_000):
+    def test_audio_embeds_description_and_season_episode_identifiers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            conversion = self.conversion(Path(directory))
+            conversion = devisualize.dataclasses.replace(
+                conversion,
+                metadata=devisualize.AudioMetadata(
+                    "Jeopardy!",
+                    "Season 41",
+                    "Contestants",
+                    track_number=12,
+                    release_date="2024-09-24",
+                    season_number=41,
+                    description="Alice vs. Bob vs. Charlie.",
+                ),
+            )
+            process = SimpleNamespace(
+                returncode=0, communicate=mock.AsyncMock(return_value=(b"", b""))
+            )
+            with (
+                mock.patch.object(
+                    asyncio,
+                    "create_subprocess_exec",
+                    mock.AsyncMock(return_value=process),
+                ) as spawn,
+                mock.patch.object(devisualize.os, "replace"),
+            ):
+                asyncio.run(devisualize.write_audio(conversion))
+            args = spawn.call_args.args
+            for tag in [
+                "album=Season 41",
+                "track=12",
+                "disc=41",
+                "date=2024-09-24",
+                "comment=Alice vs. Bob vs. Charlie.",
+            ]:
+                self.assertIn(tag, args)
+
+
+class PodcastCoverTests(unittest.TestCase):
+    def conversion(self, root, item, artist="Maria Bamford"):
+        return devisualize.Conversion(
+            infile=root / "source.mkv",
+            outfile=root / artist / "special.m4a",
+            output_root=root,
+            source_id="42:0",
+            item=item,
+            metadata=devisualize.AudioMetadata(artist, artist, "Special"),
+        )
+
+    def movie(self):
         return SimpleNamespace(
-            duration=duration,
-            viewOffset=offset,
-            isPlayed=played,
-            lastViewedAt=last_viewed_at,
-            markPlayed=mock.Mock(),
-            markUnplayed=mock.Mock(),
-            updateProgress=mock.Mock(),
+            TYPE="movie",
+            thumb="/special-poster",
+            roles=[
+                SimpleNamespace(tag="Someone Else", thumb="/other"),
+                SimpleNamespace(tag="Maria Bamford", thumb="/portrait"),
+            ],
+            _server=SimpleNamespace(
+                url=mock.Mock(return_value="https://plex/special-poster")
+            ),
         )
 
-    def test_most_recent_item_can_rewind_progress(self):
-        older = datetime(2026, 1, 1, tzinfo=timezone.utc)
-        newer = datetime(2026, 1, 2, tzinfo=timezone.utc)
-        recent_item = self.item(20_000, newer)
-        stale_item = self.item(80_000, older)
+    def test_special_cover_is_downloaded_once_and_existing_cover_is_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            item = self.movie()
+            conversion = self.conversion(Path(directory), item)
+            response = SimpleNamespace(
+                content=b"portrait", raise_for_status=mock.Mock()
+            )
+            with mock.patch.object(
+                devisualize.requests, "get", return_value=response
+            ) as get:
+                devisualize.ensure_podcast_covers([conversion, conversion])
+                get.assert_called_once_with("https://plex/special-poster", timeout=30)
+                item._server.url.assert_called_once_with(
+                    "/special-poster", includeToken=True
+                )
+                cover = conversion.outfile.parent / "cover.jpg"
+                self.assertEqual(cover.read_bytes(), b"portrait")
+                cover.write_bytes(b"custom cover")
+                devisualize.ensure_podcast_covers([conversion])
+                self.assertEqual(get.call_count, 1)
+                self.assertEqual(cover.read_bytes(), b"custom cover")
 
-        self.assertTrue(devisualize.sync_progress_pair(recent_item, stale_item))
-
-        stale_item.updateProgress.assert_called_once_with(20_000)
-        recent_item.updateProgress.assert_not_called()
-
-    def test_furthest_progress_wins_when_timestamps_are_unavailable(self):
-        less_progressed = self.item(20_000)
-        more_progressed = self.item(80_000)
-
-        self.assertTrue(
-            devisualize.sync_progress_pair(less_progressed, more_progressed)
+    def test_jeopardy_cover_uses_show_artwork(self):
+        item = SimpleNamespace(
+            TYPE="episode",
+            thumb="/episode",
+            grandparentThumb="/show",
+            _server=SimpleNamespace(url=mock.Mock(return_value="https://plex/show")),
         )
+        conversion = self.conversion(Path("podcasts"), item, "Jeopardy!")
+        self.assertEqual(
+            devisualize.podcast_artwork_url(conversion), "https://plex/show"
+        )
+        item._server.url.assert_called_once_with("/show", includeToken=True)
 
-        less_progressed.updateProgress.assert_called_once_with(80_000)
-        more_progressed.updateProgress.assert_not_called()
+    def test_season_cover_is_preferred_over_show_and_episode_artwork(self):
+        item = SimpleNamespace(
+            TYPE="episode",
+            thumb="/episode",
+            parentThumb="/season",
+            grandparentThumb="/show",
+            _server=SimpleNamespace(url=mock.Mock(return_value="https://plex/season")),
+        )
+        conversion = self.conversion(Path("podcasts"), item, "Jeopardy! - Season 41")
+        self.assertEqual(
+            devisualize.podcast_artwork_url(conversion), "https://plex/season"
+        )
+        item._server.url.assert_called_once_with("/season", includeToken=True)
 
-    def test_recent_partial_progress_clears_played_status(self):
-        older = datetime(2026, 1, 1, tzinfo=timezone.utc)
-        newer = datetime(2026, 1, 2, tzinfo=timezone.utc)
-        recent_item = self.item(40_000, newer)
-        stale_item = self.item(0, older, played=True)
+    def test_missing_artwork_can_be_found_in_another_episode_of_the_season(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            missing = self.movie()
+            missing.thumb = None
+            conversions = [
+                self.conversion(root, missing),
+                self.conversion(root, self.movie()),
+            ]
+            response = SimpleNamespace(
+                content=b"portrait", raise_for_status=mock.Mock()
+            )
+            with mock.patch.object(
+                devisualize.requests, "get", return_value=response
+            ) as get:
+                devisualize.ensure_podcast_covers(conversions)
+                self.assertEqual(get.call_count, 1)
+            self.assertTrue((conversions[0].outfile.parent / "cover.jpg").exists())
 
-        self.assertTrue(devisualize.sync_progress_pair(recent_item, stale_item))
-
-        stale_item.markUnplayed.assert_called_once_with()
-        stale_item.updateProgress.assert_called_once_with(40_000)
+    def test_failed_cover_download_is_retried_on_next_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            conversion = self.conversion(Path(directory), self.movie())
+            response = SimpleNamespace(
+                content=b"portrait", raise_for_status=mock.Mock()
+            )
+            with mock.patch.object(
+                devisualize.requests,
+                "get",
+                side_effect=[devisualize.requests.RequestException("failed"), response],
+            ):
+                devisualize.ensure_podcast_covers([conversion])
+                self.assertFalse((conversion.outfile.parent / "cover.jpg").exists())
+                devisualize.ensure_podcast_covers([conversion])
+            self.assertEqual(
+                (conversion.outfile.parent / "cover.jpg").read_bytes(), b"portrait"
+            )
+            self.assertEqual(list(conversion.outfile.parent.glob("*.partial")), [])
 
 
 if __name__ == "__main__":

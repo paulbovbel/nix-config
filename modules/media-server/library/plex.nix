@@ -130,7 +130,8 @@ in {
         };
         script = ''
           ${python}/bin/python ${devisualizeScript}/bin/devisualize \
-            --host-media-root ${lib.escapeShellArg datasets.media.path}
+            --host-media-root ${lib.escapeShellArg datasets.media.path} \
+            --output-root ${lib.escapeShellArg datasets.media.children.devisualized.path}
         '';
       };
 

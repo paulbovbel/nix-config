@@ -2,14 +2,13 @@
 """Convert Plex collection videos into audio-only files.
 
 For each configured mapping, the script reads items from an input Plex library
-collection and writes `.m4a` files under the output Plex library location. Plex
+collection and writes `.m4a` files into podcast folders for Audiobookshelf. Plex
 reports media paths from inside the Plex container, so CLI root mappings translate
 those paths back to host paths for ffmpeg.
 """
 
 import argparse
 import asyncio
-import collections
 import dataclasses
 import json
 import logging
@@ -18,7 +17,7 @@ import re
 import tempfile
 import uuid
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import urlsplit
 
 import requests
 from plexapi.exceptions import NotFound
@@ -26,8 +25,7 @@ from plexapi.server import PlexServer
 
 FFMPEG_CONCURRENCY = 1
 MANIFEST_FILENAME = ".devisualize-manifest.json"
-MINIMUM_PROGRESS_CHANGE_MS = 1000
-PROCESSING_VERSION = 1
+PROCESSING_VERSION = 4
 PATH_SEPARATOR_PATTERN = re.compile(r"[\\/]+")
 LOGGER = logging.getLogger(__name__)
 
@@ -39,12 +37,11 @@ LOGGER = logging.getLogger(__name__)
 class DevisualizeConfig:
     input_library: str
     collection: str
-    output_library: str
 
 
 CONFIG = [
-    DevisualizeConfig("Movies", "Devisualize", "Devisualized"),
-    DevisualizeConfig("TV Shows", "Devisualize", "Devisualized"),
+    DevisualizeConfig("Movies", "Devisualize"),
+    DevisualizeConfig("TV Shows", "Devisualize"),
 ]
 
 
@@ -52,7 +49,7 @@ CONFIG = [
 class RuntimeConfig:
     host_media_root: Path
     plex_media_root: Path
-    scan_timeout: int
+    output_root: Path
     plex_url: str
     dry_run: bool
 
@@ -82,6 +79,8 @@ class AudioMetadata:
     track: str
     track_number: int | None = None
     release_date: str | None = None
+    season_number: int | None = None
+    description: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -91,7 +90,6 @@ class Conversion:
     output_root: Path
     source_id: str
     item: object
-    output_library: str
     metadata: AudioMetadata
 
 
@@ -141,7 +139,6 @@ class ProcessingManifest:
             },
             "output": str(conversion.outfile),
             "metadata": dataclasses.asdict(conversion.metadata),
-            "plex_url": item_plex_url(conversion.item),
             "artwork": getattr(conversion.item, "thumb", None)
             or getattr(conversion.item, "grandparentThumb", None),
         }
@@ -240,13 +237,16 @@ async def write_audio(
         f"artist={metadata.artist}",
         "-metadata",
         f"album_artist={metadata.artist}",
-        "-metadata",
-        f"comment={item_plex_url(conversion.item)}",
     ]
     if metadata.track_number is not None:
         cmd += ["-metadata", f"track={metadata.track_number}"]
     if metadata.release_date is not None:
         cmd += ["-metadata", f"date={metadata.release_date}"]
+    # Audiobookshelf maps disc/track to podcast season/episode identifiers.
+    if metadata.season_number is not None:
+        cmd += ["-metadata", f"disc={metadata.season_number}"]
+    if metadata.description:
+        cmd += ["-metadata", f"comment={metadata.description}"]
 
     cmd += [str(partial_file)]
     process = None
@@ -300,7 +300,12 @@ def playable_items(item) -> list:
     return []
 
 
-def movie_metadata(title: str, release_date: str | None = None) -> AudioMetadata:
+def movie_metadata(
+    title: str, release_date: str | None = None, comedian: str | None = None
+) -> AudioMetadata:
+    title = title.strip()
+    artist = comedian or title
+    track = title
     separators = [
         (index, separator)
         for separator in (":", " - ")
@@ -308,31 +313,37 @@ def movie_metadata(title: str, release_date: str | None = None) -> AudioMetadata
     ]
     if separators:
         separator_index, separator = min(separators)
-        artist = title[:separator_index].strip()
-        track = title[separator_index + len(separator) :].strip()
-        if artist and track:
-            album = track
-            if release_date and len(release_date) >= 4 and release_date[:4].isdigit():
-                album = f"{track} ({release_date[:4]})"
-            return AudioMetadata(artist, album, track)
+        title_artist = title[:separator_index].strip()
+        title_track = title[separator_index + len(separator) :].strip()
+        if title_artist and title_track:
+            artist, track = title_artist, title_track
 
-    title = title.strip()
-    album = title
-    if release_date and len(release_date) >= 4 and release_date[:4].isdigit():
-        album = f"{title} ({release_date[:4]})"
-    return AudioMetadata(title, album, title)
+    album = track
+    if release_date:
+        album = f"{album} ({release_date[:4]})"
+    return AudioMetadata(artist, album, track, release_date=release_date)
 
 
 def episode_metadata(item) -> AudioMetadata:
     artist = getattr(item, "grandparentTitle", None) or item.title
-    album = getattr(item, "parentTitle", None) or artist
+    season_number = getattr(item, "parentIndex", None)
+    season = getattr(item, "parentTitle", None) or (
+        f"Season {season_number}" if season_number is not None else "Unknown Season"
+    )
+    album = season.strip()
     episode_number = getattr(item, "index", None)
     if episode_number is None:
         track = item.title
     else:
         track = f"Episode {episode_number} - {item.title}"
 
-    return AudioMetadata(artist.strip(), album.strip(), track.strip(), episode_number)
+    return AudioMetadata(
+        artist.strip(),
+        album.strip(),
+        track.strip(),
+        track_number=episode_number,
+        season_number=season_number,
+    )
 
 
 def item_release_date(item) -> str | None:
@@ -353,7 +364,9 @@ def item_metadata(item) -> AudioMetadata:
     item_type = getattr(item, "TYPE", None)
     release_date = item_release_date(item)
     if item_type == "movie":
-        metadata = movie_metadata(item.title, release_date)
+        roles = getattr(item, "roles", [])
+        comedian = getattr(roles[0], "tag", None) if roles else None
+        metadata = movie_metadata(item.title, release_date, comedian)
     elif item_type == "episode":
         metadata = episode_metadata(item)
     else:
@@ -361,7 +374,34 @@ def item_metadata(item) -> AudioMetadata:
             f"Unsupported playable Plex item type {item_type}: {item.title}"
         )
 
-    return dataclasses.replace(metadata, release_date=release_date)
+    return dataclasses.replace(
+        metadata,
+        release_date=release_date,
+        description=item_description(item),
+    )
+
+
+def item_description(item) -> str | None:
+    summary = getattr(item, "summary", None)
+    if not summary:
+        return None
+
+    def remove_plex_link(match):
+        url = urlsplit(match.group())
+        host = (url.hostname or "").casefold()
+        if (
+            url.scheme == "plex"
+            or host == "plex.tv"
+            or host.endswith(".plex.tv")
+            or "/library/metadata/" in url.path
+        ):
+            return ""
+        return match.group()
+
+    return (
+        re.sub(r"(?:https?://|plex://)[^\s<>\"']+", remove_plex_link, summary).strip()
+        or None
+    )
 
 
 def path_segment(value: str) -> str:
@@ -377,16 +417,15 @@ def path_segment(value: str) -> str:
 
 def output_path(
     output_root: Path,
-    input_library: str,
     metadata: AudioMetadata,
 ) -> Path:
-    return (
-        output_root
-        / input_library
-        / path_segment(metadata.artist)
-        / path_segment(metadata.album)
-        / f"{path_segment(metadata.track)}.m4a"
-    )
+    title = metadata.track
+    if metadata.release_date:
+        title = f"{metadata.release_date} - {title}"
+    # Keep folders unique across artists/shows without repeating the author in
+    # Audiobookshelf's displayed podcast title (the album tag).
+    podcast = f"{metadata.artist} - {metadata.album}"
+    return output_root / path_segment(podcast) / f"{path_segment(title)}.m4a"
 
 
 def item_artwork_url(item) -> str | None:
@@ -395,30 +434,6 @@ def item_artwork_url(item) -> str | None:
         return None
 
     return item._server.url(thumb, includeToken=True)
-
-
-def item_artist_artwork_url(item, artist: str) -> str | None:
-    if getattr(item, "TYPE", None) != "movie":
-        return None
-
-    for role in getattr(item, "roles", []):
-        if getattr(role, "tag", "").casefold() != artist.casefold():
-            continue
-
-        thumb = getattr(role, "thumb", None)
-        if thumb:
-            return item._server.url(thumb, includeToken=True)
-
-    return None
-
-
-def item_plex_url(item) -> str:
-    machine_identifier = quote(str(item._server.machineIdentifier), safe="")
-    metadata_key = quote(f"/library/metadata/{item.ratingKey}", safe="")
-    return (
-        "https://app.plex.tv/desktop/#!/server/"
-        f"{machine_identifier}/details?key={metadata_key}"
-    )
 
 
 def download_artwork(item, directory: Path) -> Path | None:
@@ -431,6 +446,48 @@ def download_artwork(item, directory: Path) -> Path | None:
     artwork = directory / f"{item.ratingKey}.jpg"
     artwork.write_bytes(response.content)
     return artwork
+
+
+def podcast_artwork_url(conversion: Conversion) -> str | None:
+    item = conversion.item
+    if getattr(item, "TYPE", None) == "movie":
+        thumb = getattr(item, "thumb", None)
+    else:
+        # Prefer season artwork; episode thumbnails are not podcast covers.
+        thumb = getattr(item, "parentThumb", None) or getattr(
+            item, "grandparentThumb", None
+        )
+    return item._server.url(thumb, includeToken=True) if thumb else None
+
+
+def ensure_podcast_covers(conversions: list[Conversion]) -> None:
+    covered = set()
+    for conversion in conversions:
+        cover = conversion.outfile.parent / "cover.jpg"
+        if cover in covered:
+            continue
+        if cover.exists():
+            covered.add(cover)
+            continue
+
+        partial = cover.with_name(f".{cover.name}.{uuid.uuid4().hex}.partial")
+        try:
+            url = podcast_artwork_url(conversion)
+            if not url:
+                continue
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            cover.parent.mkdir(parents=True, exist_ok=True)
+            partial.write_bytes(response.content)
+            os.replace(partial, cover)
+            covered.add(cover)
+            LOGGER.info("Saved podcast cover %s", cover)
+        except (requests.RequestException, OSError) as err:
+            LOGGER.warning(
+                "Failed to save podcast cover %s (%s)", cover, type(err).__name__
+            )
+        finally:
+            partial.unlink(missing_ok=True)
 
 
 # Components
@@ -470,274 +527,6 @@ async def process_conversion(
     return conversion
 
 
-def progress_fraction(item) -> float:
-    if bool(getattr(item, "isPlayed", False)):
-        return 1.0
-
-    duration = getattr(item, "duration", None) or 0
-    if duration <= 0:
-        return 0.0
-
-    offset = getattr(item, "viewOffset", None) or 0
-    return max(0.0, min(offset / duration, 1.0))
-
-
-def progress_timestamp(item) -> float:
-    last_viewed_at = getattr(item, "lastViewedAt", None)
-    return last_viewed_at.timestamp() if last_viewed_at is not None else 0.0
-
-
-def mirror_progress_attributes(source, target, offset: int) -> None:
-    target.viewCount = 1 if bool(getattr(source, "isPlayed", False)) else 0
-    target.viewOffset = offset
-    target.lastViewedAt = getattr(source, "lastViewedAt", None)
-
-
-def copy_progress(source, target) -> bool:
-    source_progress = progress_fraction(source)
-    target_progress = progress_fraction(target)
-    target_duration = getattr(target, "duration", None) or 0
-    source_played = bool(getattr(source, "isPlayed", False))
-    target_played = bool(getattr(target, "isPlayed", False))
-
-    if source_played:
-        if target_played:
-            return False
-        target.markPlayed()
-        mirror_progress_attributes(source, target, 0)
-        return True
-
-    changed = False
-    if target_played:
-        target.markUnplayed()
-        mirror_progress_attributes(source, target, 0)
-        changed = True
-
-    if source_progress == 0.0:
-        if target_progress > 0.0 and not changed:
-            target.markUnplayed()
-            mirror_progress_attributes(source, target, 0)
-            changed = True
-        return changed
-
-    if target_duration <= 1:
-        return changed
-
-    desired_offset = max(
-        1, min(int(source_progress * target_duration), target_duration - 1)
-    )
-    current_offset = getattr(target, "viewOffset", None) or 0
-    if abs(desired_offset - current_offset) < MINIMUM_PROGRESS_CHANGE_MS:
-        return changed
-
-    target.updateProgress(desired_offset)
-    mirror_progress_attributes(source, target, desired_offset)
-    return True
-
-
-def sync_progress_pair(first, second) -> bool:
-    first_timestamp = progress_timestamp(first)
-    second_timestamp = progress_timestamp(second)
-    if first_timestamp > second_timestamp:
-        return copy_progress(first, second)
-    if second_timestamp > first_timestamp:
-        return copy_progress(second, first)
-    if progress_fraction(first) >= progress_fraction(second):
-        return copy_progress(first, second)
-    return copy_progress(second, first)
-
-
-def sync_progress(
-    plex: PlexServer,
-    runtime_config: RuntimeConfig,
-    conversions: list[Conversion],
-) -> None:
-    mapper = PlexPathMapper(
-        runtime_config.plex_media_root.resolve(),
-        runtime_config.host_media_root.resolve(),
-    )
-    output_tracks = {}
-    for output_library in {conversion.output_library for conversion in conversions}:
-        try:
-            tracks = plex.library.section(output_library).search(libtype="track")
-        except Exception as err:
-            LOGGER.error(
-                "Failed to list tracks in %s (%s)", output_library, type(err).__name__
-            )
-            continue
-
-        for track in tracks:
-            for plex_file in item_files(track):
-                output_tracks[mapper.to_host(plex_file).resolve()] = track
-
-    source_items = {}
-    synced_pairs = set()
-    for conversion in conversions:
-        output_track = output_tracks.get(conversion.outfile.resolve())
-        if output_track is None:
-            LOGGER.warning("Output track not found in Plex: %s", conversion.outfile)
-            continue
-
-        source_key = str(conversion.item.ratingKey)
-        pair = (source_key, str(output_track.ratingKey))
-        if pair in synced_pairs:
-            continue
-        synced_pairs.add(pair)
-
-        try:
-            if source_key not in source_items:
-                source_items[source_key] = conversion.item.reload()
-            source_item = source_items[source_key]
-            if sync_progress_pair(source_item, output_track):
-                LOGGER.info(
-                    "Synchronized progress between Plex items %s and %s",
-                    source_key,
-                    output_track.ratingKey,
-                )
-        except Exception as err:
-            LOGGER.error(
-                "Failed to synchronize progress for Plex item %s (%s)",
-                source_key,
-                type(err).__name__,
-            )
-
-
-def ensure_artist_artwork(plex: PlexServer, conversions: list[Conversion]) -> None:
-    artwork_by_artist = {}
-    for conversion in conversions:
-        key = (conversion.output_library, conversion.metadata.artist)
-        if key in artwork_by_artist:
-            continue
-
-        artwork_url = item_artist_artwork_url(
-            conversion.item, conversion.metadata.artist
-        )
-        if artwork_url:
-            artwork_by_artist[key] = artwork_url
-
-    output_sections = {}
-    for (output_library, artist), artwork_url in artwork_by_artist.items():
-        try:
-            if output_library not in output_sections:
-                output_sections[output_library] = plex.library.section(output_library)
-            plex_artist = output_sections[output_library].get(artist)
-            if getattr(plex_artist, "thumb", None):
-                continue
-
-            plex_artist.uploadPoster(url=artwork_url)
-            LOGGER.info("Set Plex artist artwork for %s", artist)
-        except Exception as err:
-            LOGGER.error(
-                "Failed to set Plex artist artwork for %s (%s)",
-                artist,
-                type(err).__name__,
-            )
-
-
-async def wait_for_scan(plex: PlexServer, scan_timeout: int):
-    def is_scanning():
-        return any(
-            activity.title.startswith("Scanning") for activity in plex.activities
-        )
-
-    elapsed = 0
-    while is_scanning() and elapsed < scan_timeout:
-        LOGGER.info("Waiting for scan to complete...")
-        await asyncio.sleep(5)
-        elapsed += 5
-
-    return not is_scanning()
-
-
-async def merge_albums(output_section, albums_by_artist: dict):
-    for artist, albums in albums_by_artist.items():
-        try:
-            plex_artist = output_section.get(artist)
-        except NotFound:
-            LOGGER.warning("Plex artist not found, skipping merge: %s", artist)
-            continue
-
-        for album in albums:
-            duplicate_albums = plex_artist.albums(title=album)
-            if len(duplicate_albums) > 1:
-                duplicate_keys = [album.ratingKey for album in duplicate_albums[1:]]
-                duplicate_albums[0].merge(duplicate_keys)
-                LOGGER.info(
-                    "Merged %d duplicate Plex album(s) for %s - %s",
-                    len(duplicate_keys),
-                    artist,
-                    album,
-                )
-
-
-@dataclasses.dataclass
-class PlexLibraryUpdater:
-    plex: PlexServer
-    scan_timeout: int
-    pending: collections.defaultdict = dataclasses.field(
-        default_factory=lambda: collections.defaultdict(
-            lambda: collections.defaultdict(set)
-        )
-    )
-    done: bool = False
-
-    def _add_processed(self, conversion: Conversion) -> None:
-        self.pending[conversion.output_library][conversion.metadata.artist].add(
-            conversion.metadata.album
-        )
-
-    async def _scan_pending(self, output_library: str) -> None:
-        albums_by_artist = self.pending.pop(output_library, None)
-        if not albums_by_artist:
-            return
-
-        output_section = self.plex.library.section(output_library)
-        LOGGER.info("Scanning Plex library: %s", output_library)
-        output_section.update()
-        if await wait_for_scan(self.plex, self.scan_timeout):
-            await merge_albums(output_section, albums_by_artist)
-        else:
-            LOGGER.warning("Plex scan did not complete before timeout")
-
-    async def _drain_queue(self, queue: asyncio.Queue) -> None:
-        while True:
-            try:
-                conversion = queue.get_nowait()
-            except asyncio.QueueEmpty:
-                return
-
-            if conversion is None:
-                self.done = True
-                continue
-
-            self._add_processed(conversion)
-
-    async def run(self, queue: asyncio.Queue) -> None:
-        while not self.done or self.pending:
-            if not self.pending:
-                conversion = await queue.get()
-                if conversion is None:
-                    self.done = True
-                else:
-                    self._add_processed(conversion)
-                continue
-
-            for output_library in list(self.pending):
-                await self._scan_pending(output_library)
-                await self._drain_queue(queue)
-
-        await self._drain_queue(queue)
-
-
-def output_locations(
-    plex: PlexServer,
-    mapper: PlexPathMapper,
-    config: DevisualizeConfig,
-) -> list[Path]:
-    output_section = plex.library.section(config.output_library)
-    return [mapper.to_host(location) for location in output_section.locations]
-
-
 def collection(plex: PlexServer, config: DevisualizeConfig):
     input_section = plex.library.section(config.input_library)
     try:
@@ -754,7 +543,6 @@ def collection(plex: PlexServer, config: DevisualizeConfig):
 def conversions_for_item(
     item,
     mapper: PlexPathMapper,
-    config: DevisualizeConfig,
     output_root: Path,
 ) -> list[Conversion]:
     files = item_files(item)
@@ -770,7 +558,7 @@ def conversions_for_item(
             metadata = dataclasses.replace(
                 metadata, track=f"{metadata.track}-{index + 1}"
             )
-        outfile = output_path(output_root, config.input_library, metadata)
+        outfile = output_path(output_root, metadata)
         conversions.append(
             Conversion(
                 infile=infile,
@@ -778,7 +566,6 @@ def conversions_for_item(
                 output_root=output_root,
                 source_id=f"{item.ratingKey}:{index}",
                 item=item,
-                output_library=config.output_library,
                 metadata=metadata,
             )
         )
@@ -790,12 +577,8 @@ def conversions_for_config(
     plex: PlexServer,
     mapper: PlexPathMapper,
     config: DevisualizeConfig,
+    output_root: Path,
 ) -> list[Conversion]:
-    locations = output_locations(plex, mapper, config)
-    if not locations:
-        LOGGER.warning("Output library has no locations: %s", config.output_library)
-        return []
-
     plex_collection = collection(plex, config)
     if not plex_collection:
         return []
@@ -803,7 +586,7 @@ def conversions_for_config(
     conversions = []
     for collection_item in plex_collection.items():
         for item in playable_items(collection_item):
-            conversions.extend(conversions_for_item(item, mapper, config, locations[0]))
+            conversions.extend(conversions_for_item(item, mapper, output_root))
     return conversions
 
 
@@ -818,7 +601,9 @@ def collect_conversions(
     )
     conversions = []
     for config in configs:
-        conversions.extend(conversions_for_config(plex, mapper, config))
+        conversions.extend(
+            conversions_for_config(plex, mapper, config, runtime_config.output_root)
+        )
     return conversions
 
 
@@ -862,7 +647,6 @@ async def process_conversions(
     conversions: list[Conversion],
     manifest: ProcessingManifest,
     artwork_dir: Path,
-    plex_updates: asyncio.Queue,
 ):
     semaphore = asyncio.Semaphore(FFMPEG_CONCURRENCY)
     conversions = pending_conversions(conversions, manifest)
@@ -872,7 +656,6 @@ async def process_conversions(
             processed = await process_conversion(conversion, artwork_dir)
         if processed:
             manifest.mark_processed(processed)
-            await plex_updates.put(processed)
 
     await asyncio.gather(*(process_one(conversion) for conversion in conversions))
 
@@ -891,7 +674,10 @@ async def main():
         "--plex-media-root", type=Path, default=Path("/mnt/storage/share")
     )
     parser.add_argument(
-        "--scan-timeout", type=int, default=300, help="Maximum seconds to wait for Plex"
+        "--output-root",
+        type=Path,
+        required=True,
+        help="Audiobookshelf podcast directory",
     )
     parser.add_argument(
         "--plex-url",
@@ -902,7 +688,7 @@ async def main():
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Log planned conversions without writing files or updating Plex",
+        help="Log planned conversions without writing files",
     )
     args = parser.parse_args()
     plex_token = os.environ.get("PLEX_TOKEN")
@@ -912,7 +698,7 @@ async def main():
     runtime_config = RuntimeConfig(
         host_media_root=args.host_media_root,
         plex_media_root=args.plex_media_root,
-        scan_timeout=args.scan_timeout,
+        output_root=args.output_root,
         plex_url=args.plex_url,
         dry_run=args.dry_run,
     )
@@ -923,20 +709,11 @@ async def main():
         log_dry_run(conversions, manifest)
         return
 
+    # Check all podcast folders, including ones whose audio is already up to date.
+    await asyncio.to_thread(ensure_podcast_covers, conversions)
     with tempfile.TemporaryDirectory() as temporary_directory:
         artwork_dir = Path(temporary_directory)
-        plex_updates = asyncio.Queue()
-        plex_updater = PlexLibraryUpdater(plex, runtime_config.scan_timeout)
-        plex_update_task = asyncio.create_task(plex_updater.run(plex_updates))
-
-        try:
-            await process_conversions(conversions, manifest, artwork_dir, plex_updates)
-        finally:
-            await plex_updates.put(None)
-            await plex_update_task
-
-    ensure_artist_artwork(plex, conversions)
-    sync_progress(plex, runtime_config, conversions)
+        await process_conversions(conversions, manifest, artwork_dir)
 
 
 if __name__ == "__main__":
