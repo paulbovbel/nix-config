@@ -64,6 +64,8 @@
     (entry "authentik_core.application" slug {inherit slug;} {
       inherit (application) name;
       meta_launch_url = application.launchUrl;
+      meta_icon = application.iconUrl;
+      meta_hide = false;
       provider = key providerId;
     })
     (entry "authentik_policies.policybinding" "${slug}-binding" {
@@ -73,6 +75,42 @@
         policy = key "allowed-users";
       })
   ]) (lib.attrNames cfg.applications);
+  dashboardEntries = lib.concatMap (siteName: let
+    site = config.caddy.sites.${siteName};
+    domain = lib.findFirst (domain: domain.tls == "public") (lib.head site.domains) site.domains;
+    baseUrl = "https://${integration.domainAddress domain}";
+  in
+    lib.concatMap (endpointName: let
+      endpoint = site.endpoints.${endpointName};
+      launchUrl = "${baseUrl}${lib.removeSuffix "/" endpoint.path}/";
+      id = "caddy-${siteName}-${endpointName}";
+      hasNativeApplication = lib.any (application: application.launchUrl == launchUrl) (lib.attrValues cfg.applications);
+    in
+      lib.optionals (endpoint.dashboard.enable && !hasNativeApplication) (
+        [
+          (entry "authentik_core.application" id {slug = id;} {
+            name = endpoint.dashboard.name;
+            meta_launch_url = launchUrl;
+            meta_icon = endpoint.dashboard.iconUrl;
+            meta_hide = false;
+            provider = null;
+            policy_engine_mode = "all";
+          })
+          (entry "authentik_policies.policybinding" "${id}-allowlist" {
+              target = key id;
+              order = 0;
+            } {
+              policy = key "allowed-users";
+            })
+        ]
+        ++ lib.optional (endpoint.auth == "oauth") (entry "authentik_policies.policybinding" "${id}-role" {
+            target = key id;
+            order = 1;
+          } {
+            group = key "group-${endpoint.role}";
+          })
+      )) (lib.attrNames site.endpoints))
+  (lib.filter (siteName: config.caddy.sites.${siteName}.domains != []) (lib.attrNames config.caddy.sites));
   entries =
     map (name: {
       model = "authentik_blueprints.metaapplyblueprint";
@@ -81,6 +119,8 @@
         required = true;
       };
     }) [
+      "System - OAuth2 Provider - Scopes"
+      "System - Proxy Provider - Scopes"
       "Default - Authentication flow"
       "Default - Source authentication flow"
       "Default - Provider authorization flow (implicit consent)"
@@ -146,6 +186,7 @@
       (entry "authentik_core.application" "app-${id}" {slug = id;} {
         name = "Caddy ${domain}";
         meta_launch_url = "https://${domain}/";
+        meta_hide = true;
         provider = key id;
       })
       (entry "authentik_policies.policybinding" "binding-${id}" {
@@ -173,7 +214,8 @@
         expression = ''return {"email": request.user.email, "email_verified": True}'';
       })
     ]
-    ++ applicationEntries;
+    ++ applicationEntries
+    ++ dashboardEntries;
 in {
   config = lib.mkIf cfg.enable {
     authentik.blueprint = pkgs.writeText "authentik-blueprint.yaml" (render {

@@ -105,6 +105,9 @@ in {
     };
 
     caddy.sites.media.endpoints.tautulli = {
+      dashboard = {
+        name = "Tautulli";
+      };
       type = "proxy";
       auth = "oauth";
       path = "/tautulli";

@@ -12,12 +12,14 @@ The worker applies a generated blueprint that owns users, memberships, and provi
 
 Caddy endpoints with `auth = "oauth"` automatically provision forward-auth providers. Caddy checks each endpoint's required role and strips identity headers before proxying to applications.
 
+Caddy endpoints also generate dashboard tiles with names, icons, and role-aware visibility. Public URLs are preferred, native OIDC entries are reused, and `dashboard.enable = false` excludes non-browser endpoints. Dashboard links do not replace application or Caddy access controls.
+
 `authentik.applications` declares native OIDC clients, scopes, and redirect URIs; configure the corresponding client settings in each application. Confidential clients generate persistent secrets by default, while public clients do not. A dedicated email mapping marks allowlisted identities as verified without changing Authentik's managed mapping.
 
 ## Operations
 
-Server and worker share PostgreSQL and use the embedded outpost. Persist and restore `storage.datasets.app.children.authentik` and `authentik-db` together. Generated credentials live in the root-only `authentik/secrets/runtime.env` beneath the Authentik dataset. Images are pinned so server and worker upgrade together.
+Server and worker share PostgreSQL and use the embedded outpost. Persist and restore `storage.datasets.app.children.authentik` and `authentik-db` together. Generated credentials live in root-only files beneath the Authentik dataset's `secrets/` directory; client secrets are persisted individually and reuse existing credentials during migration. Images are pinned so server and worker upgrade together.
 
 Inspect `authentik.service`, `authentik-worker.service`, and `authentik-db.service`, plus blueprint status in the admin UI. Restart containers through their systemd services.
 
-Run `nix develop --command just authentik-test` for disposable-container checks of grants, email claims, and blueprint reconciliation. Google login also requires a browser smoke test.
+Run `nix develop --command just authentik-test` for the minimal NixOS VM check of provisioning, credentials, dashboard links, visibility, and blueprint reconciliation. CI includes it in the flake checks. Google login also requires a browser smoke test.

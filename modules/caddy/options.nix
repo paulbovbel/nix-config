@@ -1,5 +1,9 @@
 {lib, ...}: let
-  endpointType = lib.types.submodule {
+  endpointType = lib.types.submodule ({
+    name,
+    config,
+    ...
+  }: {
     options = {
       type = lib.mkOption {
         type = lib.types.enum ["proxy" "share"];
@@ -54,8 +58,30 @@
         default = [];
         description = "Additional header_up directive arguments passed to Caddy.";
       };
+      dashboard = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Show this endpoint in the Authentik application dashboard.";
+        };
+        name = lib.mkOption {
+          type = lib.types.str;
+          default = name;
+          description = "Application dashboard display name.";
+        };
+        iconUrl = lib.mkOption {
+          type = lib.types.str;
+          default = (import ./icons.nix {inherit lib;}) config.dashboard.iconName;
+          description = "Application dashboard icon URL; defaults to Homarr SVG/PNG lookup.";
+        };
+        iconName = lib.mkOption {
+          type = lib.types.str;
+          default = name;
+          description = "Homarr icon name; light artwork is preferred for dark backgrounds.";
+        };
+      };
     };
-  };
+  });
 
   domainType = lib.types.submodule {
     options = {

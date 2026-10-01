@@ -405,6 +405,7 @@
         inherit (mkDocs system) module-docs-check;
       }
       // lib.optionalAttrs (system == "x86_64-linux") {
+        authentik-blueprint = import ./modules/authentik/tests/blueprint.nix {inherit pkgs quadlet-nix;};
         # TODO: Add end-to-end Btrfs and ZFS USB installer state-migration tests.
         root-fs-btrfs-impermanence = rootFsImpermanenceTest "btrfs";
         root-fs-zfs-impermanence = rootFsImpermanenceTest "zfs";

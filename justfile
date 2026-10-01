@@ -83,10 +83,10 @@ nix-test:
     system="$(nix eval --impure --raw --expr builtins.currentSystem)"; \
       nix build --no-link -L $(nix eval --raw ".#checks.$system" --apply 'checks: builtins.concatStringsSep " " (map (name: ".#checks.'"$system"'.${name}") (builtins.attrNames checks))')
 
-# Test the Authentik blueprint and mapping reconciliation in disposable containers.
+# Test Authentik provisioning, dashboard, and reconciliation in a minimal NixOS VM.
 [group('checks')]
 authentik-test:
-    bash modules/authentik/tests/authentik-containers.sh
+    nix build --no-link -L .#checks.x86_64-linux.authentik-blueprint
 
 # Lint and format-check Python files.
 [group('checks')]

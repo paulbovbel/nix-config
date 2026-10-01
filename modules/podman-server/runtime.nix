@@ -9,6 +9,16 @@
 
   derivedEnvUnits = names: map (name: "podman-server-${name}-env.service") names;
   derivedEnvFiles = names: map (name: cfg.derivedEnvFiles.${name}.path) names;
+  derivedEnvDefinitions = names:
+    builtins.listToAttrs (lib.concatMap (name:
+      [
+        {
+          inherit name;
+          value = cfg.derivedEnvFiles.${name};
+        }
+      ]
+      ++ lib.mapAttrsToList (name: value: {inherit name value;}) (derivedEnvDefinitions cfg.derivedEnvFiles.${name}.derivedEnvironmentFiles))
+    names);
   ageSecretFilesByPath = lib.mapAttrs' (_: secret: lib.nameValuePair secret.path secret.file) config.age.secrets;
   derivedEnvSecretPaths = names:
     lib.concatMap (
@@ -83,6 +93,7 @@
     restartTriggers =
       [
         (pkgs.writeText "podman-server-${name}-config" (builtins.toJSON container))
+        (pkgs.writeText "podman-server-${name}-derived-env-config" (builtins.toJSON (derivedEnvDefinitions container.derivedEnvironmentFiles)))
       ]
       ++ secretRestartTriggers container;
   };
@@ -120,7 +131,8 @@
     renderedVariables = lib.concatStringsSep "\n" (lib.mapAttrsToList (key: value: "${key}=${value}") envFile.variables);
   in {
     description = "Render environment file for Podman server ${name}";
-    wants = derivedEnvUnitNames ++ envFile.wants;
+    requires = derivedEnvUnitNames;
+    inherit (envFile) wants;
     after = derivedEnvUnitNames ++ envFile.after;
     path = [pkgs.coreutils] ++ envFile.packages;
     serviceConfig = {

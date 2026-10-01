@@ -22,6 +22,10 @@ caddy.sites.media.endpoints.example = {
 
 Proxy endpoints require `host` and `port`. Authentication defaults to Authentik forward auth (`auth = "oauth"`); `role` selects the required Authentik group. Use `auth = null` for public endpoints or applications enforcing their own authentication, including native OIDC clients.
 
+When Authentik is enabled, endpoints appear as application dashboard tiles using a public site domain (or the first domain when none is public). Override `dashboard.name` and `dashboard.iconUrl` for presentation, or set `dashboard.enable = false` for protocol-only endpoints. OAuth tile visibility follows the endpoint's required role; native OIDC entries with the same launch URL are reused.
+
+Icons default to a lookup in Homarr's pinned catalogue using the endpoint name: light artwork for dark backgrounds, SVG before PNG, then a folder fallback. Set `dashboard.iconName` for a different Homarr asset or `dashboard.iconUrl` for custom artwork.
+
 Protected domains automatically provision Authentik proxy providers. Shared helpers in `modules/authentik/lib.nix` keep domain selection/formatting, the outpost upstream, and identity-header handling consistent. The generated `authentik-auth` snippet performs authentication and per-route role checks before path-prefix stripping; application upstreams do not receive identity headers, while protocol headers such as `X-Authentik-CSRF` are preserved.
 
 Useful endpoint settings include:

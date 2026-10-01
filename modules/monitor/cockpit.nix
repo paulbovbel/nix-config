@@ -40,6 +40,9 @@ in {
     };
 
     caddy.sites.media.endpoints.cockpit = {
+      dashboard = {
+        name = "Cockpit";
+      };
       type = "proxy";
       auth = "oauth";
       path = "/cockpit";

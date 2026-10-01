@@ -18,6 +18,10 @@ in {
 
     caddy.sites.media.endpoints = {
       share = {
+        dashboard = {
+          name = "Shared files";
+          iconName = "folder";
+        };
         type = "share";
         auth = "oauth";
         path = "/share";

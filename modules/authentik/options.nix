@@ -54,6 +54,11 @@
             type = lib.types.str;
             description = "HTTPS application front-page URL opened from the Authentik dashboard.";
           };
+          iconUrl = lib.mkOption {
+            type = lib.types.str;
+            default = (import ../caddy/icons.nix {inherit lib;}) name;
+            description = "Application dashboard icon URL.";
+          };
           clientId = lib.mkOption {
             type = lib.types.str;
             default = name;

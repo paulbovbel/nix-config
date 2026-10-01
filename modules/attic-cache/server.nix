@@ -83,6 +83,7 @@ in {
     caddy.sites.nix-cache = {
       domains = [{host = domain;}];
       endpoints.attic = {
+        dashboard.enable = false;
         type = "proxy";
         auth = null;
         path = "/";

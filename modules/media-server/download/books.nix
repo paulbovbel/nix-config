@@ -117,6 +117,9 @@ in {
 
     caddy.sites.media.endpoints = {
       readarr = {
+        dashboard = {
+          name = "Readarr";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/readarr";
@@ -127,6 +130,9 @@ in {
       };
 
       shelfmark = {
+        dashboard = {
+          name = "Shelfmark";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/shelfmark";

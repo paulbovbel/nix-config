@@ -176,6 +176,9 @@ in {
 
     caddy.sites.media.endpoints = {
       autobrr = {
+        dashboard = {
+          name = "autobrr";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/autobrr";
@@ -185,6 +188,9 @@ in {
       };
 
       jackett = {
+        dashboard = {
+          name = "Jackett";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/jackett";
@@ -194,6 +200,9 @@ in {
       };
 
       prowlarr = {
+        dashboard = {
+          name = "Prowlarr";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/prowlarr";
@@ -203,6 +212,9 @@ in {
       };
 
       qbittorrent = {
+        dashboard = {
+          name = "qBittorrent";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/qbittorrent";

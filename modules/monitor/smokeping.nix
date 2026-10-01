@@ -33,6 +33,9 @@ in {
     };
 
     caddy.sites.media.endpoints.smokeping = {
+      dashboard = {
+        name = "Smokeping";
+      };
       type = "proxy";
       auth = "oauth";
       path = "/smokeping";

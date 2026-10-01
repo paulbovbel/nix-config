@@ -11,8 +11,25 @@
   confidentialApplications = lib.filter (application: application.clientType == "confidential") applications;
   generatedSecretApplications = lib.filter (application: application.generateClientSecret) confidentialApplications;
   inherit (import ./lib.nix {inherit lib;}) clientSecretEnvironment;
-  generatedSecrets = builtins.listToAttrs (map (application: lib.nameValuePair (clientSecretEnvironment application) "$(openssl rand -hex 32)") generatedSecretApplications);
-  propagatedSecrets = builtins.mapAttrs (name: _: "$" + name) generatedSecrets;
+  clientSecretFiles = map (application: "authentik-client-${application.clientId}") generatedSecretApplications;
+  propagatedSecrets = builtins.listToAttrs (map (application: let
+    name = clientSecretEnvironment application;
+  in
+    lib.nameValuePair name "\${${name}:?Missing generated Authentik client secret}")
+  generatedSecretApplications);
+  clientSecretEnvFiles = builtins.listToAttrs (map (application: let
+    name = clientSecretEnvironment application;
+    legacyName = lib.removePrefix "AUTHENTIK_" name;
+  in
+    lib.nameValuePair "authentik-client-${application.clientId}" {
+      path = "${state}/secrets/clients/${application.clientId}.env";
+      createIfMissing = true;
+      directoryMode = "0700";
+      packages = [pkgs.openssl];
+      derivedEnvironmentFiles = ["authentik-secrets"];
+      variables.${name} = "\${${name}:-\${${legacyName}:-$(openssl rand -hex 32)}}";
+    })
+  generatedSecretApplications);
   declaredUsers = map (user: user.email) cfg.users;
   inherit (config.podmanServer) user;
   mkContainer = command: {
@@ -24,13 +41,18 @@
         inherit (cfg) image;
         exec = command;
         autoUpdate = lib.mkForce null;
-        environments = {
-          AUTHENTIK_POSTGRESQL__HOST = "authentik-db";
-          AUTHENTIK_POSTGRESQL__NAME = "authentik";
-          AUTHENTIK_POSTGRESQL__USER = "authentik";
-          AUTHENTIK_ERROR_REPORTING__ENABLED = "false";
-          AUTHENTIK_DISABLE_UPDATE_CHECK = "true";
-        };
+        environments =
+          {
+            AUTHENTIK_POSTGRESQL__HOST = "authentik-db";
+            AUTHENTIK_POSTGRESQL__NAME = "authentik";
+            AUTHENTIK_POSTGRESQL__USER = "authentik";
+            AUTHENTIK_ERROR_REPORTING__ENABLED = "false";
+            AUTHENTIK_DISABLE_UPDATE_CHECK = "true";
+          }
+          // lib.optionalAttrs (command == "worker") {
+            # Blueprint imports and outpost permission rebuilds share database rows.
+            AUTHENTIK_WORKER__THREADS = "1";
+          };
         volumes = [
           "${state}/data:/data"
           "${cfg.blueprint}:/blueprints/custom/nix-config.yaml:ro"
@@ -102,36 +124,36 @@ in {
     systemd.tmpfiles.rules = ["d ${state}/data 0750 1000 1000 - -"];
     podmanServer = {
       paths.authentik = state;
-      derivedEnvFiles = {
-        authentik-secrets = {
-          path = "${state}/secrets/runtime.env";
-          createIfMissing = true;
-          directoryMode = "0700";
-          packages = [pkgs.openssl];
-          after = ["zfs-mount.service"];
-          variables =
-            {
+      derivedEnvFiles =
+        clientSecretEnvFiles
+        // {
+          authentik-secrets = {
+            path = "${state}/secrets/runtime.env";
+            createIfMissing = true;
+            directoryMode = "0700";
+            packages = [pkgs.openssl];
+            after = ["zfs-mount.service"];
+            variables = {
               AUTHENTIK_SECRET_KEY = "$(openssl rand -hex 60)";
               POSTGRES_PASSWORD = "$(openssl rand -hex 36)";
               AUTHENTIK_BOOTSTRAP_PASSWORD = "$(openssl rand -hex 32)";
-            }
-            // generatedSecrets;
+            };
+          };
+          authentik = {
+            derivedEnvironmentFiles = ["authentik-secrets"] ++ clientSecretFiles;
+            variables =
+              {
+                AUTHENTIK_SECRET_KEY = "$AUTHENTIK_SECRET_KEY";
+                AUTHENTIK_POSTGRESQL__PASSWORD = "$POSTGRES_PASSWORD";
+                AUTHENTIK_BOOTSTRAP_PASSWORD = "$AUTHENTIK_BOOTSTRAP_PASSWORD";
+              }
+              // propagatedSecrets;
+          };
+          authentik-db = {
+            derivedEnvironmentFiles = ["authentik-secrets"];
+            variables.POSTGRES_PASSWORD = "$POSTGRES_PASSWORD";
+          };
         };
-        authentik = {
-          derivedEnvironmentFiles = ["authentik-secrets"];
-          variables =
-            {
-              AUTHENTIK_SECRET_KEY = "$AUTHENTIK_SECRET_KEY";
-              AUTHENTIK_POSTGRESQL__PASSWORD = "$POSTGRES_PASSWORD";
-              AUTHENTIK_BOOTSTRAP_PASSWORD = "$AUTHENTIK_BOOTSTRAP_PASSWORD";
-            }
-            // propagatedSecrets;
-        };
-        authentik-db = {
-          derivedEnvironmentFiles = ["authentik-secrets"];
-          variables.POSTGRES_PASSWORD = "$POSTGRES_PASSWORD";
-        };
-      };
       containers = {
         authentik = mkContainer "server";
         authentik-worker = mkContainer "worker";
@@ -139,6 +161,7 @@ in {
           derivedEnvironmentFiles = ["authentik-db"];
           quadlet.containerConfig = {
             image = "docker.io/library/postgres:16-alpine";
+            exec = "postgres -c jit=off";
             autoUpdate = lib.mkForce null;
             podmanArgs = ["--user=${toString user.uid}:${toString user.gid}"];
             environments = {
@@ -154,6 +177,7 @@ in {
     caddy.sites.authentik = {
       domains = [{host = cfg.domain;}];
       endpoints.authentik = {
+        dashboard.enable = false;
         type = "proxy";
         auth = null;
         path = "/";

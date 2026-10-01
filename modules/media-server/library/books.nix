@@ -17,11 +17,13 @@ in {
       audiobookshelf = {
         name = "Audiobookshelf";
         launchUrl = "${baseUrl}${config.caddy.sites.media.endpoints.audiobookshelf.path}/";
+        iconUrl = config.caddy.sites.media.endpoints.audiobookshelf.dashboard.iconUrl;
         redirectUris = map (path: "${baseUrl}/audiobookshelf/auth/openid/${path}") ["callback" "mobile-redirect"];
       };
       grimmory = {
         name = "Grimmory";
         launchUrl = "${baseUrl}${config.caddy.sites.media.endpoints.grimmory.path}/";
+        iconUrl = config.caddy.sites.media.endpoints.grimmory.dashboard.iconUrl;
         clientType = "public";
         redirectUris = ["${baseUrl}/grimmory/oauth2-callback"];
         scopes = ["openid" "email" "profile" "offline_access" "groups"];
@@ -132,6 +134,7 @@ in {
             }
           ];
           endpoints.grimmory-kobo = {
+            dashboard.enable = false;
             type = "proxy";
             auth = null;
             path = "/grimmory/api/kobo";
@@ -146,6 +149,9 @@ in {
         };
 
         media.endpoints.audiobookshelf = {
+          dashboard = {
+            name = "Audiobookshelf";
+          };
           type = "proxy";
           # Use the application's login so native streaming clients can authenticate.
           auth = null;
@@ -155,6 +161,10 @@ in {
         };
 
         media.endpoints.grimmory = {
+          dashboard = {
+            name = "Grimmory";
+            iconUrl = "https://raw.githubusercontent.com/grimmory-tools/grimmory/develop/assets/logo.svg";
+          };
           type = "proxy";
           # Native OIDC and application tokens also work for API/mobile clients.
           auth = null;

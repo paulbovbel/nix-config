@@ -168,6 +168,9 @@ in {
 
     caddy.sites.media.endpoints = {
       maintainerr = {
+        dashboard = {
+          name = "Maintainerr";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/maintainerr";
@@ -185,6 +188,9 @@ in {
       #   handlePath = true;
       # };
       radarr = {
+        dashboard = {
+          name = "Radarr";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/radarr";
@@ -194,6 +200,9 @@ in {
         spoofBasic = true;
       };
       sonarr = {
+        dashboard = {
+          name = "Sonarr";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/sonarr";
@@ -203,6 +212,9 @@ in {
         spoofBasic = true;
       };
       bazarr = {
+        dashboard = {
+          name = "Bazarr";
+        };
         type = "proxy";
         auth = "oauth";
         path = "/bazarr";

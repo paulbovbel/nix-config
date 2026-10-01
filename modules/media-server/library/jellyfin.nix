@@ -28,6 +28,9 @@ in {
     };
 
     caddy.sites.media.endpoints.jellyfin = {
+      dashboard = {
+        name = "Jellyfin";
+      };
       type = "proxy";
       auth = null;
       path = "/jellyfin";
