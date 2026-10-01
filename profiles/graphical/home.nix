@@ -1,5 +1,6 @@
 {
   config,
+  headsetcontrolPackage,
   lib,
   pkgs,
   ...
@@ -138,7 +139,7 @@ in {
         picture-options = "zoom";
       };
       "org/gnome/shell/extensions/HeadsetControl" = {
-        headsetcontrol-executable = lib.getExe pkgs.headsetcontrol;
+        headsetcontrol-executable = lib.getExe headsetcontrolPackage;
       };
       "org/gnome/shell/extensions/dash-to-dock" = {
         apply-custom-theme = true;
