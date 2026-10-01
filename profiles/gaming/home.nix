@@ -4,12 +4,13 @@
   ...
 }: let
   mkAutostart = import ../graphical/autostart.nix;
+  workActive = builtins.elem "work" config.profiles.selected;
 in {
-  xdg.configFile = mkAutostart {
+  xdg.configFile = lib.mkIf (!workActive) (mkAutostart {
     file = "steam";
     name = "Steam";
     exec = "steam -silent";
-  };
+  });
 
   home.activation.steamappsLibrary = lib.hm.dag.entryAfter ["writeBoundary"] ''
     steamapps_path="${config.xdg.dataHome}/Steam/steamapps"

@@ -91,7 +91,10 @@
       backupFileExtension = "backup";
       useGlobalPkgs = true;
       useUserPackages = true;
-      sharedModules = [catppuccin.homeModules.catppuccin];
+      sharedModules = [
+        catppuccin.homeModules.catppuccin
+        ../profiles/selected.nix
+      ];
       extraSpecialArgs = {inherit unstablePkgs vscode-workspace-populator;};
     };
   };
@@ -119,6 +122,12 @@ in
         ]
         ++ externalModules
         ++ lib.unique (lib.concatMap userSystemModules cfg.users)
-        ++ map (user: {home-manager.users.${user.name}.imports = userHomeModules user;}) cfg.users
+        ++ map (user: {
+          home-manager.users.${user.name} = {
+            imports = userHomeModules user;
+            profiles.selected = user.profiles;
+          };
+        })
+        cfg.users
         ++ extraModules;
     }

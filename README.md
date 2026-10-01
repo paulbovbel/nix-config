@@ -28,7 +28,7 @@ just switch <host>
 
 ## Architecture
 
-Hosts are registered in `hosts/default.nix`. Each `hosts/<host>/default.nix` selects a system, age recipient, installer kind (`generic` or `apple-silicon`), CI build eligibility (`ciBuild`), users, and profiles. `hosts/mk-host.nix` composes hosts, and `profiles/default.nix` maps user-specific profiles to Home Manager and system modules. Reusable modules under `modules/` are imported globally and enabled from host configurations.
+Hosts are registered in `hosts/default.nix`. Each `hosts/<host>/default.nix` selects a system, age recipient, installer kind (`generic` or `apple-silicon`), CI build eligibility (`ciBuild`), users, and profiles. `hosts/mk-host.nix` composes hosts, and `profiles/default.nix` maps user-specific profiles to Home Manager and system modules. Home Manager modules can read the user's selected profile names from `profiles.selected` (defined in `profiles/selected.nix`) to adapt to profile combinations. Reusable modules under `modules/` are imported globally and enabled from host configurations.
 
 Key abstractions (see each module's `options.nix` for its API):
 
