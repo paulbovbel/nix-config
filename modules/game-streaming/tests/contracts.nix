@@ -42,7 +42,8 @@
     nvidiaPackage =
       nvenc.services.sunshine.package.outPath
       == (streamingPkgs.sunshine.override {cudaSupport = true;}).outPath
-      && nvenc.services.sunshine.settings.encoder == "nvenc";
+      && nvenc.services.sunshine.settings.encoder == "nvenc"
+      && nvenc.services.sunshine.settings ? nvenc_preset;
   };
   failed = lib.attrNames (lib.filterAttrs (_: passed: !passed) tests);
 in

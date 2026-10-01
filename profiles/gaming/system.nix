@@ -1,4 +1,9 @@
-{pkgs, ...}: {
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
   imports = [
     ../graphical/system.nix
   ];
@@ -34,6 +39,11 @@
         inhibit_screensaver = 1;
       };
       cpu.governor = "performance";
+      gpu = lib.mkIf config.nvidia.enable {
+        apply_gpu_optimisations = "accept-responsibility";
+        gpu_device = 0;
+        nv_powermizer_mode = 1;
+      };
     };
   };
 

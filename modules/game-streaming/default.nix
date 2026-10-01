@@ -22,16 +22,23 @@ in {
       openFirewall = true;
       capSysAdmin = true;
       package = lib.mkDefault (pkgs.sunshine.override {cudaSupport = cfg.encoder == "nvenc";});
-      settings = {
-        port = 47989;
-        capture = "kms";
-        encoder = lib.mkIf (cfg.encoder != null) cfg.encoder;
-        hevc_mode = 3;
-        av1_mode = 1;
-        max_bitrate = 150000;
-        minimum_fps_target = 60;
-        lan_encryption_mode = 0;
-      };
+      settings =
+        {
+          port = 47989;
+          capture = "kms";
+          encoder = lib.mkIf (cfg.encoder != null) cfg.encoder;
+          hevc_mode = 3;
+          av1_mode = 1;
+          max_bitrate = 150000;
+          minimum_fps_target = 60;
+          lan_encryption_mode = 0;
+        }
+        // lib.optionalAttrs (cfg.encoder == "nvenc") {
+          nvenc_preset = 5;
+          nvenc_twopass = "quarter_res";
+          nvenc_spatial_aq = "enabled";
+          nvenc_vbv_increase = 200;
+        };
       applications = {
         env.PATH = "$(PATH):$(HOME)/.local/bin";
         apps = [
