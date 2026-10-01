@@ -3,6 +3,8 @@
   pkgs,
   ...
 }: let
+  fingerprintPython = pkgs.python3.withPackages (ps: [ps.pyudev ps.systemd-python]);
+  fingerprintPolicy = "${fingerprintPython}/bin/python3 ${./scripts/keyboard-policy.py}";
   broadcomFingerprintDriver = pkgs.libfprint-2-tod1-broadcom-cv3plus.overrideAttrs (old: rec {
     version = "6.4.372-6.4.062.0";
     src = pkgs.fetchurl {
@@ -63,6 +65,25 @@ in {
   };
 
   environment.systemPackages = [pkgs.intel-gpu-tools];
+
+  systemd.services = {
+    fingerprint-keyboard-policy = {
+      description = "Disable fingerprint authentication while an external keyboard is connected";
+      wantedBy = ["multi-user.target"];
+      before = ["display-manager.service"];
+      after = ["systemd-udev-trigger.service"];
+      path = [pkgs.systemd];
+      serviceConfig = {
+        Type = "notify";
+        ExecStart = fingerprintPolicy;
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+    };
+
+    # An attached keyboard is an expected skip, not a daemon startup failure.
+    fprintd.serviceConfig.ExecCondition = ["${fingerprintPolicy} --check"];
+  };
 
   grafanaCloud.role = "laptop";
 
