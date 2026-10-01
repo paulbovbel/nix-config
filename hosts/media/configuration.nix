@@ -155,7 +155,29 @@ in {
     ];
   };
 
-  storage.enable = true;
+  storage = {
+    enable = true;
+    defaultOwner = config.podmanServer.user.name;
+    defaultGroup = config.podmanServer.user.group;
+    datasets = {
+      app.autoSnapshot = {
+        enable = true;
+        frequent = false;
+        hourly = true;
+        daily = true;
+        weekly = true;
+        monthly = false;
+      };
+      backup.autoSnapshot = {
+        enable = true;
+        frequent = false;
+        hourly = false;
+        daily = true;
+        weekly = true;
+        monthly = false;
+      };
+    };
+  };
 
   backup = {
     targets = {
