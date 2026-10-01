@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  unstablePkgs,
   ...
 }: let
   cliPackages = import ../../common/cli-packages.nix {inherit pkgs;};
@@ -39,7 +40,8 @@ in {
 
   home.packages = [
     pkgs.chromium
-    pkgs.github-copilot-cli
+    # Unstable carries the NixOS spawn fix for the embedded bash tool.
+    unstablePkgs.github-copilot-cli
   ];
 
   programs.kitty.keybindings = {

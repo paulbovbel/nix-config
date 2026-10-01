@@ -2,12 +2,17 @@
   config,
   lib,
   pkgs,
+  unstablePkgs,
   ...
-}: {
+}: let
+  headsetcontrolPackage = unstablePkgs.headsetcontrol;
+in {
   imports = [
     ../common/system.nix
     ./visual.nix
   ];
+
+  home-manager.extraSpecialArgs = {inherit headsetcontrolPackage;};
 
   age.secrets.tailscale-oauth-authkey = {
     file = ../../secrets/laptop/tailscale-oauth-authkey.age;
@@ -41,7 +46,7 @@
       pulse.enable = true;
     };
 
-    udev.packages = [pkgs.headsetcontrol];
+    udev.packages = [headsetcontrolPackage];
 
     flatpak = {
       enable = true;
@@ -126,7 +131,7 @@
       pkgs.gnomeExtensions.dash-to-dock
       pkgs.gnomeExtensions.headsetcontrol
       pkgs.gnomeExtensions.unlock-dialog-background
-      pkgs.headsetcontrol
+      headsetcontrolPackage
       pkgs.libva-utils
       pkgs.qpwgraph
       pkgs.remmina
