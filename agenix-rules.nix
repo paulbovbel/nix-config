@@ -1,11 +1,12 @@
 let
   keys = import ./keys.nix;
+  hosts = import ./hosts;
   inherit (keys) pbovbel;
-  white_tower = (import ./hosts/white-tower).ageRecipient;
-  rainbow_wave = (import ./hosts/rainbow-wave).ageRecipient;
-  pbovbel_dell = (import ./hosts/pbovbel-dell).ageRecipient;
-  media = (import ./hosts/media).ageRecipient;
-  becmac_pro = (import ./hosts/becmac-pro).ageRecipient;
+  white_tower = hosts.white-tower.ageRecipient;
+  rainbow_wave = hosts.rainbow-wave.ageRecipient;
+  pbovbel_dell = hosts.pbovbel-dell.ageRecipient;
+  media = hosts.media.ageRecipient;
+  becmac_pro = hosts.becmac-pro.ageRecipient;
 in {
   "secrets/common/pbovbel-id_rsa.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell media becmac_pro];
   "secrets/laptop/tailscale-oauth-authkey.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell becmac_pro];

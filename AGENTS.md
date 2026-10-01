@@ -13,7 +13,7 @@ For repository layout, module composition, and structure recommendations, see [R
 - Host-specific enablement and machine settings belong in `hosts/<host>/configuration.nix`.
 - Reusable NixOS behavior belongs in `modules/<name>/`, with options exposed from `options.nix` when appropriate.
 - User profile changes belong under `profiles/<profile>/`; update `profiles/default.nix` when adding or changing selectable profiles.
-- System profile behavior belongs under `profiles/`; `flake.nix` composes profiles from user declarations in `hosts/<host>/default.nix`.
+- System profile behavior belongs under `profiles/`; `hosts/mk-host.nix` composes profiles from user declarations in `hosts/<host>/default.nix`.
 - Globally imported modules should generally be enabled from host configs through their option namespace, not imported ad hoc.
 
 ## Repo Rules

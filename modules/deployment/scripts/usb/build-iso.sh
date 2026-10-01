@@ -46,8 +46,8 @@ cleanup_temporary_directory() {
 }
 trap cleanup_temporary_directory EXIT
 
-target_system="$(nix eval --impure --raw "$NIXOS_INSTALLER_FLAKE#nixosConfigurations.$host.config.nixpkgs.hostPlatform.system")"
-if [[ "$target_system" == aarch64-linux ]]; then
+installer_kind="$(nix eval --impure --raw "$NIXOS_INSTALLER_FLAKE#lib.hosts.$host.installer")"
+if [[ "$installer_kind" == apple-silicon ]]; then
   firmware_directory="$temporary_directory/vendorfw"
   mkdir "$firmware_directory"
   sudo cp -a /boot/vendorfw/. "$firmware_directory/"

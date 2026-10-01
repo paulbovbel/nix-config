@@ -1,5 +1,6 @@
 {
   expectedRecipient,
+  isAppleSilicon,
   keyPayload,
   lib,
   pkgs,
@@ -11,7 +12,6 @@
   target = targetSystem.config;
   hostName = target.networking.hostName;
   system = target.nixpkgs.hostPlatform.system;
-  isAppleSilicon = system == "aarch64-linux";
   partitions = target.rootFs.existingPartitions;
   usesExistingPartitions = partitions != null;
   targetSystemPath = target.system.build.toplevel;
