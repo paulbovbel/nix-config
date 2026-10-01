@@ -108,6 +108,12 @@
       inherit hosts mkInstaller;
       hostNames = lib.attrNames hosts;
       ciHostNames = lib.attrNames (lib.filterAttrs (_: host: host.ciBuild) hosts);
+      hostEvaluations = lib.mapAttrs (name: metadata:
+        import ./modules/deployment/tests/evaluate-host.nix {
+          inherit metadata;
+          host = self.nixosConfigurations.${name};
+        })
+      hosts;
     };
     packages = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
@@ -127,8 +133,10 @@
       {
         inherit (mkDocs system) module-docs-check;
         podman-server-contracts = import ./modules/podman-server/tests/contracts.nix {inherit pkgs nixpkgs quadlet-nix agenix;};
+        storage-contracts = import ./modules/storage/tests/contracts.nix {inherit pkgs nixpkgs disko disko-zfs;};
       }
       // lib.optionalAttrs (system == "x86_64-linux") {
+        game-streaming-contracts = import ./modules/game-streaming/tests/contracts.nix {inherit pkgs nixpkgs;};
         authentik-blueprint = import ./modules/authentik/tests/blueprint.nix {inherit pkgs quadlet-nix;};
         # TODO: Add end-to-end Btrfs and ZFS USB installer state-migration tests.
         root-fs-btrfs-impermanence = rootFsImpermanenceTest "btrfs";

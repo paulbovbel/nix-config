@@ -30,8 +30,21 @@ jobs:
           set -euo pipefail
           nix develop --command just check
 
-  test:
+  evaluate:
     needs: check
+    runs-on: [self-hosted, nix-media]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Evaluate all hosts
+        run: nix develop --command just nix-eval
+
+      - name: Check module contracts
+        run: nix develop --command just nix-contracts
+
+  test:
+    needs: [check, evaluate]
     runs-on: [self-hosted, nix-media]
     steps:
       - name: Checkout

@@ -10,9 +10,9 @@ nixpkgs.lib.nixosSystem {
     quadlet-nix.nixosModules.quadlet
     agenix.nixosModules.default
     ../default.nix
+    ../../storage/options.nix
     ({lib, ...}: {
       options = {
-        storage.enable = lib.mkEnableOption "shared storage";
         rootFs.persistDirectories = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [];

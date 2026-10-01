@@ -45,6 +45,14 @@ Hosts use pinned release nixpkgs by default; `useUnstablePackages` selects unsta
 
 Describe public options in `modules/<name>/options.nix`; use a module README for usage, invariants, or operations. Add display metadata in `modules/<name>/default.nix` for the generated documentation site. Keep non-Nix scripts in `modules/<name>/scripts/` and tests, including NixOS VM tests and test helpers, in `modules/<name>/tests/`. CI validates the site and its links with `just nix-test`.
 
+Validation has three levels:
+
+- `just check` runs formatting, linting, and Python unit tests.
+- `just nix-eval` evaluates every registered host; `just nix-contracts` checks module behavior without booting VMs. CI runs both before integration tests and host builds.
+- `just nix-test` builds all flake checks, including documentation and NixOS VM tests.
+
+The evaluation-only Apple Silicon check disables peripheral firmware extraction because `/boot/vendorfw` is machine-local. Production host and installer builds retain firmware extraction. `ciBuild` controls the build matrix, not evaluation coverage.
+
 ## Repository Layout
 
 - Machine policy and module enablement: `hosts/<host>/configuration.nix`
