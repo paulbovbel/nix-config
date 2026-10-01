@@ -77,6 +77,18 @@ nix-lint:
     deadnix .
     alejandra --check .
 
+# Evaluate every host, using evaluation-only firmware overrides for Apple Silicon.
+[group('checks')]
+nix-eval:
+    bash modules/deployment/scripts/evaluate-hosts.sh
+
+# Build lightweight module contract checks without booting VMs.
+[group('checks')]
+nix-contracts:
+    system="$(nix eval --impure --raw --expr builtins.currentSystem)"; \
+      checks="$(nix eval --raw ".#checks.$system" --apply 'checks: builtins.concatStringsSep " " (map (name: ".#checks.'"$system"'.${name}") (builtins.filter (name: builtins.match ".*-contracts" name != null) (builtins.attrNames checks)))')"; \
+      nix build --no-link -L $checks
+
 # Build all flake checks, including NixOS integration tests.
 [group('checks')]
 nix-test:

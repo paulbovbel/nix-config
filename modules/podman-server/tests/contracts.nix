@@ -11,6 +11,8 @@
   };
   container = {quadlet.containerConfig.image = "docker.io/library/alpine:latest";};
   env = {variables.VALUE = "example";};
+  disabled = (evaluate {}).config;
+  storageOnly = (evaluate {storage.enable = true;}).config;
   configuration = extra:
     (evaluate (lib.recursiveUpdate {
         podmanServer.containers.app = container;
@@ -60,6 +62,21 @@
     };
   };
   tests = {
+    disabledHasNoWorkloadState =
+      disabled.storage.datasets
+      == {}
+      && disabled.podmanServer.derivedEnvFiles == {}
+      && disabled.rootFs.persistDirectories == [];
+    disabledHasNoRuntime =
+      !disabled.virtualisation.podman.enable
+      && disabled.virtualisation.quadlet.containers == {}
+      && !(disabled.systemd.services ? podman-server-lan-env)
+      && !(disabled.systemd.timers ? podman-auto-update);
+    storageDoesNotActivatePodman =
+      storageOnly.storage.datasets
+      == {}
+      && !storageOnly.virtualisation.podman.enable;
+    activeDoesNotDeclareDatasets = valid.storage.datasets == {};
     validConfiguration = failedMessages valid == [] && (builtins.tryEval valid.system.build.toplevel.drvPath).success;
     portRendering =
       valid.virtualisation.quadlet.containers.app.containerConfig.publishPorts
@@ -108,6 +125,9 @@
         left = env // {derivedEnvironmentFiles = ["right"];};
         right = env // {derivedEnvironmentFiles = ["left"];};
       };
+    });
+    environmentSelfDependency = rejects "derivedEnvFiles has a dependency cycle" (configuration {
+      podmanServer.derivedEnvFiles.source = env // {derivedEnvironmentFiles = ["source"];};
     });
     overflowingRange = rejects "range ending above 65535" (configuration {
       podmanServer.containers.app.ports = [
