@@ -166,12 +166,18 @@ in {
       "org/gnome/settings-daemon/plugins/media-keys" = {
         custom-keybindings = [
           "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/"
+          "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/"
         ];
       };
       "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0" = {
         name = "Launch Kitty";
         command = "kitty";
         binding = "<Primary><Alt>t";
+      };
+      "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1" = {
+        name = "Launch Kitty (Assistant key)";
+        command = "kitty";
+        binding = "<Shift><Super>F23";
       };
     };
 
