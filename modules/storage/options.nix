@@ -55,13 +55,13 @@
 
         owner = lib.mkOption {
           type = lib.types.str;
-          default = config.podmanServer.user.name;
+          default = config.storage.defaultOwner;
           description = "User that should own the dataset mountpoint.";
         };
 
         group = lib.mkOption {
           type = lib.types.str;
-          default = config.podmanServer.user.group;
+          default = config.storage.defaultGroup;
           description = "Group that should own the dataset mountpoint.";
         };
 
@@ -93,6 +93,18 @@
     });
 in {
   options.storage = {
+    defaultOwner = lib.mkOption {
+      type = lib.types.str;
+      default = "root";
+      description = "Default owner of shared dataset mountpoints.";
+    };
+
+    defaultGroup = lib.mkOption {
+      type = lib.types.str;
+      default = "root";
+      description = "Default group of shared dataset mountpoints.";
+    };
+
     enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -118,7 +130,6 @@ in {
     pool = lib.mkOption {
       type = lib.types.str;
       default = "storage";
-      readOnly = true;
       description = "ZFS pool backing shared host storage.";
     };
 

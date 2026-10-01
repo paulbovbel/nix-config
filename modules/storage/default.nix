@@ -60,15 +60,6 @@ in {
   imports = [./options.nix];
 
   config = lib.mkIf cfg.enable {
-    storage.datasets.backup.autoSnapshot = {
-      enable = true;
-      frequent = false;
-      hourly = false;
-      daily = true;
-      weekly = true;
-      monthly = false;
-    };
-
     boot.zfs.extraPools = [cfg.pool];
 
     services.zfs.autoScrub = {
