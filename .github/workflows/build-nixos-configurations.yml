@@ -12,12 +12,18 @@ concurrency:
 jobs:
   check:
     runs-on: [self-hosted, nix-media]
+    outputs:
+      build-hosts: ${{ steps.inventory.outputs.build-hosts }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Verify Nix
         run: nix --version
+
+      - name: Read build host inventory
+        id: inventory
+        run: printf 'build-hosts=%s\n' "$(nix eval --json .#lib.ciHostNames)" >> "$GITHUB_OUTPUT"
 
       - name: Check repository
         run: |
@@ -44,7 +50,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        host: [white-tower, rainbow-wave, pbovbel-dell, media]
+        host: ${{ fromJSON(needs.check.outputs.build-hosts) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7

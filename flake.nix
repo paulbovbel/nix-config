@@ -64,24 +64,14 @@
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
   };
 
-  outputs = {
+  outputs = inputs @ {
     self,
     nixpkgs,
-    nixpkgs-unstable,
-    home-manager,
-    nix-flatpak,
+    agenix,
     disko,
     disko-zfs,
-    agenix,
     impermanence,
-    locus-vpn-client,
-    nix-vscode-extensions,
-    vscode-workspace-populator,
-    stylix,
-    catppuccin,
     quadlet-nix,
-    nixos-apple-silicon,
-    tiny-dfr-nyan,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -97,294 +87,27 @@
       if revision != ""
       then revision
       else self.rev or self.dirtyRev or null;
-    systems = [
-      "aarch64-linux"
-      "x86_64-linux"
-    ];
+    systems = ["aarch64-linux" "x86_64-linux"];
     forAllSystems = lib.genAttrs systems;
-    packageOverrides = final: prev: {
-      headsetcontrol = prev.headsetcontrol.overrideAttrs (_: {
-        # Last released version of headsetcontrol doesn't include fixes for Audeze Maxwell headset
-        # https://github.com/Sapd/HeadsetControl/pull/412
-        version = "4d57d17af8b49d436b01822a23a3871aa7646f11";
-        src = final.fetchFromGitHub {
-          owner = "Sapd";
-          repo = "HeadsetControl";
-          rev = "4d57d17af8b49d436b01822a23a3871aa7646f11";
-          hash = "sha256-N59GYF5XEIdm2zeIbsHwFA6dkXaCCyi3oxIWuUVL1fk=";
-        };
-      });
-
-      netbootxyz-efi = prev.netbootxyz-efi.overrideAttrs (_: {
-        version = "3.0.2";
-        src = final.fetchurl {
-          url = "https://github.com/netbootxyz/netboot.xyz/releases/download/3.0.2/netboot.xyz.efi";
-          hash = "sha256-4PbBxZPh2grQg/nXoOOjWAhR9gJqNgR53oriAUrv0i8=";
-        };
-      });
-
-      netbootxyz-legacy = final.stdenvNoCC.mkDerivation {
-        pname = "netboot.xyz-legacy";
-        version = "3.0.2";
-        src = final.fetchurl {
-          url = "https://github.com/netbootxyz/netboot.xyz/releases/download/3.0.2/netboot.xyz-legacy.efi";
-          hash = "sha256-TJNf+oy0lr2YOKJ+h2ooae+uIHD25J6T9AsPN01LiFM=";
-        };
-
-        dontUnpack = true;
-
-        postInstall = ''
-          cp $src $out
-        '';
-      };
+    overlays = [inputs.nix-vscode-extensions.overlays.default (import ./overlays)];
+    hosts = import ./hosts;
+    mkHost = import ./hosts/mk-host.nix {
+      inherit inputs overlays configurationBranch configurationRevision;
     };
-    overlays = [
-      nix-vscode-extensions.overlays.default
-      packageOverrides
-    ];
-
-    mkPkgs = system: src:
-      import src {
-        inherit system overlays;
-        config.allowUnfree = true;
-      };
-
-    profiles = import ./profiles;
-    accountNames = ["abovbel" "pbovbel" "rbovbel"];
-    profileEntries = lib.concatMap (userName:
-      lib.mapAttrsToList (profileName: value: {
-        name = "${userName}.${profileName}";
-        inherit value;
-      })
-      profiles.${userName})
-    (lib.attrNames profiles);
-    invalidProfiles = map (profile: profile.name) (builtins.filter (profile:
-      !(profile.value ? homeModules)
-      || !builtins.isList profile.value.homeModules
-      || !(profile.value ? systemModules)
-      || !builtins.isList profile.value.systemModules
-      || (profile.value ? graphical && !builtins.isBool profile.value.graphical))
-    profileEntries);
-
-    externalModules = [
-      agenix.nixosModules.default
-      nix-flatpak.nixosModules.nix-flatpak
-      disko.nixosModules.disko
-      disko-zfs.nixosModules.default
-      impermanence.nixosModules.impermanence
-      home-manager.nixosModules.home-manager
-      stylix.nixosModules.stylix
-      catppuccin.nixosModules.catppuccin
-      quadlet-nix.nixosModules.quadlet
-    ];
-
-    catppuccinPaletteSource = let
-      source = (lib.importJSON "${catppuccin}/pkgs/sources.json").palette;
-    in
-      (builtins.fetchTree {
-        type = "github";
-        owner = "catppuccin";
-        repo = "palette";
-        inherit (source) rev;
-        narHash = source.hash;
-      }).outPath;
-
-    userHomeModules = user: let
-      userProfiles = profiles.${user.name};
-      selectedProfiles = map (profileName: userProfiles.${profileName}) user.profiles;
-    in
-      lib.concatMap (profile: profile.homeModules) selectedProfiles;
-
-    userSystemModules = user: let
-      userProfiles = profiles.${user.name};
-    in
-      lib.concatMap (profileName: userProfiles.${profileName}.systemModules) user.profiles;
-
-    validateHost = name: cfg: let
-      configuredUserNames = map (user: user.name) cfg.users;
-      unknownAccounts = lib.subtractLists accountNames configuredUserNames;
-      unknownUsers = lib.subtractLists (lib.attrNames profiles) configuredUserNames;
-      invalidHideFromLogin = map (user: user.name) (builtins.filter (user:
-        user ? hideFromLogin && !builtins.isBool user.hideFromLogin)
-      cfg.users);
-      knownUsers = builtins.filter (user: builtins.hasAttr user.name profiles) cfg.users;
-      unknownProfiles = lib.concatMap (user:
-        map (profileName: "${user.name}.${profileName}")
-        (lib.subtractLists (lib.attrNames profiles.${user.name}) user.profiles))
-      knownUsers;
-    in
-      assert lib.assertMsg (builtins.match "age1.+" cfg.ageRecipient != null) "Host ${name} must define a valid ageRecipient";
-      assert lib.assertMsg (unknownAccounts == []) "Host ${name} selects unknown accounts: ${lib.concatStringsSep ", " unknownAccounts}";
-      assert lib.assertMsg (unknownUsers == []) "Host ${name} selects unknown users: ${lib.concatStringsSep ", " unknownUsers}";
-      assert lib.assertMsg (invalidHideFromLogin == []) "Host ${name} users must define hideFromLogin as a boolean: ${lib.concatStringsSep ", " invalidHideFromLogin}";
-      assert lib.assertMsg (unknownProfiles == []) "Host ${name} selects unknown profiles: ${lib.concatStringsSep ", " unknownProfiles}";
-      assert lib.assertMsg (invalidProfiles == []) "Profiles must define list-valued homeModules and systemModules, with optional boolean graphical: ${lib.concatStringsSep ", " invalidProfiles}"; cfg;
-
-    mkHostSettings = name: users: unstablePkgs: {config, ...}: let
-      configuredUserNames = map (user: user.name) users;
-      hiddenUserNames = map (user: user.name) (builtins.filter (user: user.hideFromLogin or false) users);
-    in {
-      assertions = [
-        {
-          assertion = config.networking.hostName == name;
-          message = "Host ${name} configures networking.hostName as ${config.networking.hostName}";
-        }
-      ];
-
-      rootFs.homeUsers = configuredUserNames;
-
-      system.configurationRevision = configurationRevision;
-      environment.etc."nix-config/branch".text = configurationBranch;
-
-      accounts = lib.genAttrs configuredUserNames (_: {enable = true;});
-
-      services.displayManager.gdm.settings = lib.mkIf (hiddenUserNames != []) {
-        greeter.Exclude = lib.concatStringsSep "," hiddenUserNames;
-      };
-
-      # Avoid building a target-platform package for TTY colors during evaluation.
-      catppuccin.sources.palette = catppuccinPaletteSource;
-
-      nixpkgs = {
-        inherit overlays;
-        config.allowUnfree = true;
-      };
-
-      home-manager = {
-        backupFileExtension = "backup";
-        useGlobalPkgs = true;
-        useUserPackages = true;
-        sharedModules = [catppuccin.homeModules.catppuccin];
-        extraSpecialArgs = {
-          inherit unstablePkgs;
-          inherit vscode-workspace-populator;
-        };
-      };
+    mkInstaller = import ./modules/deployment/usb/mk-installer.nix {
+      inherit nixpkgs hosts mkHost;
+      inherit (inputs) nixos-apple-silicon;
     };
-
-    mkUserModules = users:
-      map (user: {
-        home-manager.users.${user.name}.imports = userHomeModules user;
-      })
-      users;
-
-    mkHost = name: rawCfg: extraModules: let
-      cfg = validateHost name rawCfg;
-      inherit (cfg) system;
-      nixpkgsForHost =
-        if cfg.useUnstablePackages or false
-        then nixpkgs-unstable
-        else nixpkgs;
-      unstablePkgs = mkPkgs system nixpkgs-unstable;
-    in
-      nixpkgsForHost.lib.nixosSystem {
-        inherit system;
-        specialArgs = {
-          inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan unstablePkgs;
-        };
-        modules =
-          [
-            ./hosts/${name}/configuration.nix
-            ./modules
-            (mkHostSettings name cfg.users unstablePkgs)
-          ]
-          ++ externalModules
-          ++ lib.unique (lib.concatMap userSystemModules cfg.users)
-          ++ mkUserModules cfg.users
-          ++ extraModules;
-      };
-
-    hosts = {
-      white-tower = import ./hosts/white-tower;
-      rainbow-wave = import ./hosts/rainbow-wave;
-      pbovbel-dell = import ./hosts/pbovbel-dell;
-      becmac-pro = import ./hosts/becmac-pro;
-      media = import ./hosts/media;
+    mkDocs = import ./modules/documentation/evaluate.nix {
+      inherit inputs;
+      sourceRoot = ./.;
     };
-    nixosConfigurations = lib.mapAttrs (name: cfg: mkHost name cfg []) hosts;
-    mkInstaller = {
-      firmwareDirectory ? null,
-      hostName,
-      keyPayload,
-      stateBackup ? null,
-      unlockPayload,
-    }: let
-      host = hosts.${hostName} or (throw "Unknown installer host: ${hostName}");
-      inherit (host) system;
-      isAppleSilicon = system == "aarch64-linux";
-      targetSystem = mkHost hostName host (lib.optional (firmwareDirectory != null) {
-        hardware.asahi.peripheralFirmwareDirectory = lib.mkForce firmwareDirectory;
-      });
-    in
-      nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = {
-          expectedRecipient = host.ageRecipient;
-          inherit keyPayload stateBackup targetSystem unlockPayload;
-        };
-        modules =
-          (
-            if isAppleSilicon
-            then [nixos-apple-silicon.nixosModules.apple-silicon-installer]
-            else [(nixpkgs + "/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix")]
-          )
-          ++ [
-            ./modules/deployment/usb
-            {
-              nixpkgs.hostPlatform.system = system;
-            }
-          ]
-          ++ lib.optional isAppleSilicon {
-            hardware.asahi.pkgsSystem = system;
-            hardware.apple.touchBar = {
-              enable = true;
-              package = targetSystem.config.hardware.apple.touchBar.package;
-            };
-          }
-          ++ lib.optional (isAppleSilicon && firmwareDirectory != null) {
-            hardware.asahi.peripheralFirmwareDirectory = lib.mkForce firmwareDirectory;
-          };
-      };
-    mkDocs = system: let
-      pkgs = import nixpkgs {inherit system;};
-      unstablePkgs = import nixpkgs-unstable {
-        inherit system;
-        config.allowUnfree = true;
-      };
-      evaluation = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = {inherit unstablePkgs;};
-        modules = [
-          agenix.nixosModules.default
-          disko.nixosModules.disko
-          disko-zfs.nixosModules.default
-          impermanence.nixosModules.impermanence
-          quadlet-nix.nixosModules.quadlet
-          ./modules
-          {
-            networking.hostName = "module-docs";
-            networking.domain = "example.invalid";
-            tailscale.domain = "tailnet.example.invalid";
-            time.timeZone = "UTC";
-            system.stateVersion = "26.05";
-          }
-        ];
-      };
-      revision = self.shortRev or (self.dirtyShortRev or "dirty");
-      sourceRevision = self.rev or "main";
-    in
-      import ./modules/documentation/build.nix {
-        inherit pkgs revision sourceRevision;
-        inherit (nixpkgs) lib;
-        inherit (evaluation) config options;
-        repositoryUrl = "https://github.com/paulbovbel/nix-config";
-        sourceRoot = ./.;
-      };
   in {
-    inherit nixosConfigurations;
+    nixosConfigurations = lib.mapAttrs (name: cfg: mkHost name cfg []) hosts;
     lib = {
+      inherit hosts mkInstaller;
       hostNames = lib.attrNames hosts;
-      inherit mkInstaller;
+      ciHostNames = lib.attrNames (lib.filterAttrs (_: host: host.ciBuild) hosts);
     };
     packages = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};

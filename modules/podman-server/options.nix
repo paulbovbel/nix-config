@@ -14,6 +14,7 @@
       containerPort = lib.mkOption {
         type = lib.types.port;
         default = config.hostPort;
+        defaultText = lib.literalExpression "config.hostPort";
         description = "First destination port in the container.";
       };
       count = lib.mkOption {

@@ -28,7 +28,7 @@ just switch <host>
 
 ## Architecture
 
-Hosts are registered in `flake.nix`. Each `hosts/<host>/default.nix` selects a system, age recipient, users, and profiles. `profiles/default.nix` maps those user-specific profiles to Home Manager and system modules. Reusable modules under `modules/` are imported globally and enabled from host configurations.
+Hosts are registered in `hosts/default.nix`. Each `hosts/<host>/default.nix` selects a system, age recipient, installer kind (`generic` or `apple-silicon`), CI build eligibility (`ciBuild`), users, and profiles. `hosts/mk-host.nix` composes hosts, and `profiles/default.nix` maps user-specific profiles to Home Manager and system modules. Reusable modules under `modules/` are imported globally and enabled from host configurations.
 
 Key abstractions (see each module's `options.nix` for its API):
 
@@ -50,6 +50,8 @@ Describe public options in `modules/<name>/options.nix`; use a module README for
 - Machine policy and module enablement: `hosts/<host>/configuration.nix`
 - Hardware facts and device identities: `hosts/<host>/hardware-configuration.nix`
 - Host user and profile selection: `hosts/<host>/default.nix`
+- Shared host inventory and composition: `hosts/{default,mk-host}.nix`
+- Local package overrides: `overlays/default.nix`
 - Shared site values: `hosts/site.nix`
 - Reusable NixOS behavior and public options: `modules/<name>/`
 - Module scripts, tests, and static assets: `modules/<name>/{scripts,tests,assets}/`
