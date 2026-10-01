@@ -22,7 +22,7 @@ just switch <host>
 | --- | --- | --- |
 | `white-tower` | Primary desktop | `pbovbel: gaming`, `rbovbel: graphical`, `abovbel: gaming` |
 | `rainbow-wave` | Kids gaming desktop | `pbovbel: gaming`, `abovbel: gaming` |
-| `pbovbel-dell` | Work laptop | `pbovbel: work` |
+| `pbovbel-dell` | Work laptop | `pbovbel: work, gaming` |
 | `becmac-pro` | Personal laptop | `pbovbel: graphical`, `rbovbel: graphical` |
 | `media` | Media, game, cache, ingress, and storage server | `pbovbel: headless` |
 

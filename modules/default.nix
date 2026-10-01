@@ -22,6 +22,7 @@ in {
     ./llama-cpp
     ./media-server
     ./game-server
+    ./game-streaming
     ./github-runner
   ];
 
