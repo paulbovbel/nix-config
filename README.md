@@ -35,7 +35,7 @@ Key abstractions (see each module's `options.nix` for its API):
 - `rootFs` for ZFS or Btrfs root layouts, encryption, impermanence, snapshots, and persistent state
 - `podmanServer` for container, path, and derived environment-file declarations
 - `storage` for shared ZFS datasets and generated paths
-- `caddy` for public and authenticated HTTP ingress
+- `caddy.sites` for public and authenticated HTTP ingress, with per-site `domains` and `endpoints`
 - `backup` for scheduled pushes to remote targets
 - `mediaServer`, `gameServer`, and `atticCache` for server workloads
 
