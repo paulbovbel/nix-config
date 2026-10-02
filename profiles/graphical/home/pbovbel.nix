@@ -42,12 +42,17 @@ in {
     builtins.readFile ./vscode-settings.json
   );
 
-  home.packages = [
-    pkgs.libsecret
-    pkgs.nixfmt
-    pkgs.python3
-    pkgs.uv
-  ];
+  home.packages =
+    [
+      pkgs.android-tools
+      pkgs.libsecret
+      pkgs.nixfmt
+      pkgs.python3
+      pkgs.uv
+    ]
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
+      pkgs.android-studio
+    ];
 
   xdg.configFile = lib.mkMerge (map mkAutostart [
     {
