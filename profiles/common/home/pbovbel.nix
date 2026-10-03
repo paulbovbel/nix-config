@@ -46,7 +46,7 @@ in {
     install -m 600 ${sshConfig} "$HOME/.ssh/config"
   '';
 
-  home.packages = [pkgs.nix-tree];
+  home.packages = [pkgs.gh pkgs.nix-tree];
 
   programs = {
     opencode = {
