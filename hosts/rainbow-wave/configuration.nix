@@ -14,7 +14,7 @@
   networking = {
     hostName = "rainbow-wave";
     hostId = "4619f943";
-    interfaces.enp6s0.wakeOnLan = {
+    interfaces.enp42s0.wakeOnLan = {
       enable = true;
       policy = ["magic"];
     };
