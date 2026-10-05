@@ -64,9 +64,16 @@ in {
           failures=0
         ''
         + lib.concatMapStringsSep "\n" (forward: ''
-          if ! upnpc -z 1900 -a "$LAN_ADDRESS" ${toString forward.to} ${toString forward.from} ${forward.proto} 7200; then
-            echo "Failed to update UPnP forward '${forward.name}': ${toString forward.from}/${forward.proto} -> $LAN_ADDRESS:${toString forward.to}" >&2
-            failures=$((failures + 1))
+          if output=$(upnpc -z 1900 -a "$LAN_ADDRESS" ${toString forward.to} ${toString forward.from} ${forward.proto} 7200 2>&1); then
+            printf '%s\n' "$output"
+          else
+            printf '%s\n' "$output" >&2
+            if [ ${toString forward.from} -lt 1024 ] && [[ "$output" == *"failed with code 606 (Action not authorized)"* ]]; then
+              echo "Warning: router denied low-port UPnP forward '${forward.name}': ${toString forward.from}/${forward.proto} -> $LAN_ADDRESS:${toString forward.to}; configure a manual router forward if needed" >&2
+            else
+              echo "Failed to update UPnP forward '${forward.name}': ${toString forward.from}/${forward.proto} -> $LAN_ADDRESS:${toString forward.to}" >&2
+              failures=$((failures + 1))
+            fi
           fi
         '')
         forwards

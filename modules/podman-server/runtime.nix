@@ -94,15 +94,45 @@
       then "[${port.bindAddress}]:"
       else "${port.bindAddress}:";
   in "${address}${range port.hostPort}:${range port.containerPort}/${port.protocol}";
-  firewallPorts = protocol:
-    builtins.filter (port: port.openFirewall && port.protocol == protocol)
-    (lib.concatMap (container: container.ports) (lib.attrValues cfg.containers));
-  firewallSingles = protocol: lib.unique (map (port: port.hostPort) (builtins.filter (port: port.count == 1) (firewallPorts protocol)));
-  firewallRanges = protocol:
+  firewallPorts = scope: protocol:
+    builtins.filter (port: builtins.elem scope port.exposure && port.protocol == protocol) publishedPorts;
+  publishedPorts = lib.concatMap (container: container.ports) (lib.attrValues cfg.containers);
+  firewallSingles = scope: protocol: lib.unique (map (port: port.hostPort) (builtins.filter (port: port.count == 1) (firewallPorts scope protocol)));
+  firewallRanges = scope: protocol:
     lib.unique (map (port: {
       from = port.hostPort;
       to = port.hostPort + port.count - 1;
-    }) (builtins.filter (port: port.count > 1) (firewallPorts protocol)));
+    }) (builtins.filter (port: port.count > 1) (firewallPorts scope protocol)));
+  firewallRules = scope: {
+    allowedTCPPorts = firewallSingles scope "tcp";
+    allowedUDPPorts = firewallSingles scope "udp";
+    allowedTCPPortRanges = firewallRanges scope "tcp";
+    allowedUDPPortRanges = firewallRanges scope "udp";
+  };
+  restrictedPorts = builtins.filter (port: !(builtins.elem "wan" port.exposure)) publishedPorts;
+  exposureFirewall = command: ''
+    ${command} -t mangle -N podman-server-exposure 2>/dev/null || true
+    ${command} -t mangle -F podman-server-exposure
+    ${command} -t mangle -A podman-server-exposure -i ${lib.escapeShellArg cfg.networkInterface} -j RETURN
+    ${lib.concatMapStringsSep "\n" (port: let
+        portRange = toString port.hostPort + lib.optionalString (port.count > 1) ":${toString (port.hostPort + port.count - 1)}";
+        interfaceMatch = lib.optionalString (builtins.elem "tailnet" port.exposure) "! -i ${lib.escapeShellArg config.services.tailscale.interfaceName}";
+      in ''
+        ${command} -t mangle -A podman-server-exposure ${interfaceMatch} -p ${port.protocol} --dport ${portRange} -m addrtype --dst-type LOCAL -j DROP
+      '')
+      restrictedPorts}
+    ${command} -t mangle -C PREROUTING -j podman-server-exposure 2>/dev/null || ${command} -t mangle -I PREROUTING -j podman-server-exposure
+  '';
+  upnpForwards = lib.listToAttrs (lib.concatMap (port:
+    map (offset: let
+      hostPort = port.hostPort + offset;
+    in
+      lib.nameValuePair "podman-${port.protocol}-${toString hostPort}" {
+        from = hostPort;
+        to = hostPort;
+        proto = port.protocol;
+      }) (lib.range 0 (port.count - 1)))
+  (builtins.filter (port: builtins.elem "wan" port.exposure) publishedPorts));
 
   renderDerivedEnvFile = name: envFile: let
     derivedEnvUnitNames = derivedEnvUnits envFile.derivedEnvironmentFiles;
@@ -148,12 +178,20 @@ in {
       containers = lib.mapAttrs mkQuadletContainer cfg.containers;
     };
 
-    networking.firewall = {
-      allowedTCPPorts = firewallSingles "tcp";
-      allowedUDPPorts = firewallSingles "udp";
-      allowedTCPPortRanges = firewallRanges "tcp";
-      allowedUDPPortRanges = firewallRanges "udp";
-    };
+    networking.firewall =
+      firewallRules "wan"
+      // {
+        interfaces.${config.services.tailscale.interfaceName} = firewallRules "tailnet";
+        # Filter published host ports before Podman's DNAT bypasses the INPUT chain.
+        extraCommands = exposureFirewall "iptables" + exposureFirewall "ip6tables";
+        extraStopCommands = lib.concatMapStringsSep "\n" (command: ''
+          ${command} -t mangle -D PREROUTING -j podman-server-exposure 2>/dev/null || true
+          ${command} -t mangle -F podman-server-exposure 2>/dev/null || true
+          ${command} -t mangle -X podman-server-exposure 2>/dev/null || true
+        '') ["iptables" "ip6tables"];
+      };
+
+    upnp.forwards = upnpForwards;
 
     systemd.services = lib.mkMerge [
       (lib.mapAttrs' (name: envFile: lib.nameValuePair "podman-server-${name}-env" (renderDerivedEnvFile name envFile)) cfg.derivedEnvFiles)

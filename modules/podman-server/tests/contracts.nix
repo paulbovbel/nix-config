@@ -32,7 +32,7 @@
             {
               hostPort = 8080;
               containerPort = 80;
-              openFirewall = true;
+              exposure = ["wan"];
             }
             {
               hostPort = 9000;
@@ -43,11 +43,21 @@
               bindAddress = "::1";
             }
             {
+              hostPort = 9443;
+              exposure = ["tailnet"];
+            }
+            {
+              hostPort = 15000;
+              count = 2;
+              protocol = "udp";
+              exposure = ["tailnet"];
+            }
+            {
               hostPort = 10000;
               containerPort = 20000;
               count = 3;
               protocol = "udp";
-              openFirewall = true;
+              exposure = ["wan"];
             }
           ];
           quadlet.containerConfig.publishPorts = ["127.0.0.1:11000-11002:12000-12002/udp"];
@@ -85,12 +95,14 @@
         "8080:80/tcp"
         "127.0.0.1:9000:9000/tcp"
         "[::1]:9001:9001/tcp"
+        "9443:9443/tcp"
+        "15000-15001:15000-15001/udp"
         "10000-10002:20000-20002/udp"
       ];
     explicitFirewall =
       valid.networking.firewall.allowedTCPPorts
       == [8080]
-      && valid.networking.firewall.allowedUDPPorts == []
+      && valid.networking.firewall.allowedUDPPorts == [1900]
       && valid.networking.firewall.allowedUDPPortRanges
       == [
         {
@@ -98,6 +110,64 @@
           to = 10002;
         }
       ];
+    generatedUPnP =
+      valid.upnp.forwards
+      == {
+        podman-tcp-8080 = {
+          from = 8080;
+          to = 8080;
+          proto = "tcp";
+        };
+        podman-udp-10000 = {
+          from = 10000;
+          to = 10000;
+          proto = "udp";
+        };
+        podman-udp-10001 = {
+          from = 10001;
+          to = 10001;
+          proto = "udp";
+        };
+        podman-udp-10002 = {
+          from = 10002;
+          to = 10002;
+          proto = "udp";
+        };
+      };
+    tailnetFirewall =
+      valid.networking.firewall.interfaces.tailscale0.allowedTCPPorts
+      == [9443]
+      && valid.networking.firewall.interfaces.tailscale0.allowedUDPPortRanges
+      == [
+        {
+          from = 15000;
+          to = 15001;
+        }
+      ];
+    customTailnetInterface = let
+      cfg = configuration {
+        services.tailscale.interfaceName = "tailnet-test";
+        podmanServer.containers.app.ports = [
+          {
+            hostPort = 8080;
+            exposure = ["tailnet"];
+          }
+        ];
+      };
+    in
+      cfg.networking.firewall.interfaces.tailnet-test.allowedTCPPorts
+      == [8080]
+      && cfg.networking.firewall.allowedTCPPorts == []
+      && cfg.upnp.forwards == {};
+    loopbackUPnP = rejects "UPnP forwarding requires an all-interface IPv4 bind" (configuration {
+      podmanServer.containers.app.ports = [
+        {
+          hostPort = 8080;
+          exposure = ["wan"];
+          bindAddress = "127.0.0.1";
+        }
+      ];
+    });
     containerOrdering = builtins.elem "database.service" valid.virtualisation.quadlet.containers.app.unitConfig.Requires;
     environmentOrdering = valid.systemd.services.podman-server-left-env.requires == ["podman-server-source-env.service"];
     missingContainer = rejects "containers has unknown dependencies: app -> absent" (configuration {

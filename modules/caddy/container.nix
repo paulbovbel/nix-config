@@ -46,7 +46,7 @@ in {
       containers.caddy = {
         ports = map (port: {
           hostPort = port;
-          openFirewall = true;
+          exposure = ["wan" "tailnet"];
         }) (lib.unique ([80 443] ++ domainListenPorts));
         quadlet.containerConfig = {
           image = caddyImageRef;

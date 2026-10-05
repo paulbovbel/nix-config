@@ -23,6 +23,7 @@ in {
     ../../caddy/options.nix
     ../../podman-server/options.nix
     ../../podman-server/runtime.nix
+    ../../upnp
   ];
 
   # Stub storage and agenix inputs; this fixture needs neither disks nor real secrets.

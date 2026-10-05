@@ -94,11 +94,5 @@
         description = "Valheim world name loaded from persistent server storage.";
       };
     };
-
-    upnp.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Whether enabled game servers request their public port forwards through the UPnP module.";
-    };
   };
 }

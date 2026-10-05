@@ -33,7 +33,7 @@ in {
       ports = map (port: {
         hostPort = port;
         protocol = "udp";
-        openFirewall = true;
+        exposure = ["wan" "tailnet"];
       }) [2456 2457];
       quadlet.serviceConfig = {
         ExecStartPre = [
@@ -62,19 +62,6 @@ in {
         };
       };
       derivedEnvironmentFiles = ["valheim"];
-    };
-
-    upnp.forwards = lib.mkIf cfg.upnp.enable {
-      valheim = {
-        from = 2456;
-        to = 2456;
-        proto = "udp";
-      };
-      valheimQuery = {
-        from = 2457;
-        to = 2457;
-        proto = "udp";
-      };
     };
   };
 }

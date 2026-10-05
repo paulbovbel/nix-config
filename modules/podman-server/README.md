@@ -16,13 +16,14 @@ Both dependency graphs must be acyclic, and all references must exist.
 
 ## Published ports
 
-Use `ports` to publish ports and explicitly choose firewall policy:
+Use `ports` to publish ports and choose firewall and router-forwarding policy:
 
 ```nix
 podmanServer.containers.example.ports = [
-  { hostPort = 8080; containerPort = 80; openFirewall = true; }
+  { hostPort = 8080; containerPort = 80; exposure = [ "tailnet" ]; }
+  { hostPort = 32400; exposure = [ "wan" "tailnet" ]; }
   { hostPort = 9000; bindAddress = "127.0.0.1"; }
-  { hostPort = 10000; containerPort = 20000; count = 10; protocol = "udp"; openFirewall = true; }
+  { hostPort = 10000; containerPort = 20000; count = 10; protocol = "udp"; exposure = [ "wan" ]; }
 ];
 ```
 
@@ -30,10 +31,24 @@ podmanServer.containers.example.ports = [
 publishes equal-sized consecutive ranges. IPv6 bind addresses omit brackets, for
 example `bindAddress = "::1"`.
 
-`openFirewall` defaults to false. When enabled, it opens a global firewall rule,
-independently of the bind address. Raw `quadlet.containerConfig.publishPorts`
-entries remain available for advanced Podman syntax, but generate no firewall
-rules; declare any required rules separately.
+`exposure` defaults to `[]`, publishing without generating firewall openings.
+Omit `ports` entirely for container-internal access, including Caddy backends.
+`tailnet` opens ports only on `services.tailscale.interfaceName` (normally
+`tailscale0`); Tailscale grants/ACLs still apply. `wan` opens ports globally, which
+also permits LAN traffic. There is no dedicated LAN exposure policy. Host SSH
+access is managed separately. Declare both `wan` and `tailnet` when both access
+scopes are intended, preserving that intent for future ACL integration.
+
+WAN ports always request UPnP forwards. Each forward uses the same external and
+host port and protocol, even when `containerPort` differs. The UPnP module
+refreshes mappings periodically. Caddy requests mappings for ports 80, 443, and
+every custom domain listener port.
+UPnP requires `bindAddress = null` or `"0.0.0.0"`, because mappings target the
+host's detected LAN IPv4 address.
+
+Raw `quadlet.containerConfig.publishPorts` entries remain available for advanced
+Podman syntax, but generate no firewall rules or UPnP forwards; declare any
+required rules separately.
 
 ## Derived Environment Files
 

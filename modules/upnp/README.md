@@ -24,6 +24,8 @@ Mappings expose the receiving service beyond the local network. Declare only por
 
 `upnp-update.service` installs each mapping with a two-hour lease. `upnp-update.timer` refreshes mappings hourly and catches up after downtime through its persistent timer. The service also runs during normal multi-user startup when at least one forward is declared.
 
+Router authorization rejections (UPnP error 606) for external ports below 1024 are logged as warnings without failing the service. These ports may require manual router forwards. Other mapping failures still fail the service after all mappings have been attempted.
+
 ## Troubleshooting
 
 Inspect `upnp-update.service`, `upnp-update.timer`, and `journalctl -u upnp-update.service` for the name and endpoint of any failed mapping. Verify that the default-route interface has a global IPv4 address, UDP 1900 is allowed locally, and `upnpc -l` discovers the expected gateway. If the mapping exists but traffic still fails, test the receiving service on `LAN_ADDRESS:<to>` and check its firewall rule before changing the external `<from>` port.

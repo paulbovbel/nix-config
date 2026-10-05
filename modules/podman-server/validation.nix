@@ -30,6 +30,10 @@ in {
           assertion = builtins.all (port: port.hostPort + port.count - 1 <= 65535 && port.containerPort + port.count - 1 <= 65535) container.ports;
           message = "podmanServer.containers.${name}.ports contains a range ending above 65535";
         }
+        {
+          assertion = builtins.all (port: !(builtins.elem "wan" port.exposure) || port.bindAddress == null || port.bindAddress == "0.0.0.0") container.ports;
+          message = "podmanServer.containers.${name}.ports UPnP forwarding requires an all-interface IPv4 bind";
+        }
       ])
       cfg.containers);
 }

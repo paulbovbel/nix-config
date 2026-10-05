@@ -10,6 +10,7 @@ nixpkgs.lib.nixosSystem {
     quadlet-nix.nixosModules.quadlet
     agenix.nixosModules.default
     ../default.nix
+    ../../upnp
     ../../storage/options.nix
     ({lib, ...}: {
       options = {
