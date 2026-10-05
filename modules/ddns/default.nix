@@ -68,7 +68,7 @@ in {
                 ]
               }
             EOF
-              aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE" --change-batch "file://$runtime_dir/record.json"
+              aws route53 change-resource-record-sets --hosted-zone-id "$AWS_HOSTED_ZONE_ID" --change-batch "file://$runtime_dir/record.json"
             done
           '';
         };

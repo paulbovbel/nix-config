@@ -4,7 +4,7 @@ The Dynamic DNS module updates configured Route53 A records with the host's publ
 
 ## Requirements
 
-The agenix-managed `/run/agenix/aws-access-env` file must provide AWS credentials and `AWS_HOSTED_ZONE`. Configure at least one fully qualified record in `ddns.records` and set `ddns.zone` to its DNS zone.
+The agenix-managed `/run/agenix/aws-access-env` file must provide AWS credentials and `AWS_HOSTED_ZONE_ID`. Configure at least one fully qualified record in `ddns.records` and set `ddns.zone` to its DNS zone.
 
 Configure the host's Tailscale IPv4 address as a restricted nameserver for the applicable domains in the Tailscale admin console. The DNS server accepts TCP and UDP queries only through `tailscale0`. Names in `ddns.records` resolve to the host's Tailscale address; all other queries are forwarded in order to the host's upstream servers from `/run/systemd/resolve/resolv.conf`.
 

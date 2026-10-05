@@ -153,7 +153,7 @@ in {
     email = lib.mkOption {
       type = lib.types.str;
       default = "paul@bovbel.com";
-      description = "ACME contact email for Caddy.";
+      description = "Contact email for NixOS-managed ACME certificates.";
     };
 
     sites = lib.mkOption {

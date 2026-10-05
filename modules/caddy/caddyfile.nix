@@ -144,16 +144,7 @@
 
   renderSite = site: concatMapStrings (renderDomain site) site.domains;
 
-  publicTls = renderBlock "(public-tls)" (renderBlock "tls" (''
-      propagation_delay 60s
-      propagation_timeout 5m
-    ''
-    + renderBlock "dns route53" ''
-      access_key_id "{$AWS_ACCESS_KEY_ID}"
-      secret_access_key "{$AWS_SECRET_ACCESS_KEY}"
-      region "{$AWS_REGION}"
-      hosted_zone_id "{$AWS_HOSTED_ZONE}"
-    ''));
+  publicTls = renderBlock "(public-tls)" "tls /certs/fullchain.pem /certs/key.pem\n";
 
   notFoundHtml = builtins.readFile ./assets/404.html;
 
