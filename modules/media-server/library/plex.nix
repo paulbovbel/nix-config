@@ -48,7 +48,7 @@ in {
           ports = [
             {
               hostPort = 32400;
-              openFirewall = true;
+              exposure = ["wan" "tailnet"];
             }
           ];
           quadlet.containerConfig = {
@@ -88,7 +88,7 @@ in {
           ports = [
             {
               hostPort = 3001;
-              openFirewall = true;
+              exposure = ["tailnet"];
             }
           ];
           dependsOn = ["plex"];
@@ -178,12 +178,6 @@ in {
           Persistent = true;
         };
       };
-    };
-
-    upnp.forwards.plex = lib.mkIf cfg.upnp.enable {
-      from = 32400;
-      to = 32400;
-      proto = "tcp";
     };
   };
 }

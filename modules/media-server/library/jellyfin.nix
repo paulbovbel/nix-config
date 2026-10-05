@@ -11,12 +11,6 @@ in {
     storage.datasets.app.children.jellyfin = {};
 
     podmanServer.containers.jellyfin = {
-      ports = [
-        {
-          hostPort = 8096;
-          openFirewall = true;
-        }
-      ];
       quadlet.containerConfig = {
         image = "lscr.io/linuxserver/jellyfin:latest";
         environments = {

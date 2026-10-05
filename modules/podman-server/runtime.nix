@@ -94,15 +94,31 @@
       then "[${port.bindAddress}]:"
       else "${port.bindAddress}:";
   in "${address}${range port.hostPort}:${range port.containerPort}/${port.protocol}";
-  firewallPorts = protocol:
-    builtins.filter (port: port.openFirewall && port.protocol == protocol)
-    (lib.concatMap (container: container.ports) (lib.attrValues cfg.containers));
-  firewallSingles = protocol: lib.unique (map (port: port.hostPort) (builtins.filter (port: port.count == 1) (firewallPorts protocol)));
-  firewallRanges = protocol:
+  firewallPorts = scope: protocol:
+    builtins.filter (port: builtins.elem scope port.exposure && port.protocol == protocol) publishedPorts;
+  publishedPorts = lib.concatMap (container: container.ports) (lib.attrValues cfg.containers);
+  firewallSingles = scope: protocol: lib.unique (map (port: port.hostPort) (builtins.filter (port: port.count == 1) (firewallPorts scope protocol)));
+  firewallRanges = scope: protocol:
     lib.unique (map (port: {
       from = port.hostPort;
       to = port.hostPort + port.count - 1;
-    }) (builtins.filter (port: port.count > 1) (firewallPorts protocol)));
+    }) (builtins.filter (port: port.count > 1) (firewallPorts scope protocol)));
+  firewallRules = scope: {
+    allowedTCPPorts = firewallSingles scope "tcp";
+    allowedUDPPorts = firewallSingles scope "udp";
+    allowedTCPPortRanges = firewallRanges scope "tcp";
+    allowedUDPPortRanges = firewallRanges scope "udp";
+  };
+  upnpForwards = lib.listToAttrs (lib.concatMap (port:
+    map (offset: let
+      hostPort = port.hostPort + offset;
+    in
+      lib.nameValuePair "podman-${port.protocol}-${toString hostPort}" {
+        from = hostPort;
+        to = hostPort;
+        proto = port.protocol;
+      }) (lib.range 0 (port.count - 1)))
+    (builtins.filter (port: builtins.elem "wan" port.exposure) publishedPorts));
 
   renderDerivedEnvFile = name: envFile: let
     derivedEnvUnitNames = derivedEnvUnits envFile.derivedEnvironmentFiles;
@@ -148,12 +164,13 @@ in {
       containers = lib.mapAttrs mkQuadletContainer cfg.containers;
     };
 
-    networking.firewall = {
-      allowedTCPPorts = firewallSingles "tcp";
-      allowedUDPPorts = firewallSingles "udp";
-      allowedTCPPortRanges = firewallRanges "tcp";
-      allowedUDPPortRanges = firewallRanges "udp";
-    };
+    networking.firewall =
+      firewallRules "wan"
+      // {
+        interfaces.${config.services.tailscale.interfaceName} = firewallRules "tailnet";
+      };
+
+    upnp.forwards = upnpForwards;
 
     systemd.services = lib.mkMerge [
       (lib.mapAttrs' (name: envFile: lib.nameValuePair "podman-server-${name}-env" (renderDerivedEnvFile name envFile)) cfg.derivedEnvFiles)

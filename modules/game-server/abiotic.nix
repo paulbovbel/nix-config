@@ -23,7 +23,7 @@ in {
       ports = map (port: {
         hostPort = port;
         protocol = "udp";
-        openFirewall = true;
+        exposure = ["wan" "tailnet"];
       }) [7777 27015];
       quadlet.containerConfig = {
         image = "ghcr.io/pleut/abiotic-factor-linux-docker:latest";
@@ -44,19 +44,6 @@ in {
         };
       };
       derivedEnvironmentFiles = ["abiotic"];
-    };
-
-    upnp.forwards = lib.mkIf cfg.upnp.enable {
-      abiotic = {
-        from = 7777;
-        to = 7777;
-        proto = "udp";
-      };
-      abioticquery = {
-        from = 27015;
-        to = 27015;
-        proto = "udp";
-      };
     };
   };
 }

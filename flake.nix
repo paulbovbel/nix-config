@@ -136,6 +136,7 @@
         storage-contracts = import ./modules/storage/tests/contracts.nix {inherit pkgs nixpkgs disko disko-zfs;};
       }
       // lib.optionalAttrs (system == "x86_64-linux") {
+        podman-server-exposure = import ./modules/podman-server/tests/exposure.nix {inherit pkgs quadlet-nix agenix;};
         game-streaming-contracts = import ./modules/game-streaming/tests/contracts.nix {inherit pkgs nixpkgs;};
         authentik-blueprint = import ./modules/authentik/tests/blueprint.nix {inherit pkgs quadlet-nix;};
         # TODO: Add end-to-end Btrfs and ZFS USB installer state-migration tests.

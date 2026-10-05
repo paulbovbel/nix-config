@@ -174,11 +174,5 @@ in {
         };
       };
     };
-
-    upnp.forwards.kobo = lib.mkIf cfg.upnp.enable {
-      from = 8443;
-      to = 8443;
-      proto = "tcp";
-    };
   };
 }

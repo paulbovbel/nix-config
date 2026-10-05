@@ -52,11 +52,5 @@
         description = "systemd OnCalendar schedule for download-popular-videos.timer.";
       };
     };
-
-    upnp.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Whether enabled media services request their public port forwards through the UPnP module.";
-    };
   };
 }

@@ -219,7 +219,6 @@ in {
 
   gameServer = {
     # abiotic.enable = true;
-    upnp.enable = true;
 
     minecraft = {
       enable = true;

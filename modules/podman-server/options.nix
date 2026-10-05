@@ -32,10 +32,10 @@
         default = "tcp";
         description = "Transport protocol to publish.";
       };
-      openFirewall = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Open these host ports in the global firewall. Independent of the bind address.";
+      exposure = lib.mkOption {
+        type = lib.types.listOf (lib.types.enum ["tailnet" "wan"]);
+        default = [];
+        description = "Direct host access scopes. Tailnet opens ports on the Tailscale interface; WAN opens ports globally and always requests UPnP forwards. Declare both to express both access intents. An empty list publishes without opening the firewall. Omit ports entirely for container-internal access.";
       };
     };
   });
@@ -44,7 +44,7 @@
       ports = lib.mkOption {
         type = lib.types.listOf portType;
         default = [];
-        description = "Structured published ports with explicit firewall policy. Raw quadlet.containerConfig.publishPorts remain supported but do not generate firewall rules.";
+        description = "Structured published ports with firewall and UPnP policy. Raw quadlet.containerConfig.publishPorts remain supported but do not generate firewall rules or UPnP forwards.";
       };
       build = lib.mkOption {
         type = lib.types.nullOr quadletBuildType;
@@ -189,7 +189,7 @@ in {
       example = lib.literalExpression ''
         {
           example = {
-            ports = [{ hostPort = 8080; containerPort = 80; openFirewall = true; }];
+            ports = [{ hostPort = 8080; containerPort = 80; exposure = [ "tailnet" ]; }];
             quadlet.containerConfig = {
               image = "docker.io/library/nginx:latest";
             };

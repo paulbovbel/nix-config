@@ -22,7 +22,7 @@ in {
         ports = [
           {
             hostPort = 25565;
-            openFirewall = true;
+            exposure = ["tailnet"];
           }
         ];
         quadlet.containerConfig = {
