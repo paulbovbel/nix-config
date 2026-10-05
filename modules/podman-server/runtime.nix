@@ -118,7 +118,7 @@
         to = hostPort;
         proto = port.protocol;
       }) (lib.range 0 (port.count - 1)))
-    (builtins.filter (port: builtins.elem "wan" port.exposure) publishedPorts));
+  (builtins.filter (port: builtins.elem "wan" port.exposure) publishedPorts));
 
   renderDerivedEnvFile = name: envFile: let
     derivedEnvUnitNames = derivedEnvUnits envFile.derivedEnvironmentFiles;

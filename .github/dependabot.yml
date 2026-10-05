@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
       day: sunday
+    # Private SSH inputs are updated manually; Dependabot cannot access them.
+    ignore:
+      - dependency-name: locus-vpn-client
+      - dependency-name: vscode-workspace-populator
   - package-ecosystem: github-actions
     directory: /
     schedule:
