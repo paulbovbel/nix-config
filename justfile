@@ -7,7 +7,7 @@ default:
 # Run routine repository checks in parallel.
 [group('checks')]
 [parallel]
-check: just-lint nix-lint python-lint python-test shell-lint dashboards-check
+check: just-lint nix-lint python-lint python-test shell-lint workflows-lint dashboards-check
 
 # Build a host configuration.
 [group('deployment')]
@@ -120,3 +120,8 @@ python-test:
 shell-lint:
     fd -e sh -X shellcheck
     fd -e sh -X shfmt -i 2 -d
+
+# Validate GitHub Actions workflows.
+[group('checks')]
+workflows-lint:
+    actionlint

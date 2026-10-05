@@ -47,9 +47,11 @@ Describe public options in `modules/<name>/options.nix`; use a module README for
 
 Validation has three levels:
 
-- `just check` runs formatting, linting, and Python unit tests.
+- `just check` runs formatting, linting (including GitHub Actions workflows), and Python unit tests.
 - `just nix-eval` evaluates every registered host; `just nix-contracts` checks module behavior without booting VMs. CI runs both before integration tests and host builds.
 - `just nix-test` builds all flake checks, including documentation and NixOS VM tests.
+
+CI exposes each non-contract flake check and eligible host build separately, then requires all validation stages in the stable `CI` status. Successful `main` runs publish the validated documentation artifact and host closures. Self-hosted validation is restricted to repository branches; see `modules/github-runner/README.md` for credentials, diagnostics, and branch protection setup.
 
 The evaluation-only Apple Silicon check disables peripheral firmware extraction because `/boot/vendorfw` is machine-local. Production host and installer builds retain firmware extraction. `ciBuild` controls the build matrix, not evaluation coverage.
 

@@ -147,6 +147,7 @@
     in {
       default = pkgs.mkShell {
         packages = with pkgs; [
+          actionlint
           agenix.packages.${system}.default
           alejandra
           deadnix

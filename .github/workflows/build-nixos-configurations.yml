@@ -5,82 +5,164 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: build-nixos-configurations-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   check:
+    # Never execute fork code on the persistent runner.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, nix-media]
+    timeout-minutes: 15
     outputs:
       build-hosts: ${{ steps.inventory.outputs.build-hosts }}
+      checks: ${{ steps.inventory.outputs.checks }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Verify Nix
-        run: nix --version
-
-      - name: Read build host inventory
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Read CI inventory
         id: inventory
-        run: printf 'build-hosts=%s\n' "$(nix eval --json .#lib.ciHostNames)" >> "$GITHUB_OUTPUT"
-
-      - name: Check repository
         run: |
-          set -euo pipefail
-          nix develop --command just check
+          hosts="$(nix eval --json .#lib.ciHostNames)"
+          checks="$(nix eval --json .#checks.x86_64-linux --apply 'checks: builtins.filter (name: builtins.match ".*-contracts" name == null) (builtins.attrNames checks)')"
+          [[ "$hosts" != '[]' && "$checks" != '[]' ]]
+          printf 'build-hosts=%s\nchecks=%s\n' "$hosts" "$checks" >> "$GITHUB_OUTPUT"
+      - name: Check repository
+        run: nix develop --command just check
 
   evaluate:
     needs: check
     runs-on: [self-hosted, nix-media]
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - name: Evaluate all hosts
         run: nix develop --command just nix-eval
-
       - name: Check module contracts
         run: nix develop --command just nix-contracts
 
   test:
+    name: Flake check (${{ matrix.check }})
     needs: [check, evaluate]
     runs-on: [self-hosted, nix-media]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        check: ${{ fromJSON(needs.check.outputs.checks) }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Verify Nix
-        run: nix --version
-
-      - name: Run NixOS integration tests
-        run: nix develop --command just nix-test
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Build flake check
+        env:
+          CHECK: ${{ matrix.check }}
+        run: nix build --no-link -L ".#checks.x86_64-linux.$CHECK"
+      - name: Build documentation artifact
+        if: matrix.check == 'module-docs-check' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: nix build .#module-docs --out-link "$RUNNER_TEMP/result-docs"
+      - name: Upload validated documentation
+        if: matrix.check == 'module-docs-check' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: ${{ runner.temp }}/result-docs
 
   build:
+    name: Host (${{ matrix.host }})
     needs: [check, test]
     runs-on: [self-hosted, nix-media]
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
         host: ${{ fromJSON(needs.check.outputs.build-hosts) }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Build host
+        env:
+          HOST: ${{ matrix.host }}
+        run: nix build --no-link -L ".#nixosConfigurations.$HOST.config.system.build.toplevel"
 
-      - name: Verify Nix
-        run: nix --version
+  ci:
+    # One stable check for branch protection, regardless of host/check matrix changes.
+    # Fail on failed, cancelled, or skipped validation; publication requires success.
+    name: CI
+    if: always()
+    needs: [check, evaluate, test, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every validation stage
+        env:
+          ALL_SUCCEEDED: ${{ needs.check.result == 'success' && needs.evaluate.result == 'success' && needs.test.result == 'success' && needs.build.result == 'success' }}
+          FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          if [[ "$FORK_PR" == true ]]; then
+            printf 'Fork PRs cannot run on the self-hosted runner. A maintainer must review and transfer the changes to a repository branch for full validation.\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          [[ "$ALL_SUCCEEDED" == true ]]
 
-      - name: Authenticate with Attic
+  publish-cache:
+    name: Publish cache (${{ matrix.host }})
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, ci]
+    runs-on: [self-hosted, nix-media]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        host: ${{ fromJSON(needs.check.outputs.build-hosts) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Publish validated host
+        id: cache
+        continue-on-error: true
         env:
           ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
-        continue-on-error: true
-        run: nix run nixpkgs#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
-
-      - name: Build ${{ matrix.host }}
-        run: nix build ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel" --out-link "result-${{ matrix.host }}"
-
-      - name: Push ${{ matrix.host }} to Attic
-        continue-on-error: true
+          HOST: ${{ matrix.host }}
         run: |
-          nix run nixpkgs#attic-client -- push bovbel:nixos "result-${{ matrix.host }}"
+          nix run .#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
+          nix build ".#nixosConfigurations.$HOST.config.system.build.toplevel" --out-link "result-$HOST"
+          nix run .#attic-client -- push bovbel:nixos "result-$HOST"
+      - name: Report cache failure
+        if: always() && steps.cache.outcome == 'failure'
+        run: printf '::warning::Cache publication failed; see the publication job logs.\n'
+
+  publish-docs:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: ci
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Deploy validated documentation
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
