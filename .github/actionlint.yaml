@@ -1,3 +1,8 @@
+# GitHub supports queue: max, but the pinned actionlint does not yet recognize it.
 self-hosted-runner:
   labels:
     - nix-media
+paths:
+  .github/workflows/build-nixos-configurations.yml:
+    ignore:
+      - 'unexpected key "queue" for "concurrency" section'

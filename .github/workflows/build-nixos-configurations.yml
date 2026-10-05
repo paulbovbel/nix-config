@@ -13,8 +13,9 @@ defaults:
     shell: bash
 
 concurrency:
-  group: build-nixos-configurations-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Preserve every main run; superseded PR runs can still be cancelled.
+  group: build-nixos-configurations-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -154,6 +155,7 @@ jobs:
       id-token: write
     concurrency:
       group: pages
+      queue: max
       cancel-in-progress: false
     environment:
       name: github-pages
