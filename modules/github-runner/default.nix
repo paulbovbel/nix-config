@@ -70,11 +70,14 @@ in {
         };
       };
       config = {pkgs, ...}: {
-        nix.settings.extra-platforms = config.boot.binfmt.emulatedSystems;
-        nix.settings.experimental-features = [
-          "nix-command"
-          "flakes"
-        ];
+        nix.settings = {
+          fallback = true;
+          extra-platforms = config.boot.binfmt.emulatedSystems;
+          experimental-features = [
+            "nix-command"
+            "flakes"
+          ];
+        };
 
         programs.ssh.knownHosts."github.com" = githubKnownHost;
 

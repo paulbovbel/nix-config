@@ -1,4 +1,9 @@
 final: prev: {
+  # Locus L2TP VPNs require IKEv1, disabled by default in strongSwan 6.
+  strongswan = prev.strongswan.overrideAttrs (old: {
+    configureFlags = (old.configureFlags or []) ++ ["--enable-ikev1"];
+  });
+
   netbootxyz-efi = prev.netbootxyz-efi.overrideAttrs (_: {
     version = "3.0.2";
     src = final.fetchurl {

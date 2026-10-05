@@ -333,11 +333,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1781122657,
-        "narHash": "sha256-NYLh8OZSoHob2Cz+ia86bj4Dwz2HJ9yKgqEisj1ffN0=",
+        "lastModified": 1791292841,
+        "narHash": "sha256-zM9pIut+k9sV7VBLxBwrwo1LNEB9eYtlPMhxJdkg74U=",
         "ref": "refs/heads/main",
-        "rev": "95adb96ad03906767901f7a6cb8ff5dc40fa1308",
-        "revCount": 5,
+        "rev": "0126d00cfedfef46c9d14761d71188202a2a5479",
+        "revCount": 9,
         "type": "git",
         "url": "ssh://git@github.com/locusrobotics/locus-vpn-client.git"
       },
