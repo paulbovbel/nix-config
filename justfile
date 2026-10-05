@@ -60,11 +60,6 @@ dashboards-check:
 dashboards-dry-run:
     modules/monitor/scripts/grafana-dashboards.sh --dry-run
 
-# Update generated Caddy configuration.
-[group('maintenance')]
-update-caddy:
-    nix develop --command python3 modules/caddy/scripts/update.py
-
 # Check justfile formatting.
 [group('checks')]
 just-lint:

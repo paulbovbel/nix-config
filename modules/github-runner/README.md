@@ -20,5 +20,5 @@ Inspect the host `container@github-runner.service`, then inspect `github-runner-
 
 - Self-hosted validation accepts pushes to `main` and PR branches within this repository. Branch writers are trusted with access to the runner's SSH key. Fork PRs receive a failing `CI` status without running on the server; review external changes before transferring them to a repository branch.
 - Configure branch protection to require **CI**, which passes only when all validation stages succeed.
-- Successful `main` runs publish host closures and documentation. Cache credentials use the `ATTIC_TOKEN` Actions secret; dependency-update PRs use `DEPENDENCY_UPDATE_TOKEN`.
+- Successful `main` runs publish host closures and documentation. Cache credentials use the `ATTIC_TOKEN` Actions secret. Dependabot updates flake inputs and GitHub Actions weekly.
 - Logs and job durations are available in GitHub Actions. Workflow definitions live in `.github/workflows/` and are checked by `just check`.

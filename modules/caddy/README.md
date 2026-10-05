@@ -4,7 +4,7 @@ The Caddy module renders declarative sites and endpoints for public or Tailscale
 
 ## Requirements
 
-Caddy uses the Podman server for its container, storage datasets for runtime state, and agenix secrets for DNS and basic-auth credentials. OAuth routes require the Authentik module; it owns Google credentials, identities, and the embedded forward-auth outpost. Public domains must resolve to the host before ACME certificate issuance can succeed.
+Caddy uses the Podman server for its container, storage datasets for runtime state, and agenix secrets for basic-auth credentials. NixOS ACME uses the existing AWS secret for Route53 DNS validation; Caddy runs the stock package without DNS plugins. OAuth routes require the Authentik module; it owns Google credentials, identities, and the embedded forward-auth outpost.
 
 ## Endpoints
 
@@ -65,7 +65,15 @@ Domain TLS can be `public` or `tailscale`; `listenPort` can override the default
 
 ## Persistence
 
-Preserve `storage.datasets.app.children.caddy` when rebuilding; it holds certificates and authentication state.
+Preserve `storage.datasets.app.children.caddy` for Caddy runtime state and `/var/lib/acme` for certificates and ACME account keys. The module declares ACME persistence through `rootFs.persistDirectories`.
+
+## Certificates
+
+`security.acme.certs.caddy` issues a certificate for the host's base domain and its wildcard, adding any public site names not covered by that wildcard. Route53 DNS validation works for Tailscale-only sites without exposing HTTP ports to the internet. The existing `aws-access-env` secret supplies AWS credentials and `AWS_HOSTED_ZONE`; the renewal service maps the latter to Lego's `AWS_HOSTED_ZONE_ID`.
+
+The certificate directory is mounted read-only at `/certs` in both Caddy and its configuration validator. NixOS creates a temporary self-signed certificate at first boot so Caddy can start, then obtains the trusted certificate. Successful issuance and renewal force a Caddy reload to pick up the changed certificate files. Tailscale TLS continues to use `tailscaled` directly.
+
+On the first deployment, NixOS requests a new certificate rather than reusing Caddy's previous certificate store. Check `acme-order-renew-caddy.service` for successful issuance before relying on browser-trusted HTTPS.
 
 ## Route Audit
 

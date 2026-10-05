@@ -11,6 +11,7 @@
   imports = [
     ./options.nix
     ./caddyfile.nix
+    ./acme.nix
     ./container.nix
     ./fail2ban.nix
     ./share.nix
