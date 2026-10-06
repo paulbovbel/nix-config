@@ -28,38 +28,33 @@ just switch <host>
 
 ## Architecture
 
-Hosts are registered in `hosts/default.nix`. Each `hosts/<host>/default.nix` selects a system, age recipient, installer kind (`generic` or `apple-silicon`), CI build eligibility (`ciBuild`), users, and profiles. `hosts/mk-host.nix` composes hosts, and `profiles/default.nix` maps user-specific profiles to Home Manager and system modules. Home Manager modules can read the user's selected profile names from `profiles.selected` (defined in `profiles/selected.nix`) to adapt to profile combinations. Reusable modules under `modules/` are imported globally and enabled from host configurations.
+`hosts/default.nix` registers the fleet; `hosts/mk-host.nix` combines host settings with user and system profiles from `profiles/default.nix`. Reusable modules are imported globally and enabled in host configurations.
 
-Key abstractions (see each module's `options.nix` for its API):
+Core modules (see the [module reference](https://paulbovbel.github.io/nix-config/) for options):
 
-- `rootFs` for ZFS or Btrfs root layouts, encryption, impermanence, snapshots, and persistent state
-- `podmanServer` for container, path, and derived environment-file declarations
+- `rootFs` for filesystems, encryption, impermanence, and persistent state
+- `podmanServer` for containers and their environment files
 - `storage` for shared ZFS datasets and generated paths
-- `caddy.sites` for public and authenticated HTTP ingress, with per-site `domains` and `endpoints`
+- `caddy.sites` for public and authenticated HTTP ingress
 - `backup` for scheduled pushes to remote targets
 - `mediaServer`, `gameServer`, and `atticCache` for server workloads
 
-Hosts use pinned release nixpkgs by default; `useUnstablePackages` selects unstable for a host, while `unstablePkgs` supports localized use. Home Manager is evaluated with NixOS; agenix manages secrets.
+Hosts use pinned release nixpkgs by default, Home Manager for user environments, and agenix for secrets.
 
 ## Development
 
-Describe public options in `modules/<name>/options.nix`; use a module README for usage, invariants, or operations. Add display metadata in `modules/<name>/default.nix` for the generated documentation site. Keep non-Nix scripts in `modules/<name>/scripts/` and tests, including NixOS VM tests and test helpers, in `modules/<name>/tests/`. CI validates the site and its links with `just nix-test`.
+- `just check`: formatting, linting, and Python unit tests.
+- `just nix-test`: host evaluation, module contracts, documentation checks, and NixOS VM tests.
 
-Validation has three levels:
+CI runs both and builds hosts marked `ciBuild`. Successful `main` runs publish documentation and host closures. See the [runner runbook](modules/github-runner/README.md) for CI access and branch protection.
 
-- `just check` runs formatting, linting (including GitHub Actions workflows), and Python unit tests.
-- `just nix-eval` evaluates every registered host; `just nix-contracts` checks module behavior without booting VMs. CI runs both before integration tests and host builds.
-- `just nix-test` builds all flake checks, including documentation and NixOS VM tests.
-
-CI exposes each non-contract flake check and eligible host build separately, then requires all validation stages in the stable `CI` status. Successful `main` runs publish the validated documentation artifact and host closures. Self-hosted validation is restricted to repository branches; see `modules/github-runner/README.md` for credentials, diagnostics, and branch protection setup.
-
-The evaluation-only Apple Silicon check disables peripheral firmware extraction because `/boot/vendorfw` is machine-local. Production host and installer builds retain firmware extraction. `ciBuild` controls the build matrix, not evaluation coverage.
+Document public options in `options.nix` and module usage in a local README. Never commit plaintext secrets; declare persistent state through `rootFs`.
 
 ## Repository Layout
 
 - Machine policy and module enablement: `hosts/<host>/configuration.nix`
 - Hardware facts and device identities: `hosts/<host>/hardware-configuration.nix`
-- Host user and profile selection: `hosts/<host>/default.nix`
+- Host metadata, users, and profiles: `hosts/<host>/default.nix`
 - Shared host inventory and composition: `hosts/{default,mk-host}.nix`
 - Local package overrides: `overlays/default.nix`
 - Shared site values: `hosts/site.nix`
@@ -67,15 +62,8 @@ The evaluation-only Apple Silicon check disables peripheral firmware extraction 
 - Module scripts, tests, and static assets: `modules/<name>/{scripts,tests,assets}/`
 - Composite-module scripts and tests: `modules/<name>/<submodule>/{scripts,tests}/`
 - Profile-only Home Manager scripts: `profiles/<profile>/home/scripts/`
-- Documentation builder and templates: `modules/documentation/`
-- Deployment tooling and runbooks: `modules/deployment/`
-- Monitoring services and Grafana dashboards: `modules/monitor/`
-- User and system profile behavior: `profiles/<profile>/`
-- Profile selection mapping: `profiles/default.nix`
-- Agenix-encrypted values: `secrets/`
-- Agenix recipient declarations: `agenix-rules.nix`
-
-Keep machine policy in `configuration.nix` and hardware-bound values in `hardware-configuration.nix`. Never commit plaintext secrets; declare persistent state with `rootFs` and use `podmanServer`, `caddy`, and `storage` for server workloads.
+- User and system profiles: `profiles/<profile>/`, selected through `profiles/default.nix`
+- Encrypted secrets and recipients: `secrets/`, `agenix-rules.nix`
 
 ## Runbooks
 

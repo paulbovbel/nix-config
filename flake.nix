@@ -89,8 +89,15 @@
       else self.rev or self.dirtyRev or null;
     systems = ["aarch64-linux" "x86_64-linux"];
     forAllSystems = lib.genAttrs systems;
+    pkgsFor = forAllSystems (system: import nixpkgs {inherit system;});
     overlays = [inputs.nix-vscode-extensions.overlays.default (import ./overlays)];
     hosts = import ./hosts;
+    hostEvaluations = lib.mapAttrs (name: metadata:
+      import ./modules/deployment/tests/evaluate-host.nix {
+        inherit metadata;
+        host = self.nixosConfigurations.${name};
+      })
+    hosts;
     mkHost = import ./hosts/mk-host.nix {
       inherit inputs overlays configurationBranch configurationRevision;
     };
@@ -108,22 +115,24 @@
       inherit hosts mkInstaller;
       hostNames = lib.attrNames hosts;
       ciHostNames = lib.attrNames (lib.filterAttrs (_: host: host.ciBuild) hosts);
-      hostEvaluations = lib.mapAttrs (name: metadata:
-        import ./modules/deployment/tests/evaluate-host.nix {
-          inherit metadata;
-          host = self.nixosConfigurations.${name};
-        })
-      hosts;
     };
     packages = forAllSystems (system: let
-      pkgs = import nixpkgs {inherit system;};
+      pkgs = pkgsFor.${system};
       docs = mkDocs system;
     in {
       inherit (pkgs) attic-client;
       inherit (docs) module-docs;
+      ci-hosts = pkgs.linkFarm "ci-hosts" (
+        map (name: {
+          inherit name;
+          path = self.nixosConfigurations.${name}.config.system.build.toplevel;
+        })
+        self.lib.ciHostNames
+      );
+      ci-checks = pkgs.linkFarm "ci-checks" self.checks.${system};
     });
     checks = forAllSystems (system: let
-      pkgs = import nixpkgs {inherit system;};
+      pkgs = pkgsFor.${system};
       rootFsImpermanenceTest = backend:
         import ./modules/root-fs/tests/root-fs-impermanence.nix {
           inherit backend disko disko-zfs impermanence nixpkgs pkgs;
@@ -132,6 +141,10 @@
     in
       {
         inherit (mkDocs system) module-docs-check;
+        # Force evaluation of every host without making their derivations build dependencies.
+        host-evaluations = pkgs.writeText "host-evaluations.json" (
+          builtins.unsafeDiscardStringContext (builtins.toJSON hostEvaluations)
+        );
         podman-server-contracts = import ./modules/podman-server/tests/contracts.nix {inherit pkgs nixpkgs quadlet-nix agenix;};
         storage-contracts = import ./modules/storage/tests/contracts.nix {inherit pkgs nixpkgs disko disko-zfs;};
       }
@@ -144,7 +157,7 @@
         root-fs-zfs-impermanence = rootFsImpermanenceTest "zfs";
       });
     devShells = forAllSystems (system: let
-      pkgs = import nixpkgs {inherit system;};
+      pkgs = pkgsFor.${system};
     in {
       default = pkgs.mkShell {
         packages = with pkgs; [

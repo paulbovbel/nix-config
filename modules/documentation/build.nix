@@ -109,6 +109,7 @@
       "(modules/monitor/README.md)"
       "(modules/caddy/README.md)"
       "(modules/attic-cache/README.md)"
+      "(modules/github-runner/README.md)"
     ]
     [
       "(remote-deployment.html)"
@@ -116,6 +117,7 @@
       "(monitoring.html)"
       "(caddy.html)"
       "(attic-cache.html)"
+      "(github-runner.html)"
     ]
     (builtins.readFile (sourceRoot + "/README.md"));
   index = pkgs.writeText "module-index.md" (
