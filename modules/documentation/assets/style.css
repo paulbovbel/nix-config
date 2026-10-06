@@ -77,6 +77,11 @@ body {
   text-transform: uppercase;
 }
 
+.sidebar .module-list {
+  padding-left: 0.65rem;
+  border-left: 1px solid light-dark(#d0d7de, #30363d);
+}
+
 .search-label {
   display: block;
   margin-bottom: 0.35rem;

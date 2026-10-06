@@ -24,77 +24,77 @@
   cfg = config.upnp;
   forwards = lib.mapAttrsToList (name: forward: forward // {inherit name;}) cfg.forwards;
 in {
-  options.moduleDocumentation.upnp = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "UPnP";
-      summary = "Periodic router port-forward declarations.";
-    };
-  };
-
   options.upnp.forwards = lib.mkOption {
     type = lib.types.attrsOf forwardType;
     default = {};
     description = "UPnP forwards.";
   };
 
-  config = lib.mkIf (forwards != []) {
-    environment.systemPackages = [pkgs.miniupnpc];
-
-    systemd.services.upnp-update = {
-      description = "Refresh configured UPnP port forwards to this host";
-      wantedBy = ["multi-user.target"];
-      wants = ["network-online.target"];
-      after = ["network-online.target"];
-      path = [pkgs.gawk pkgs.iproute2 pkgs.miniupnpc];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = false;
+  config = lib.mkMerge [
+    {
+      moduleDocumentation.upnp = {
+        title = "UPnP";
+        category = "Networking and access";
+        summary = "Periodic router port-forward declarations.";
       };
-      script =
-        ''
-          LAN_ADDRESS="$(${lanAddressCommand})"
+    }
+    (lib.mkIf (forwards != []) {
+      environment.systemPackages = [pkgs.miniupnpc];
 
-          if [ -z "$LAN_ADDRESS" ]; then
-            echo "Could not determine LAN_ADDRESS" >&2
-            exit 1
-          fi
+      systemd.services.upnp-update = {
+        description = "Refresh configured UPnP port forwards to this host";
+        wantedBy = ["multi-user.target"];
+        wants = ["network-online.target"];
+        after = ["network-online.target"];
+        path = [pkgs.gawk pkgs.iproute2 pkgs.miniupnpc];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = false;
+        };
+        script =
+          ''
+            LAN_ADDRESS="$(${lanAddressCommand})"
 
-          failures=0
-        ''
-        + lib.concatMapStringsSep "\n" (forward: ''
-          if output=$(upnpc -z 1900 -a "$LAN_ADDRESS" ${toString forward.to} ${toString forward.from} ${forward.proto} 7200 2>&1); then
-            printf '%s\n' "$output"
-          else
-            printf '%s\n' "$output" >&2
-            if [ ${toString forward.from} -lt 1024 ] && [[ "$output" == *"failed with code 606 (Action not authorized)"* ]]; then
-              echo "Warning: router denied low-port UPnP forward '${forward.name}': ${toString forward.from}/${forward.proto} -> $LAN_ADDRESS:${toString forward.to}; configure a manual router forward if needed" >&2
-            else
-              echo "Failed to update UPnP forward '${forward.name}': ${toString forward.from}/${forward.proto} -> $LAN_ADDRESS:${toString forward.to}" >&2
-              failures=$((failures + 1))
+            if [ -z "$LAN_ADDRESS" ]; then
+              echo "Could not determine LAN_ADDRESS" >&2
+              exit 1
             fi
-          fi
-        '')
-        forwards
-        + ''
 
-          if [ "$failures" -gt 0 ]; then
-            echo "Failed to update $failures UPnP forward(s)" >&2
-            exit 1
-          fi
-        '';
-    };
+            failures=0
+          ''
+          + lib.concatMapStringsSep "\n" (forward: ''
+            if output=$(upnpc -z 1900 -a "$LAN_ADDRESS" ${toString forward.to} ${toString forward.from} ${forward.proto} 7200 2>&1); then
+              printf '%s\n' "$output"
+            else
+              printf '%s\n' "$output" >&2
+              if [ ${toString forward.from} -lt 1024 ] && [[ "$output" == *"failed with code 606 (Action not authorized)"* ]]; then
+                echo "Warning: router denied low-port UPnP forward '${forward.name}': ${toString forward.from}/${forward.proto} -> $LAN_ADDRESS:${toString forward.to}; configure a manual router forward if needed" >&2
+              else
+                echo "Failed to update UPnP forward '${forward.name}': ${toString forward.from}/${forward.proto} -> $LAN_ADDRESS:${toString forward.to}" >&2
+                failures=$((failures + 1))
+              fi
+            fi
+          '')
+          forwards
+          + ''
 
-    networking.firewall.allowedUDPPorts = [1900];
-
-    systemd.timers.upnp-update = {
-      description = "Schedule refreshes for configured UPnP port forwards";
-      wantedBy = ["timers.target"];
-      timerConfig = {
-        OnCalendar = "hourly";
-        Persistent = true;
+            if [ "$failures" -gt 0 ]; then
+              echo "Failed to update $failures UPnP forward(s)" >&2
+              exit 1
+            fi
+          '';
       };
-    };
-  };
+
+      networking.firewall.allowedUDPPorts = [1900];
+
+      systemd.timers.upnp-update = {
+        description = "Schedule refreshes for configured UPnP port forwards";
+        wantedBy = ["timers.target"];
+        timerConfig = {
+          OnCalendar = "hourly";
+          Persistent = true;
+        };
+      };
+    })
+  ];
 }

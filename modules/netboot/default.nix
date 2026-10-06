@@ -18,15 +18,6 @@
 
   espMountPoint = config.boot.loader.efi.efiSysMountPoint;
 in {
-  options.moduleDocumentation.netboot = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Network Boot";
-      summary = "Local network boot services and netboot.xyz images.";
-    };
-  };
-
   options.netboot = {
     enable = lib.mkEnableOption "netboot.xyz boot entry";
 
@@ -37,30 +28,39 @@ in {
     };
   };
 
-  config = lib.mkIf (cfg.enable && config.boot.loader.systemd-boot.enable) {
-    boot.loader.systemd-boot = {
-      extraFiles = {
-        "${netbootEfiPath}" = netbootImage.outPath;
+  config = lib.mkMerge [
+    {
+      moduleDocumentation.netboot = {
+        title = "Network Boot";
+        category = "Networking and access";
+        summary = "Local network boot services and netboot.xyz images.";
+      };
+    }
+    (lib.mkIf (cfg.enable && config.boot.loader.systemd-boot.enable) {
+      boot.loader.systemd-boot = {
+        extraFiles = {
+          "${netbootEfiPath}" = netbootImage.outPath;
+        };
+
+        extraEntries."netboot-xyz.conf" = ''
+          title netboot.xyz
+          efi /${netbootEfiPath}
+        '';
       };
 
-      extraEntries."netboot-xyz.conf" = ''
-        title netboot.xyz
-        efi /${netbootEfiPath}
+      system.activationScripts.cleanupOldNetbootImages = ''
+        netboot_dir=${lib.escapeShellArg "${espMountPoint}/EFI/netboot"}
+        keep=${lib.escapeShellArg (baseNameOf netbootEfiPath)}
+
+        if [ -d "$netboot_dir" ]; then
+          find "$netboot_dir" \
+            -maxdepth 1 \
+            -type f \
+            -name 'netboot.xyz*.efi' \
+            ! -name "$keep" \
+            -delete
+        fi
       '';
-    };
-
-    system.activationScripts.cleanupOldNetbootImages = ''
-      netboot_dir=${lib.escapeShellArg "${espMountPoint}/EFI/netboot"}
-      keep=${lib.escapeShellArg (baseNameOf netbootEfiPath)}
-
-      if [ -d "$netboot_dir" ]; then
-        find "$netboot_dir" \
-          -maxdepth 1 \
-          -type f \
-          -name 'netboot.xyz*.efi' \
-          ! -name "$keep" \
-          -delete
-      fi
-    '';
-  };
+    })
+  ];
 }

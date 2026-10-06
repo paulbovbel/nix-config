@@ -96,73 +96,48 @@
       - [${modulePages.${name}.title}](${name}.html) - ${modulePages.${name}.summary}
     '')
     moduleNames;
-  sidebarModuleLinks =
-    lib.concatMapStrings (name: ''
-      <li><a href="${name}.html">${modulePages.${name}.title}</a></li>
+  pages = map (page: page // {output = "${page.name}.html";}) (
+    map (name: {
+      inherit name;
+      inherit (metadataByName.${name}) title category;
+      optionsModule = name;
+      source = "modules/${name}/README.md";
+      hasIntroduction = modulePages.${name}.hasIntroduction;
+    })
+    moduleNames
+    ++ import ../deployment/documentation.nix
+  );
+  pageCategories = import ./categories.nix;
+  sidebarLinks = assert lib.assertMsg (lib.all (page: builtins.elem page.category pageCategories) pages) "Every page must declare a known documentation category";
+    lib.concatMapStrings (category: ''
+      <section>
+        <h2 class="sidebar-heading">${category}</h2>
+        <ul class="module-list">
+          ${lib.concatMapStrings (page: ''
+          <li><a href="${page.output}">${page.title}</a></li>
+        '')
+        (builtins.filter (page: page.category == category) pages)}
+        </ul>
+      </section>
     '')
-    moduleNames;
+    pageCategories;
+  readmePages = builtins.filter (page: page.hasIntroduction or true) pages;
   landingReadme =
     builtins.replaceStrings
-    [
-      "(modules/deployment/remote/README.md)"
-      "(modules/deployment/usb/README.md)"
-      "(modules/monitor/README.md)"
-      "(modules/caddy/README.md)"
-      "(modules/attic-cache/README.md)"
-      "(modules/github-runner/README.md)"
-    ]
-    [
-      "(remote-deployment.html)"
-      "(usb-deployment.html)"
-      "(monitoring.html)"
-      "(caddy.html)"
-      "(attic-cache.html)"
-      "(github-runner.html)"
-    ]
+    (map (page: "(${page.source})") readmePages)
+    (map (page: "(${page.output})") readmePages)
     (builtins.readFile (sourceRoot + "/README.md"));
   index = pkgs.writeText "module-index.md" (
     landingReadme
     + "\n\n"
     + builtins.replaceStrings ["@modules@"] [moduleLinks] (builtins.readFile ./templates/index.md)
   );
-  sidebar = builtins.replaceStrings ["@modules@"] [sidebarModuleLinks] (builtins.readFile ./assets/sidebar.html);
+  sidebar = builtins.replaceStrings ["@pages@"] [sidebarLinks] (builtins.readFile ./assets/sidebar.html);
   pageTemplate = pkgs.writeText "page.html" (
     builtins.replaceStrings ["@sidebar@"] [sidebar] (builtins.readFile ./assets/page.html)
   );
   introductionHeading = pkgs.writeText "introduction-heading.md" (builtins.readFile ./templates/introduction.md);
   optionsHeading = pkgs.writeText "options-heading.md" (builtins.readFile ./templates/options.md);
-  guides = map (guide:
-    guide
-    // {
-      input = pkgs.writeText "${guide.name}.md" (
-        builtins.replaceStrings guide.linkSources guide.linkTargets (
-          builtins.readFile (sourceRoot + "/${guide.source}")
-        )
-      );
-      output = "${guide.name}.html";
-    }) [
-    {
-      name = "remote-deployment";
-      title = "Remote deployment";
-      source = "modules/deployment/remote/README.md";
-      linkSources = ["(../usb/README.md)"];
-      linkTargets = ["(usb-deployment.html)"];
-    }
-    {
-      name = "usb-deployment";
-      title = "USB deployment";
-      source = "modules/deployment/usb/README.md";
-      linkSources = ["(../remote/README.md)"];
-      linkTargets = ["(remote-deployment.html)"];
-    }
-    {
-      name = "monitoring";
-      title = "Grafana dashboards";
-      source = "modules/monitor/README.md";
-      linkSources = [];
-      linkTargets = [];
-    }
-  ];
 
   renderPage = {
     title,
@@ -205,33 +180,40 @@ in rec {
         inputs = [allOptions];
         output = "all-options.html";
       }}
-      ${lib.concatMapStringsSep "\n" (guide:
-        renderPage {
-          inherit (guide) output title;
-          inputs = [guide.input];
-        })
-      guides}
-      ${lib.concatMapStringsSep "\n" (name: ''
-          nixos-render-docs -j "$NIX_BUILD_CORES" options commonmark \
-            --manpage-urls ${pkgs.path + "/doc/manpage-urls.json"} \
-            --revision ${lib.escapeShellArg revision} \
-            "$options_dir/${name}.json" \
-            "$options_dir/${name}-raw.md"
-          python ${./scripts/transform_markdown.py} \
-            "$options_dir/${name}-raw.md" \
-            > "$options_dir/${name}.md"
+      ${lib.concatMapStringsSep "\n" (page: let
+          name = page.optionsModule or page.name;
+          hasOptions = page ? optionsModule;
+        in ''
+          ${lib.optionalString hasOptions ''
+            nixos-render-docs -j "$NIX_BUILD_CORES" options commonmark \
+              --manpage-urls ${pkgs.path + "/doc/manpage-urls.json"} \
+              --revision ${lib.escapeShellArg revision} \
+              "$options_dir/${name}.json" \
+              "$options_dir/${name}-raw.md"
+            python ${./scripts/transform_markdown.py} \
+              "$options_dir/${name}-raw.md" \
+               > "$options_dir/${name}.md"
+          ''}
           ${renderPage {
-            title = modulePages.${name}.title;
+            inherit (page) title output;
             inputs =
-              [modulePages.${name}.heading]
-              ++ lib.optional modulePages.${name}.hasIntroduction introductionHeading
-              ++ modulePages.${name}.introduction
-              ++ [optionsHeading];
-            rawInputs = ["$options_dir/${name}.md"];
-            output = "${name}.html";
+              if hasOptions
+              then
+                [modulePages.${name}.heading]
+                ++ lib.optional modulePages.${name}.hasIntroduction introductionHeading
+                ++ modulePages.${name}.introduction
+                ++ [optionsHeading]
+              else [
+                (pkgs.writeText "${page.name}.md" (
+                  builtins.replaceStrings (page.linkSources or []) (page.linkTargets or []) (
+                    builtins.readFile (sourceRoot + "/${page.source}")
+                  )
+                ))
+              ];
+            rawInputs = lib.optional hasOptions "$options_dir/${name}.md";
           }}
         '')
-        moduleNames}
+        pages}
       cp ${./assets/style.css} "$out/style.css"
       cp ${./scripts/site.js} "$out/site.js"
       python ${./scripts/build_search.py} \

@@ -9,6 +9,7 @@
     (nixpkgs.lib.nixosSystem {
       inherit (pkgs.stdenv.hostPlatform) system;
       modules = [
+        ../../documentation/options.nix
         disko.nixosModules.disko
         disko-zfs.nixosModules.default
         ../default.nix

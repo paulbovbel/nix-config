@@ -1,11 +1,8 @@
-{lib, ...}: {
-  options.moduleDocumentation.podman-server = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Podman Server";
-      summary = "Reusable Quadlet containers, shared paths, dependencies, and derived environment files.";
-    };
+{
+  config.moduleDocumentation.podman-server = {
+    title = "Podman Server";
+    category = "Infrastructure";
+    summary = "Reusable Quadlet containers, shared paths, dependencies, and derived environment files.";
   };
 
   imports = [

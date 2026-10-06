@@ -1,11 +1,8 @@
 {lib, ...}: {
-  options.moduleDocumentation.site = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Site";
-      summary = "Settings shared by services within the local network and tailnet.";
-    };
+  config.moduleDocumentation.site = {
+    title = "Site";
+    category = "System";
+    summary = "Settings shared by services within the local network and tailnet.";
   };
 
   options.tailscale.domain = lib.mkOption {

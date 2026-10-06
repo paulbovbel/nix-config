@@ -13,7 +13,7 @@ in
   pkgs.testers.runNixOSTest {
     name = "podman-server-exposure";
     nodes.machine = {lib, ...}: {
-      imports = [quadlet-nix.nixosModules.quadlet agenix.nixosModules.default ../default.nix ../../upnp ../../storage/options.nix];
+      imports = [../../documentation/options.nix quadlet-nix.nixosModules.quadlet agenix.nixosModules.default ../default.nix ../../upnp ../../storage/options.nix];
       options.rootFs.persistDirectories = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];

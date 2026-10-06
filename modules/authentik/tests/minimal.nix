@@ -19,6 +19,7 @@
   };
 in {
   imports = [
+    ../../documentation/options.nix
     ../default.nix
     ../../caddy/options.nix
     ../../podman-server/options.nix

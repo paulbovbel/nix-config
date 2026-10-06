@@ -48,40 +48,40 @@
   };
   datasetOwnershipRules = lib.mapAttrsToList (_: dataset: "d ${dataset.path} ${dataset.mode} ${dataset.owner} ${dataset.group} - -") datasetAttrs;
 in {
-  options.moduleDocumentation.storage = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Storage";
-      summary = "Nested shared ZFS datasets with generated mount paths and snapshot policy.";
-    };
-  };
-
   imports = [./options.nix];
 
-  config = lib.mkIf cfg.enable {
-    boot.zfs.extraPools = [cfg.pool];
+  config = lib.mkMerge [
+    {
+      moduleDocumentation.storage = {
+        title = "Storage";
+        category = "Storage and backup";
+        summary = "Nested shared ZFS datasets with generated mount paths and snapshot policy.";
+      };
+    }
+    (lib.mkIf cfg.enable {
+      boot.zfs.extraPools = [cfg.pool];
 
-    services.zfs.autoScrub = {
-      enable = true;
-      interval = "monthly";
-      pools = [cfg.pool];
-    };
+      services.zfs.autoScrub = {
+        enable = true;
+        interval = "monthly";
+        pools = [cfg.pool];
+      };
 
-    systemd.tmpfiles.rules = datasetOwnershipRules;
+      systemd.tmpfiles.rules = datasetOwnershipRules;
 
-    disko.zfs.settings.datasets =
-      {
-        ${cfg.pool}.properties = {
-          mountpoint = cfg.dataPath;
-          atime = "off";
-          canmount = "on";
-          "com.sun:auto-snapshot" = "false";
-          "com.sun:auto-snapshot:weekly" = "true,keep=12";
-          compression = "off";
-          snapdir = "hidden";
-        };
-      }
-      // lib.mapAttrs' (name: dataset: lib.nameValuePair "${cfg.pool}/${name}" (renderDataset dataset)) datasetAttrs;
-  };
+      disko.zfs.settings.datasets =
+        {
+          ${cfg.pool}.properties = {
+            mountpoint = cfg.dataPath;
+            atime = "off";
+            canmount = "on";
+            "com.sun:auto-snapshot" = "false";
+            "com.sun:auto-snapshot:weekly" = "true,keep=12";
+            compression = "off";
+            snapdir = "hidden";
+          };
+        }
+        // lib.mapAttrs' (name: dataset: lib.nameValuePair "${cfg.pool}/${name}" (renderDataset dataset)) datasetAttrs;
+    })
+  ];
 }

@@ -1,11 +1,8 @@
-{lib, ...}: {
-  options.moduleDocumentation.game-server = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Game Server";
-      summary = "Containerized Abiotic Factor, Minecraft, and Valheim servers.";
-    };
+{
+  config.moduleDocumentation.game-server = {
+    title = "Game Server";
+    category = "Applications";
+    summary = "Containerized Abiotic Factor, Minecraft, and Valheim servers.";
   };
 
   imports = [

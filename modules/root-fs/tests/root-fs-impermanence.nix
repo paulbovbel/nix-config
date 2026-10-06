@@ -16,6 +16,7 @@
   };
   rootFsConfig = {
     imports = [
+      ../../documentation/options.nix
       disko.nixosModules.disko
       disko-zfs.nixosModules.default
       impermanence.nixosModules.impermanence

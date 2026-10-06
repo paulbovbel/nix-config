@@ -20,15 +20,6 @@
   };
   llamaProxy = ./scripts/llama-proxy.py;
 in {
-  options.moduleDocumentation.llama-cpp = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "llama.cpp";
-      summary = "On-demand local inference server and Wake-on-LAN OpenCode client.";
-    };
-  };
-
   options.llamaCpp = lib.mkOption {
     type = lib.types.submodule {
       options = {
@@ -54,6 +45,13 @@ in {
   };
 
   config = lib.mkMerge [
+    {
+      moduleDocumentation.llama-cpp = {
+        title = "llama.cpp";
+        category = "Applications";
+        summary = "On-demand local inference server and Wake-on-LAN OpenCode client.";
+      };
+    }
     (lib.mkIf cfg.client.enable {
       environment.systemPackages = [llamaClient];
     })

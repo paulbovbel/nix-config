@@ -24,6 +24,11 @@ dry-run host=`hostname`:
 docs:
     @nix build .#module-docs --no-link --print-out-paths
 
+# Build and preview documentation at http://127.0.0.1:8000.
+[group('documentation')]
+docs-serve port="8000":
+    docs="$(just docs)"; python3 -m http.server {{ quote(port) }} --bind 127.0.0.1 --directory "$docs"
+
 # Activate a host configuration on the next boot.
 [group('deployment')]
 boot host=`hostname`:

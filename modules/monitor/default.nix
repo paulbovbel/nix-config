@@ -1,11 +1,8 @@
-{lib, ...}: {
-  options.moduleDocumentation.monitor = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Monitoring";
-      summary = "Grafana Cloud host metrics, Cockpit administration, and Smokeping latency monitoring.";
-    };
+{
+  config.moduleDocumentation.monitor = {
+    title = "Monitoring";
+    category = "Infrastructure";
+    summary = "Grafana Cloud host metrics, Cockpit administration, and Smokeping latency monitoring.";
   };
 
   imports = [

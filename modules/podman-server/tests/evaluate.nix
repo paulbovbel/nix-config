@@ -7,6 +7,7 @@
 nixpkgs.lib.nixosSystem {
   inherit system;
   modules = [
+    ../../documentation/options.nix
     quadlet-nix.nixosModules.quadlet
     agenix.nixosModules.default
     ../default.nix

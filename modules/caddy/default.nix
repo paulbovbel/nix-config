@@ -1,11 +1,8 @@
-{lib, ...}: {
-  options.moduleDocumentation.caddy = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Caddy";
-      summary = "Declarative domains, authenticated routes, reverse proxies, and static shares.";
-    };
+{
+  config.moduleDocumentation.caddy = {
+    title = "Caddy";
+    category = "Networking and access";
+    summary = "Declarative domains, authenticated routes, reverse proxies, and static shares.";
   };
 
   imports = [

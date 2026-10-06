@@ -14,7 +14,7 @@ just dry-run <host>
 just switch <host>
 ```
 
-`just switch` activates locally or through SSH, depending on the host. `just docs` prints the path to the [module reference](https://paulbovbel.github.io/nix-config/); open it with `xdg-open "$(just docs)/index.html"`.
+`just switch` activates locally or through SSH, depending on the host. Browse the [module reference](https://paulbovbel.github.io/nix-config/) online, or run `just docs-serve` and open http://127.0.0.1:8000/.
 
 ## Fleet
 

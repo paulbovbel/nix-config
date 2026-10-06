@@ -51,18 +51,14 @@
       };
     };
 in {
-  options.moduleDocumentation.backup = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Backup";
-      summary = "Scheduled rsync pushes from named local paths to remote SSH targets.";
-    };
-  };
-
   imports = [./options.nix];
 
   config = {
+    moduleDocumentation.backup = {
+      title = "Backup";
+      category = "Storage and backup";
+      summary = "Scheduled rsync pushes from named local paths to remote SSH targets.";
+    };
     assertions = [
       {
         assertion = lib.all (target: target.paths != {}) (lib.attrValues cfg.targets);

@@ -10,7 +10,7 @@
   evaluate = extra:
     (nixpkgs.lib.nixosSystem {
       inherit (pkgs.stdenv.hostPlatform) system;
-      modules = [../default.nix {nixpkgs.pkgs = streamingPkgs;} extra];
+      modules = [../../documentation/options.nix ../default.nix {nixpkgs.pkgs = streamingPkgs;} extra];
     }).config;
   disabled = evaluate {};
   automatic = evaluate {gameStreaming.enable = true;};

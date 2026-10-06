@@ -1,8 +1,4 @@
-{
-  lib,
-  pkgs,
-  ...
-}: let
+{pkgs, ...}: let
   graphicalSessions = pkgs.writeShellApplication {
     name = "graphical-sessions";
     runtimeInputs = [pkgs.coreutils pkgs.glib pkgs.sudo pkgs.systemd];
@@ -11,13 +7,10 @@
     '';
   };
 in {
-  options.moduleDocumentation.accounts = lib.mkOption {
-    internal = true;
-    readOnly = true;
-    default = {
-      title = "Accounts";
-      summary = "Local user accounts, SSH access, and account-specific secrets.";
-    };
+  config.moduleDocumentation.accounts = {
+    title = "Accounts";
+    category = "System";
+    summary = "Local user accounts, SSH access, and account-specific secrets.";
   };
 
   imports = [
