@@ -10,9 +10,9 @@ For offline installation, see [USB Deployment](../usb/README.md).
 
 ## Define the Host
 
-1. Create `hosts/<host>/default.nix` with its target system, users, and profile selections.
-2. Create `hosts/<host>/configuration.nix` and `hosts/<host>/hardware-configuration.nix`.
-3. Register the host in the `hosts` attribute set in `flake.nix`.
+1. Create `hosts/<host>/default.nix` with its target system, installer kind, `ciBuild` flag, and users.
+2. Create `hosts/<host>/configuration.nix` with module enablement and `userProfiles` selections, and `hosts/<host>/hardware-configuration.nix` with hardware settings.
+3. Register the host in `hosts/default.nix`.
 4. Configure and review its stable disk identifier or existing partition paths through `rootFs`.
 
 The host's agenix recipient is added after generating its identity below.
@@ -155,7 +155,7 @@ After the target reboots, verify its configuration revision and failed units:
 ssh "$target_host" 'nixos-version --configuration-revision; systemctl --failed'
 ```
 
-Confirm that `/etc/agenix/host.agekey` exists and that the filesystems or datasets declared by `rootFs` are mounted. Then verify a normal deployment from the repository:
+Confirm that `/persist/etc/agenix/host.agekey` exists and that the filesystems or datasets declared by `rootFs` are mounted. Then verify a normal deployment from the repository:
 
 ```bash
 just dry-run "$host_name"
@@ -185,5 +185,5 @@ Verify that both the TPM2 token and a recovery method are present before rebooti
 - If evaluation fails, fix the host configuration or recipient declarations before installing.
 - If the installer cannot import store paths, confirm that `nix config show require-sigs` reports `false` in the live installer and that `nix-daemon.service` restarted successfully.
 - If Disko selects an unexpected device, stop before installation and correct the stable disk identifier or explicit partition paths in `rootFs`.
-- If agenix fails after reboot, verify `/etc/agenix/host.agekey`, the matching recipient in `agenix-rules.nix`, and that secrets were rekeyed with `agenix -r`.
+- If agenix fails after reboot, verify `/persist/etc/agenix/host.agekey`, the matching recipient in `agenix-rules.nix`, and that secrets were rekeyed with `agenix -r`.
 - If the installed system does not boot, use the live installer to unlock encrypted devices and mount or import the configured `rootFs` backend before repairing the system profile.

@@ -6,6 +6,8 @@ The Podman server module layers repository conventions over `quadlet-nix`. Servi
 
 `podmanServer.user.*` defines the host user and group that own shared application paths. The numeric IDs are also passed to containers that need ownership aligned with the host.
 
+Containers run through system-level Quadlet services using rootful Podman. Application UID/GID settings control ownership and container process identity where configured; they do not make Podman rootless.
+
 ## Containers And Paths
 
 `podmanServer.containers` contains named Quadlet declarations plus repository-specific dependency and environment-file settings. `podmanServer.paths` publishes named host paths so service modules can share generated storage locations without repeating them.

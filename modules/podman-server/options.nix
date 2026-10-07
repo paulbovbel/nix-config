@@ -152,12 +152,12 @@ in {
       name = lib.mkOption {
         type = lib.types.str;
         default = "pbovbel";
-        description = "Host user that owns rootless Podman containers and application paths.";
+        description = "Host user that owns shared application paths; containers run through system-level Quadlet services.";
       };
       group = lib.mkOption {
         type = lib.types.str;
         default = "pbovbel";
-        description = "Host group that owns rootless Podman containers and application paths.";
+        description = "Host group that owns shared application paths; containers run through system-level Quadlet services.";
       };
       uid = lib.mkOption {
         type = lib.types.int;
