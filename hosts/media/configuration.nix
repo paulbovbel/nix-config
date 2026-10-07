@@ -162,6 +162,7 @@ in {
     defaultOwner = config.podmanServer.user.name;
     defaultGroup = config.podmanServer.user.group;
     datasets = {
+      app.options.compression = "lz4";
       app.autoSnapshot = {
         enable = true;
         frequent = false;
@@ -170,6 +171,7 @@ in {
         weekly = true;
         monthly = false;
       };
+      backup.options.compression = "lz4";
       backup.autoSnapshot = {
         enable = true;
         frequent = false;
