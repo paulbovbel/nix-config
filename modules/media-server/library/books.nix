@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   ...
 }: let
@@ -69,7 +70,7 @@ in {
       containers = {
         audiobookshelf = {
           quadlet.containerConfig = {
-            image = "ghcr.io/advplyr/audiobookshelf:latest";
+            image = containerImages.audiobookshelf;
             podmanArgs = ["--user=${toString user.uid}:${toString user.gid}"];
             environments = {
               PORT = "8000";
@@ -86,7 +87,7 @@ in {
 
         grimmory-db = {
           quadlet.containerConfig = {
-            image = "lscr.io/linuxserver/mariadb:11.4.8";
+            image = containerImages.mariadb;
             environments = {
               MYSQL_DATABASE = "booklore";
               PGID = toString user.gid;
@@ -101,7 +102,7 @@ in {
         grimmory = {
           dependsOn = ["grimmory-db"];
           quadlet.containerConfig = {
-            image = "ghcr.io/paulbovbel/grimmory:preview-240cc39";
+            image = containerImages.grimmory;
             environments = {
               USER_ID = toString user.uid;
               GROUP_ID = toString user.gid;

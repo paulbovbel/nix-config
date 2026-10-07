@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   pkgs,
   ...
@@ -52,7 +53,7 @@ in {
             }
           ];
           quadlet.containerConfig = {
-            image = "docker.io/plexinc/pms-docker:plexpass";
+            image = containerImages.plex;
             volumes = [
               "${datasets.app.children.plex.path}:/config"
               "${datasets.media.path}:/mnt/storage/share:ro"
@@ -71,7 +72,7 @@ in {
         tautulli = {
           dependsOn = ["plex"];
           quadlet.containerConfig = {
-            image = "lscr.io/linuxserver/tautulli:latest";
+            image = containerImages.tautulli;
             environments = {
               PUID = toString user.uid;
               PGID = toString user.gid;
@@ -94,7 +95,7 @@ in {
           dependsOn = ["plex"];
           secretEnvironmentFiles = [config.age.secrets.plex-token-env.path];
           quadlet.containerConfig = {
-            image = "ghcr.io/astral-sh/uv:python3.13-bookworm";
+            image = containerImages.uv;
             environments = {
               PLEX_URL = "http://plex:32400";
               UV_LINK_MODE = "copy";

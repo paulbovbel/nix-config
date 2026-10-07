@@ -16,6 +16,48 @@ Containers use `podmanServer.containers.<name>`. `dependsOn` names other declare
 containers; `derivedEnvironmentFiles` names entries in `podmanServer.derivedEnvFiles`.
 Both dependency graphs must be acyclic, and all references must exist.
 
+## Image Pins And Updates
+
+The repository-root `images.Dockerfile` is the shared image catalog, not an application build.
+`flake.nix` parses its `FROM registry/image:tag@sha256:<digest> AS alias` entries
+with the pure `modules/podman-server/read-images.nix` function. Host composition passes the resulting
+`containerImages` attribute set through NixOS `specialArgs` and Home Manager
+`extraSpecialArgs`. Workload modules and the work profile's Distroboxes consume
+those aliases; no generated Nix copy or synchronization step is needed.
+
+The Podman server module accepts ordinary image references and does not read or
+require the catalog. A workload can receive the repository's pins or a caller's
+own image set:
+
+```nix
+{ containerImages, ... }: {
+  podmanServer.containers.jellyfin.quadlet.containerConfig.image =
+    containerImages.jellyfin;
+}
+```
+
+Dependabot includes Docker digest updates in the weekly `dependencies`
+multi-ecosystem PR alongside flake inputs and GitHub Actions, preserving
+the existing tag channels. Changing a release channel or numbered version is a
+manual catalog edit. Merge reviewed updates and deploy normally; container
+configuration changes restart the owning systemd services. Registry auto-update
+labels and the daily Podman auto-update timer are no longer enabled by this
+module. Nix-built images, including Caddy, remain pinned through flake inputs.
+
+New Distroboxes use the catalog pins. Existing Distroboxes are not automatically
+recreated when a pin changes; preserve any needed container-local state before
+deliberately recreating them.
+
+Image pins do not freeze software downloaded at runtime, such as game server
+updates, Distrobox packages, or the `uvx`-launched Plex MCP server. Nor does an
+image rollback reverse application database migrations.
+
+To add an image, resolve its registry digest and add a unique alias to the
+catalog, then reference it through the workload's `containerImages` argument. Registry containers declared
+through this module must be digest-pinned; Nix-built archives and Quadlet builds
+are also accepted. The Authentik VM test uses separately pinned offline fixtures
+with manually maintained Nix archive hashes, not the current catalog images.
+
 ## Published ports
 
 Use `ports` to publish ports and choose firewall and router-forwarding policy:
@@ -72,4 +114,4 @@ The module persists `/var/lib/containers` and `/var/lib/podman-server` when cont
 
 ## Troubleshooting
 
-Inspect `<container>.service` and `apps-network.service`; for update failures check `podman-auto-update.service`. A missing `/run/podman-server/<name>.env` points to `podman-server-<name>-env.service` or its agenix inputs. For empty application directories, check the service's storage dataset.
+Inspect `<container>.service` and `apps-network.service`; for image update failures, inspect the container service's pull and startup logs after deployment. A missing `/run/podman-server/<name>.env` points to `podman-server-<name>-env.service` or its agenix inputs. For empty application directories, check the service's storage dataset.

@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   pkgs,
   ...
@@ -84,7 +85,7 @@ in {
       containers = {
         jackett = {
           quadlet.containerConfig = {
-            image = "lscr.io/linuxserver/jackett";
+            image = containerImages.jackett;
             environments = {
               PUID = toString user.uid;
               PGID = toString user.gid;
@@ -95,7 +96,7 @@ in {
         };
         prowlarr = {
           quadlet.containerConfig = {
-            image = "lscr.io/linuxserver/prowlarr";
+            image = containerImages.prowlarr;
             environments = {
               PUID = toString user.uid;
               PGID = toString user.gid;
@@ -112,7 +113,7 @@ in {
             After = ["qbittorrent-config.service"];
           };
           quadlet.containerConfig = {
-            image = "ghcr.io/binhex/arch-qbittorrentvpn:latest";
+            image = containerImages.qbittorrent;
             sysctl."net.ipv4.conf.all.src_valid_mark" = "1";
             addCapabilities = ["NET_ADMIN"];
             volumes = [
@@ -141,7 +142,7 @@ in {
 
         autobrr = {
           quadlet.containerConfig = {
-            image = "ghcr.io/autobrr/autobrr:latest";
+            image = containerImages.autobrr;
             user = containerUser;
             environments.TZ = config.time.timeZone;
             volumes = ["${datasets.app.children.autobrr.path}:/config"];
@@ -150,7 +151,7 @@ in {
 
         flaresolverr = {
           quadlet.containerConfig = {
-            image = "ghcr.io/flaresolverr/flaresolverr:latest";
+            image = containerImages.flaresolverr;
             environments = {
               PUID = toString user.uid;
               PGID = toString user.gid;
@@ -162,7 +163,7 @@ in {
 
         unpackerr = {
           quadlet.containerConfig = {
-            image = "docker.io/golift/unpackerr:latest";
+            image = containerImages.unpackerr;
             user = containerUser;
             environments.TZ = config.time.timeZone;
             volumes = [

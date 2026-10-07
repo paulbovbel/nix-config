@@ -3,6 +3,7 @@
   overlays,
   configurationBranch,
   configurationRevision,
+  containerImages,
 }: let
   inherit (inputs) nixpkgs nixpkgs-unstable home-manager nix-flatpak disko disko-zfs agenix impermanence locus-vpn-client vscode-workspace-populator stylix catppuccin quadlet-nix nixos-apple-silicon tiny-dfr-nyan;
   inherit (nixpkgs) lib;
@@ -69,7 +70,7 @@
       sharedModules = [
         catppuccin.homeModules.catppuccin
       ];
-      extraSpecialArgs = {inherit unstablePkgs vscode-workspace-populator;};
+      extraSpecialArgs = {inherit unstablePkgs vscode-workspace-populator containerImages;};
     };
   };
 in
@@ -87,7 +88,7 @@ in
   in
     nixpkgsForHost.lib.nixosSystem {
       inherit system;
-      specialArgs = {inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan unstablePkgs;};
+      specialArgs = {inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan unstablePkgs containerImages;};
       modules =
         [
           ./${name}/configuration.nix

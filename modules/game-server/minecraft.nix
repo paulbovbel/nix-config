@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   ...
 }: let
@@ -26,7 +27,7 @@ in {
           }
         ];
         quadlet.containerConfig = {
-          image = "ghcr.io/itzg/minecraft-server:java21";
+          image = containerImages.minecraft;
           volumes = ["${datasets.app.children.minecraft.path}:/data"];
           environments = {
             UID = toString user.uid;

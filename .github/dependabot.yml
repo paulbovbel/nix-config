@@ -1,21 +1,30 @@
 version: 2
-updates:
-  - package-ecosystem: nix
-    directory: /
+multi-ecosystem-groups:
+  dependencies:
     schedule:
       interval: weekly
-      day: sunday
-    groups:
-      nix:
-        patterns: ['*']
+
+updates:
+  - package-ecosystem: docker
+    directory: /
+    patterns: ['*']
+    multi-ecosystem-group: dependencies
+    # Preserve release channels; only refresh their pinned digests.
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+  - package-ecosystem: nix
+    directory: /
+    patterns: ['*']
+    multi-ecosystem-group: dependencies
     # Private SSH inputs are updated manually; Dependabot cannot access them.
     ignore:
       - dependency-name: locus-vpn-client
       - dependency-name: vscode-workspace-populator
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: weekly
-    groups:
-      github-actions:
-        patterns: ['*']
+    patterns: ['*']
+    multi-ecosystem-group: dependencies
