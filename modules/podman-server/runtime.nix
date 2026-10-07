@@ -33,8 +33,6 @@
     requiredUnits = dependencyUnits ++ derivedEnvUnitNames;
     afterUnits = dependencyUnits ++ derivedEnvUnitNames;
     quadletConfig = removeNulls (lib.filterAttrs (key: _: !(lib.hasPrefix "_" key) && key != "ref") container.quadlet);
-    image = container.quadlet.containerConfig.image or null;
-    archiveImage = image != null && (lib.hasPrefix "docker-archive:" image || lib.hasPrefix "oci-archive:" image);
   in
     lib.mkMerge [
       (quadletConfig
@@ -50,13 +48,7 @@
 
         containerConfig = {
           inherit name;
-          autoUpdate = lib.mkDefault (
-            if container.build != null
-            then "local"
-            else if archiveImage
-            then null
-            else "registry"
-          );
+          autoUpdate = lib.mkDefault null;
           networks = lib.mkBefore [config.virtualisation.quadlet.networks.apps.ref];
           environmentFiles = lib.mkAfter (container.secretEnvironmentFiles ++ derivedEnvFilePaths);
           publishPorts = lib.mkAfter (map renderPort container.ports);
@@ -197,14 +189,5 @@ in {
       (lib.mapAttrs' (name: envFile: lib.nameValuePair "podman-server-${name}-env" (renderDerivedEnvFile name envFile)) cfg.derivedEnvFiles)
       (lib.mapAttrs mkContainerService cfg.containers)
     ];
-
-    systemd.timers."podman-auto-update" = {
-      description = "Schedule automatic updates for Podman containers";
-      wantedBy = ["timers.target"];
-      timerConfig = {
-        OnCalendar = "daily"; # Change to your preferred schedule
-        Persistent = true;
-      };
-    };
   };
 }

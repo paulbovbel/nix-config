@@ -1,4 +1,8 @@
-{lib, ...}: {
+{
+  containerImages,
+  lib,
+  ...
+}: {
   options.authentik = {
     enable = lib.mkEnableOption "Authentik identity provider and Caddy forward authentication";
     domain = lib.mkOption {
@@ -7,7 +11,8 @@
     };
     image = lib.mkOption {
       type = lib.types.str;
-      default = "ghcr.io/goauthentik/server:2026.8.3";
+      default = containerImages.authentik;
+      defaultText = lib.literalExpression "containerImages.authentik";
       description = "Pinned Authentik image shared by server and worker.";
     };
     adminUsers = lib.mkOption {

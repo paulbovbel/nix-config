@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   ...
 }: let
@@ -12,7 +13,7 @@ in {
 
     podmanServer.containers.jellyfin = {
       quadlet.containerConfig = {
-        image = "lscr.io/linuxserver/jellyfin:latest";
+        image = containerImages.jellyfin;
         environments = {
           PUID = toString user.uid;
           PGID = toString user.gid;

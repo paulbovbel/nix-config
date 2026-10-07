@@ -91,6 +91,8 @@
     forAllSystems = lib.genAttrs systems;
     pkgsFor = forAllSystems (system: import nixpkgs {inherit system;});
     overlays = [inputs.nix-vscode-extensions.overlays.default (import ./overlays)];
+    readImages = import ./lib/read-images.nix;
+    containerImages = readImages ./images.Dockerfile;
     hosts = import ./hosts;
     hostEvaluations = lib.mapAttrs (name: metadata:
       import ./modules/deployment/tests/evaluate-host.nix {
@@ -99,14 +101,14 @@
       })
     hosts;
     mkHost = import ./hosts/mk-host.nix {
-      inherit inputs overlays configurationBranch configurationRevision;
+      inherit inputs overlays configurationBranch configurationRevision containerImages;
     };
     mkInstaller = import ./modules/deployment/usb/mk-installer.nix {
       inherit nixpkgs hosts mkHost;
       inherit (inputs) nixos-apple-silicon;
     };
     mkDocs = import ./modules/documentation/evaluate.nix {
-      inherit inputs;
+      inherit inputs containerImages;
       sourceRoot = ./.;
     };
   in {
@@ -145,7 +147,7 @@
         host-evaluations = pkgs.writeText "host-evaluations.json" (
           builtins.unsafeDiscardStringContext (builtins.toJSON hostEvaluations)
         );
-        podman-server-contracts = import ./modules/podman-server/tests/contracts.nix {inherit pkgs nixpkgs quadlet-nix agenix;};
+        podman-server-contracts = import ./modules/podman-server/tests/contracts.nix {inherit pkgs nixpkgs quadlet-nix agenix containerImages readImages;};
         storage-contracts = import ./modules/storage/tests/contracts.nix {inherit pkgs nixpkgs disko disko-zfs;};
       }
       // lib.optionalAttrs (system == "x86_64-linux") {

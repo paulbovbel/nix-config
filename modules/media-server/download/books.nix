@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   pkgs,
   ...
@@ -81,7 +82,7 @@ in {
       readarr = {
         dependsOn = ["jackett"];
         quadlet.containerConfig = {
-          image = "lscr.io/linuxserver/readarr:0.4.18-develop";
+          image = containerImages.readarr;
           environments = {
             PUID = toString user.uid;
             PGID = toString user.gid;
@@ -99,7 +100,7 @@ in {
 
       shelfmark = {
         quadlet.containerConfig = {
-          image = "ghcr.io/calibrain/shelfmark:latest";
+          image = containerImages.shelfmark;
           environments = {
             PUID = toString user.uid;
             PGID = toString user.gid;

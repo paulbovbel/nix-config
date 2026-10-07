@@ -191,7 +191,7 @@ in {
           example = {
             ports = [{ hostPort = 8080; containerPort = 80; exposure = [ "tailnet" ]; }];
             quadlet.containerConfig = {
-              image = "docker.io/library/nginx:latest";
+              image = containerImages.jellyfin;
             };
             dependsOn = [ "database" ];
           };

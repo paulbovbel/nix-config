@@ -15,6 +15,11 @@ This profile depends on the private Locus VPN flake input. Host hardware and net
 
 Extends the personal graphical environment with workplace applications and development helpers. User services create Ubuntu Distroboxes, and Kitty split shortcuts open development environments. Slack and Zoom start at login.
 
+Distrobox base images use digest pins from the repository-root `images.Dockerfile`.
+Dependabot refreshes those pins without changing Ubuntu releases. Existing
+Distroboxes are left intact; new pins apply when a box is deliberately recreated.
+Preserve any needed container-local state before doing so.
+
 ## Combining with gaming
 
 Select `userProfiles.pbovbel = ["work" "gaming"]` to retain gaming tools and shared Steam storage while using work-oriented startup behavior. The [gaming profile](../gaming/README.md) suppresses Steam and personal gaming autostart when it sees `work` in `profiles.selected`.

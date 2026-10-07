@@ -59,6 +59,7 @@ Document public options in `options.nix` and module usage in a local README. Nev
 - Host metadata and users: `hosts/<host>/default.nix`
 - Shared host inventory and composition: `hosts/{default,mk-host}.nix`
 - Local package overrides: `overlays/default.nix`
+- Shared container image pins: `images.Dockerfile`, parsed by `lib/read-images.nix` and passed to workloads by `flake.nix`
 - Shared site values: `hosts/site.nix`
 - Reusable NixOS behavior and public options: `modules/<name>/`
 - Module scripts, tests, and static assets: `modules/<name>/{scripts,tests,assets}/`

@@ -3,13 +3,17 @@
   nixpkgs,
   quadlet-nix,
   agenix,
+  containerImages,
+  readImages,
 }: let
   inherit (pkgs) lib;
   evaluate = import ./evaluate.nix {
     inherit nixpkgs quadlet-nix agenix;
     inherit (pkgs.stdenv.hostPlatform) system;
   };
-  container = {quadlet.containerConfig.image = "docker.io/library/alpine:latest";};
+  parseImages = text: readImages (builtins.toFile "test-images.Dockerfile" text);
+  catalogEntry = "FROM ${containerImages.postgres} AS example";
+  container = {quadlet.containerConfig.image = containerImages.postgres;};
   env = {variables.VALUE = "example";};
   disabled = (evaluate {}).config;
   storageOnly = (evaluate {storage.enable = true;}).config;
@@ -87,6 +91,27 @@
       == {}
       && !storageOnly.virtualisation.podman.enable;
     activeDoesNotDeclareDatasets = valid.storage.datasets == {};
+    catalogPins = builtins.all (image: builtins.match ".+:[^@]+@sha256:[0-9a-f]{64}" image != null) (lib.attrValues containerImages);
+    catalogParsing = parseImages "# Example catalog\n\n${catalogEntry}\n" == {example = containerImages.postgres;};
+    emptyCatalog = !(builtins.tryEval (parseImages "# No images\n")).success;
+    duplicateCatalogAliases = !(builtins.tryEval (parseImages "${catalogEntry}\n${catalogEntry}\n")).success;
+    unpinnedCatalogEntry = !(builtins.tryEval (parseImages "FROM docker.io/library/postgres:16-alpine AS example\n")).success;
+    registryAutoUpdatesDisabled =
+      valid.virtualisation.quadlet.containers.app.containerConfig.autoUpdate
+      == null
+      && !(valid.systemd.timers ? podman-auto-update);
+    unpinnedImage = rejects "must use a digest-pinned registry image" (configuration {
+      podmanServer.containers.app.quadlet.containerConfig.image = "docker.io/library/postgres:16-alpine";
+    });
+    malformedDigest = rejects "must use a digest-pinned registry image" (configuration {
+      podmanServer.containers.app.quadlet.containerConfig.image = "docker.io/library/postgres@sha256:invalid";
+    });
+    imageChangeRestarts = let
+      changed = configuration {
+        podmanServer.containers.app.quadlet.containerConfig.image = containerImages.authentik;
+      };
+    in
+      (configuration {}).systemd.services.app.restartTriggers != changed.systemd.services.app.restartTriggers;
     validConfiguration = failedMessages valid == [] && (builtins.tryEval valid.system.build.toplevel.drvPath).success;
     portRendering =
       valid.virtualisation.quadlet.containers.app.containerConfig.publishPorts

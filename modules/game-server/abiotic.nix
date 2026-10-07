@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   ...
 }: let
@@ -26,7 +27,7 @@ in {
         exposure = ["wan" "tailnet"];
       }) [7777 27015];
       quadlet.containerConfig = {
-        image = "ghcr.io/pleut/abiotic-factor-linux-docker:latest";
+        image = containerImages.abiotic;
         user = containerUser;
         volumes = [
           "${datasets.app.children.abiotic.path}/gamefiles:/server"

@@ -2,6 +2,7 @@
   pkgs,
   quadlet-nix,
 }: let
+  # Offline fixtures have independent archive hashes; refresh these pins manually.
   authentikImage = pkgs.dockerTools.pullImage {
     imageName = "ghcr.io/goauthentik/server";
     imageDigest = "sha256:ab9b4e8cc4ab3f8d1198d2db6aeea66bafea1963b3f2843589e0d163f97d9849";
@@ -19,16 +20,18 @@
 in
   pkgs.testers.runNixOSTest {
     name = "authentik-blueprint";
-    nodes.machine = {lib, ...}: {
+    nodes.machine = {
       imports = [quadlet-nix.nixosModules.quadlet ./minimal.nix];
+      _module.args.containerImages = {
+        authentik = "docker-archive:${authentikImage}";
+        postgres = "docker-archive:${postgresImage}";
+      };
       virtualisation = {
         memorySize = 4096;
         cores = 2;
         diskSize = 8192;
       };
-      authentik.image = "docker-archive:${authentikImage}";
       podmanServer.containers = {
-        authentik-db.quadlet.containerConfig.image = lib.mkForce "docker-archive:${postgresImage}";
         authentik.quadlet.containerConfig.volumes = ["${./check-blueprint.py}:/tests/check-blueprint.py:ro"];
         authentik-worker.quadlet.containerConfig.volumes = ["${./wait-blueprint.py}:/tests/wait-blueprint.py:ro"];
       };

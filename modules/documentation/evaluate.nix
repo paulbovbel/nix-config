@@ -1,5 +1,6 @@
 {
   inputs,
+  containerImages,
   sourceRoot,
 }: system: let
   inherit (inputs) self nixpkgs nixpkgs-unstable agenix disko disko-zfs impermanence quadlet-nix;
@@ -10,7 +11,7 @@
   };
   evaluation = nixpkgs.lib.nixosSystem {
     inherit system;
-    specialArgs = {inherit unstablePkgs;};
+    specialArgs = {inherit unstablePkgs containerImages;};
     modules = [
       agenix.nixosModules.default
       disko.nixosModules.disko
