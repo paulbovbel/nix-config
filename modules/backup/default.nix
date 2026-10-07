@@ -68,5 +68,6 @@ in {
 
     systemd.services = lib.mkIf hasTargets (lib.mapAttrs' targetService cfg.targets);
     systemd.timers = lib.mkIf hasTargets (lib.mapAttrs' (target: _: targetTimer target) cfg.targets);
+    rootFs.persistDirectories = map (target: "/var/lib/${serviceName target}") (lib.attrNames cfg.targets);
   };
 }

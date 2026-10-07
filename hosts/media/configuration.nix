@@ -9,6 +9,7 @@
     lib.mapAttrs (name: dataset: {
       source = dataset.path;
       destination = "app/${name}";
+      excludes = lib.optional (name == "github-runner") "/work/";
     })
     config.storage.datasets.app.children;
   fullBackupPaths =
