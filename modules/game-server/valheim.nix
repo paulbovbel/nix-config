@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   pkgs,
   ...
@@ -42,7 +43,7 @@ in {
         TimeoutStopSec = 120;
       };
       quadlet.containerConfig = {
-        image = "ghcr.io/community-valheim-tools/valheim-server:latest";
+        image = containerImages.valheim;
         addCapabilities = ["SYS_NICE"];
         volumes = [
           "${datasets.app.children.valheim.path}/config:/config"

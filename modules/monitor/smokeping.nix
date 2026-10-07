@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   ...
 }: let
@@ -18,7 +19,7 @@ in {
     podmanServer = {
       containers.smokeping = {
         quadlet.containerConfig = {
-          image = "lscr.io/linuxserver/smokeping:latest";
+          image = containerImages.smokeping;
           environments = {
             PUID = toString user.uid;
             PGID = toString user.gid;

@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   pkgs,
   ...
@@ -160,7 +161,7 @@ in {
           authentik-db = {
             derivedEnvironmentFiles = ["authentik-db"];
             quadlet.containerConfig = {
-              image = "docker.io/library/postgres:16-alpine";
+              image = containerImages.postgres;
               exec = "postgres -c jit=off";
               autoUpdate = lib.mkForce null;
               podmanArgs = ["--user=${toString user.uid}:${toString user.gid}"];

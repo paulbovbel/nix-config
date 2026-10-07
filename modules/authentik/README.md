@@ -23,3 +23,8 @@ Server and worker share PostgreSQL and use the embedded outpost. Persist and res
 Inspect `authentik.service`, `authentik-worker.service`, and `authentik-db.service`, plus blueprint status in the admin UI. Restart containers through their systemd services.
 
 Run `nix develop --command just authentik-test` for the minimal NixOS VM check of provisioning, credentials, dashboard links, visibility, and blueprint reconciliation. CI includes it in the flake checks. Google login also requires a browser smoke test.
+
+The VM uses separately pinned offline Authentik and PostgreSQL archives in
+`tests/blueprint.nix`. Refresh their image digests and Nix archive hashes manually
+when updating the fixtures. Dependabot updates the production image catalog,
+not these fixtures; a passing VM test does not certify a newer production image.

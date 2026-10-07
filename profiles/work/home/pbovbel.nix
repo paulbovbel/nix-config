@@ -1,4 +1,5 @@
 {
+  containerImages,
   lib,
   pkgs,
   unstablePkgs,
@@ -87,9 +88,9 @@ in {
       Install.WantedBy = ["default.target"];
     };
   in {
-    distrobox-ubuntu-jammy = mkDistrobox "ubuntu-jammy" "docker.io/library/ubuntu:22.04";
-    distrobox-ubuntu-noble = mkDistrobox "ubuntu-noble" "docker.io/library/ubuntu:24.04";
-    distrobox-ubuntu-resolute = mkDistrobox "ubuntu-resolute" "docker.io/library/ubuntu:26.04";
+    distrobox-ubuntu-jammy = mkDistrobox "ubuntu-jammy" containerImages.ubuntu-jammy;
+    distrobox-ubuntu-noble = mkDistrobox "ubuntu-noble" containerImages.ubuntu-noble;
+    distrobox-ubuntu-resolute = mkDistrobox "ubuntu-resolute" containerImages.ubuntu-resolute;
   };
 
   xdg.configFile = lib.mkMerge (map mkAutostart [

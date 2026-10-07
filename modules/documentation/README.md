@@ -2,6 +2,9 @@
 
 `build.nix` builds the module reference from NixOS options, module READMEs, and repository runbooks. It is called by `flake.nix`, rather than imported as a NixOS module.
 
+`flake.nix` supplies the parsed `containerImages` catalog to the isolated
+documentation evaluation through `specialArgs`, matching host composition.
+
 - `scripts/` contains Markdown processing, option splitting, search indexing, link checking, and browser JavaScript.
 - `templates/` contains the Markdown page templates.
 - `assets/` contains HTML templates and stylesheets.

@@ -1,5 +1,6 @@
 {
   config,
+  containerImages,
   lib,
   pkgs,
   ...
@@ -81,7 +82,7 @@ in {
             }
           ];
           quadlet.containerConfig = {
-            image = "docker.io/brainicism/bgutil-ytdlp-pot-provider:latest";
+            image = containerImages.bgutil-ytdlp-pot-provider;
           };
         };
       }
@@ -89,7 +90,7 @@ in {
         sonarr = {
           dependsOn = ["jackett"];
           quadlet.containerConfig = {
-            image = "lscr.io/linuxserver/sonarr:latest";
+            image = containerImages.sonarr;
             environments = {
               PUID = toString user.uid;
               PGID = toString user.gid;
@@ -107,7 +108,7 @@ in {
         radarr = {
           dependsOn = ["jackett"];
           quadlet.containerConfig = {
-            image = "lscr.io/linuxserver/radarr:latest";
+            image = containerImages.radarr;
             environments = {
               PUID = toString user.uid;
               PGID = toString user.gid;
@@ -124,7 +125,7 @@ in {
 
         bazarr = {
           quadlet.containerConfig = {
-            image = "lscr.io/linuxserver/bazarr:latest";
+            image = containerImages.bazarr;
             environments = {
               PUID = toString user.uid;
               PGID = toString user.gid;
@@ -140,7 +141,7 @@ in {
 
         maintainerr = {
           quadlet.containerConfig = {
-            image = "ghcr.io/maintainerr/maintainerr:latest";
+            image = containerImages.maintainerr;
             user = containerUser;
             volumes = ["${datasets.app.children.maintainerr.path}:/opt/data"];
             environments = {
@@ -153,7 +154,7 @@ in {
 
         # pinchflat = {
         #   quadlet.containerConfig = {
-        #     image = "ghcr.io/kieraneglin/pinchflat:latest";
+        #     image = containerImages.pinchflat;
         #     user = containerUser;
         #     environments = {
         #       BASE_ROUTE_PATH = "/pinchflat";
