@@ -86,6 +86,9 @@ in {
     };
 
     dconf.settings = {
+      "org/gnome/desktop/sound" = {
+        allow-volume-above-100-percent = true;
+      };
       "org/gnome/desktop/background" = lib.mkIf cfg.enable {
         picture-uri = backgroundUri;
         picture-uri-dark = backgroundUri;
