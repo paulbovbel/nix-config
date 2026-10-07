@@ -4,5 +4,6 @@
   "Networking and access"
   "Infrastructure"
   "Applications"
+  "Profiles"
   "Deployment"
 ]

@@ -44,6 +44,7 @@
     }
     // appBackupPaths;
 in {
+  userProfiles.pbovbel = ["headless"];
   imports = [
     ../site.nix
     ./hardware-configuration.nix

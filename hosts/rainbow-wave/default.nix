@@ -7,11 +7,9 @@
   users = [
     {
       name = "abovbel";
-      profiles = ["gaming"];
     }
     {
       name = "pbovbel";
-      profiles = ["gaming"];
       hideFromLogin = true;
     }
   ];

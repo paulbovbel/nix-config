@@ -27,7 +27,7 @@
   isModuleDeclaration = declaration: let
     path = toString declaration;
   in
-    path == modulesRootString || lib.hasPrefix "${modulesRootString}/" path;
+    path == modulesRootString || lib.hasPrefix "${modulesRootString}/" path || path == "${sourceRootString}/profiles/options.nix";
 
   mkOptionsDoc = declarationFilter:
     pkgs.nixosOptionsDoc {
@@ -71,57 +71,84 @@
         ${markdown} > "$out"
     '';
 
-  prepareIntroduction = name: readme:
-    transformMarkdown {
-      dropTitle = true;
-      markdown = pkgs.writeText "${name}-readme.md" (builtins.readFile readme);
-      name = "${name}-introduction";
-    };
-
-  modulePages = lib.genAttrs moduleNames (name: let
-    metadata = metadataByName.${name};
-    readme = modulesRoot + "/${name}/README.md";
-    hasIntroduction = builtins.pathExists readme;
-  in {
-    inherit (metadata) summary title;
-    inherit hasIntroduction;
-    heading = pkgs.writeText "${name}-title.md" (
-      builtins.replaceStrings ["@moduleTitle@"] [metadata.title] (builtins.readFile ./templates/module.md)
-    );
-    introduction = lib.optional hasIntroduction (prepareIntroduction name readme);
-  });
-
   moduleLinks =
     lib.concatMapStrings (name: ''
-      - [${modulePages.${name}.title}](${name}.html) - ${modulePages.${name}.summary}
+      - [${metadataByName.${name}.title}](${name}.html) - ${metadataByName.${name}.summary}
     '')
     moduleNames;
-  pages = map (page: page // {output = "${page.name}.html";}) (
+  normalizePage = page: let
+    isModule = page.modulePage or false;
+    hasSource = builtins.pathExists (sourceRoot + "/${page.source}");
+    markdown = pkgs.writeText "${page.name}-readme.md" (
+      builtins.replaceStrings (page.linkSources or []) (page.linkTargets or []) (
+        builtins.readFile (sourceRoot + "/${page.source}") + (page.appendMarkdown or "")
+      )
+    );
+    heading = pkgs.writeText "${page.name}-title.md" (
+      builtins.replaceStrings ["@moduleTitle@"] [page.title] (builtins.readFile ./templates/module.md)
+    );
+  in
+    page
+    // {
+      output = "${page.name}.html";
+      inherit hasSource;
+      inputs =
+        (
+          if isModule
+          then
+            [heading]
+            ++ lib.optionals hasSource [
+              introductionHeading
+              (transformMarkdown {
+                dropTitle = true;
+                inherit markdown;
+                name = "${page.name}-introduction";
+              })
+            ]
+          else [markdown]
+        )
+        ++ lib.optional (page ? optionsModule) optionsHeading;
+      rawInputs = lib.optional (page ? optionsModule) "$options_dir/${page.optionsModule}.md";
+    };
+  pages = map normalizePage (
     map (name: {
       inherit name;
       inherit (metadataByName.${name}) title category;
       optionsModule = name;
       source = "modules/${name}/README.md";
-      hasIntroduction = modulePages.${name}.hasIntroduction;
+      modulePage = true;
     })
     moduleNames
     ++ import ../deployment/documentation.nix
+    ++ import ../../profiles/documentation.nix
   );
   pageCategories = import ./categories.nix;
+  optionPageNames = map (page: page.optionsModule) (builtins.filter (page: page ? optionsModule) pages);
+  sidebarCategory = heading: category: ''
+    <section>
+      <${heading} class="${
+      if heading == "h2"
+      then "sidebar-heading"
+      else "sidebar-subheading"
+    }">${category}</${heading}>
+      <ul class="module-list">
+        ${lib.concatMapStrings (page: ''
+        <li><a href="${page.output}">${page.title}</a></li>
+      '')
+      (builtins.filter (page: page.category == category) pages)}
+      </ul>
+    </section>
+  '';
   sidebarLinks = assert lib.assertMsg (lib.all (page: builtins.elem page.category pageCategories) pages) "Every page must declare a known documentation category";
-    lib.concatMapStrings (category: ''
+    sidebarCategory "h2" "Deployment"
+    + sidebarCategory "h2" "Profiles"
+    + ''
       <section>
-        <h2 class="sidebar-heading">${category}</h2>
-        <ul class="module-list">
-          ${lib.concatMapStrings (page: ''
-          <li><a href="${page.output}">${page.title}</a></li>
-        '')
-        (builtins.filter (page: page.category == category) pages)}
-        </ul>
+        <h2 class="sidebar-heading">Modules</h2>
+        ${lib.concatMapStrings (sidebarCategory "h3") (builtins.filter (category: !(builtins.elem category ["Deployment" "Profiles"])) pageCategories)}
       </section>
-    '')
-    pageCategories;
-  readmePages = builtins.filter (page: page.hasIntroduction or true) pages;
+    '';
+  readmePages = builtins.filter (page: page.hasSource) pages;
   landingReadme =
     builtins.replaceStrings
     (map (page: "(${page.source})") readmePages)
@@ -169,7 +196,7 @@ in rec {
       python ${./scripts/split_options.py} \
         ${allOptionsDoc.optionsJSON}/share/doc/nixos/options.json \
         "$options_dir" \
-        ${lib.escapeShellArgs moduleNames}
+        ${lib.escapeShellArgs optionPageNames}
       ${renderPage {
         title = "Nix-config modules";
         inputs = [index];
@@ -196,21 +223,7 @@ in rec {
           ''}
           ${renderPage {
             inherit (page) title output;
-            inputs =
-              if hasOptions
-              then
-                [modulePages.${name}.heading]
-                ++ lib.optional modulePages.${name}.hasIntroduction introductionHeading
-                ++ modulePages.${name}.introduction
-                ++ [optionsHeading]
-              else [
-                (pkgs.writeText "${page.name}.md" (
-                  builtins.replaceStrings (page.linkSources or []) (page.linkTargets or []) (
-                    builtins.readFile (sourceRoot + "/${page.source}")
-                  )
-                ))
-              ];
-            rawInputs = lib.optional hasOptions "$options_dir/${name}.md";
+            inherit (page) inputs rawInputs;
           }}
         '')
         pages}
@@ -219,7 +232,7 @@ in rec {
       python ${./scripts/build_search.py} \
         "$out" \
         "$out/search.json" \
-        ${lib.escapeShellArgs moduleNames}
+        ${lib.escapeShellArgs optionPageNames}
     '';
 
   module-docs-check = pkgs.runCommand "module-docs-check" {nativeBuildInputs = [pkgs.python3];} ''

@@ -1,39 +1,36 @@
 {
-  abovbel = {
-    gaming = {
-      graphical = true;
-      homeModules = [./gaming/home/abovbel.nix];
-      systemModules = [./gaming/system.nix];
+  headless = {
+    title = "Headless";
+    extends = [];
+    systemModule = ./headless/system.nix;
+    summary = "Server and command-line environment";
+    homeModule.pbovbel = ./headless/home/pbovbel.nix;
+  };
+  graphical = {
+    title = "Graphical";
+    extends = [];
+    systemModule = ./graphical/system.nix;
+    summary = "GNOME desktop and everyday applications";
+    homeModule = {
+      pbovbel = ./graphical/home/pbovbel.nix;
+      rbovbel = ./graphical/home/rbovbel.nix;
     };
   };
-
-  pbovbel = {
-    headless = {
-      homeModules = [./headless/home/pbovbel.nix];
-      systemModules = [./headless/system.nix];
-    };
-    graphical = {
-      graphical = true;
-      homeModules = [./graphical/home/pbovbel.nix];
-      systemModules = [./graphical/system.nix];
-    };
-    work = {
-      graphical = true;
-      homeModules = [./work/home/pbovbel.nix];
-      systemModules = [./work/system.nix];
-    };
-    gaming = {
-      graphical = true;
-      homeModules = [./gaming/home/pbovbel.nix];
-      systemModules = [./gaming/system.nix];
+  gaming = {
+    title = "Gaming";
+    extends = ["graphical"];
+    systemModule = ./gaming/system.nix;
+    summary = "Desktop gaming and shared game storage";
+    homeModule = {
+      pbovbel = ./gaming/home/pbovbel.nix;
+      abovbel = ./gaming/home/abovbel.nix;
     };
   };
-
-  rbovbel = {
-    graphical = {
-      graphical = true;
-      homeModules = [./graphical/home/rbovbel.nix];
-      systemModules = [./graphical/system.nix];
-    };
+  work = {
+    title = "Work";
+    extends = ["graphical"];
+    systemModule = ./work/system.nix;
+    summary = "Development containers and workplace connectivity";
+    homeModule.pbovbel = ./work/home/pbovbel.nix;
   };
 }

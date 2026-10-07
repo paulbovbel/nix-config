@@ -18,6 +18,13 @@ class TransformMarkdownTests(unittest.TestCase):
 
 
 class SplitOptionsTests(unittest.TestCase):
+    def test_routes_profile_options_to_profile_overview(self) -> None:
+        option = {"declarations": [{"name": "profiles/options.nix"}]}
+        self.assertEqual(
+            split_options({"userProfiles.pbovbel": option}, ["profiles", "accounts"]),
+            {"profiles": {"userProfiles.pbovbel": option}, "accounts": {}},
+        )
+
     def test_groups_options_by_declaration_directory(self) -> None:
         options = {
             "example.enable": {

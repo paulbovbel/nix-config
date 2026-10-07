@@ -18,6 +18,7 @@
       impermanence.nixosModules.impermanence
       quadlet-nix.nixosModules.quadlet
       ../default.nix
+      ../../profiles/options.nix
       {
         networking.hostName = "module-docs";
         networking.domain = "example.invalid";

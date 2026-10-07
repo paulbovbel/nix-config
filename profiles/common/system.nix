@@ -1,4 +1,8 @@
 {
+  config,
+  lib,
+  ...
+}: {
   imports = [
     ./boot.nix
     ./mail.nix
@@ -6,10 +10,12 @@
     ./core.nix
   ];
 
-  grafanaCloud = {
-    enable = true;
-    smartctl.enable = true;
-  };
+  config = lib.mkIf (config.systemProfiles != []) {
+    grafanaCloud = {
+      enable = true;
+      smartctl.enable = true;
+    };
 
-  llamaCpp.client.enable = true;
+    llamaCpp.client.enable = true;
+  };
 }

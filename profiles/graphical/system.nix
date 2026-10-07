@@ -8,151 +8,152 @@
   headsetcontrolPackage = unstablePkgs.headsetcontrol;
 in {
   imports = [
-    ../common/system.nix
     ./visual.nix
   ];
 
-  home-manager.extraSpecialArgs = {inherit headsetcontrolPackage;};
+  config = lib.mkIf (builtins.elem "graphical" config.systemProfiles) {
+    home-manager.extraSpecialArgs = {inherit headsetcontrolPackage;};
 
-  age.secrets.tailscale-oauth-authkey = {
-    file = ../../secrets/laptop/tailscale-oauth-authkey.age;
-    owner = "root";
-    group = "root";
-    mode = "0400";
-  };
-
-  networking.networkmanager = {
-    enable = true;
-    dns = "systemd-resolved";
-  };
-
-  services = {
-    tailscale = {
-      enable = true;
-      authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
-      authKeyParameters.ephemeral = false;
-      extraUpFlags = [
-        "--advertise-tags=tag:graphical"
-        "--hostname=${config.networking.hostName}"
-      ];
+    age.secrets.tailscale-oauth-authkey = {
+      file = ../../secrets/laptop/tailscale-oauth-authkey.age;
+      owner = "root";
+      group = "root";
+      mode = "0400";
     };
 
-    pulseaudio.enable = false;
-    pipewire = {
+    networking.networkmanager = {
       enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      jack.enable = true;
-      pulse.enable = true;
+      dns = "systemd-resolved";
     };
 
-    udev.packages = [headsetcontrolPackage];
-
-    flatpak = {
-      enable = true;
-      remotes = [
-        {
-          name = "flathub";
-          location = "https://flathub.org/repo/flathub.flatpakrepo";
-        }
-      ];
-      packages =
-        [
-          "org.mozilla.firefox"
-          "com.bitwarden.desktop"
-          "org.gimp.GIMP"
-          "org.inkscape.Inkscape"
-          "com.rtosta.zapzap"
-        ]
-        ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
-          "com.bambulab.BambuStudio"
-          "com.spotify.Client"
-          "com.discordapp.Discord"
-          "org.signal.Signal"
-          "tv.plex.PlexDesktop"
+    services = {
+      tailscale = {
+        enable = true;
+        authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
+        authKeyParameters.ephemeral = false;
+        extraUpFlags = [
+          "--advertise-tags=tag:graphical"
+          "--hostname=${config.networking.hostName}"
         ];
-      overrides.settings."com.rtosta.zapzap".Environment = {
-        QTWEBENGINE_DISABLE_GPU = "1";
-        QT_QUICK_BACKEND = "software";
       };
-      overrides.settings."com.bitwarden.desktop".Context.filesystems = [
-        "~/.mozilla/native-messaging-hosts:create"
-      ];
+
+      pulseaudio.enable = false;
+      pipewire = {
+        enable = true;
+        alsa.enable = true;
+        alsa.support32Bit = true;
+        jack.enable = true;
+        pulse.enable = true;
+      };
+
+      udev.packages = [headsetcontrolPackage];
+
+      flatpak = {
+        enable = true;
+        remotes = [
+          {
+            name = "flathub";
+            location = "https://flathub.org/repo/flathub.flatpakrepo";
+          }
+        ];
+        packages =
+          [
+            "org.mozilla.firefox"
+            "com.bitwarden.desktop"
+            "org.gimp.GIMP"
+            "org.inkscape.Inkscape"
+            "com.rtosta.zapzap"
+          ]
+          ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
+            "com.bambulab.BambuStudio"
+            "com.spotify.Client"
+            "com.discordapp.Discord"
+            "org.signal.Signal"
+            "tv.plex.PlexDesktop"
+          ];
+        overrides.settings."com.rtosta.zapzap".Environment = {
+          QTWEBENGINE_DISABLE_GPU = "1";
+          QT_QUICK_BACKEND = "software";
+        };
+        overrides.settings."com.bitwarden.desktop".Context.filesystems = [
+          "~/.mozilla/native-messaging-hosts:create"
+        ];
+      };
+
+      xserver = {
+        enable = true;
+        xkb = {
+          layout = "us";
+          variant = "";
+        };
+      };
+      displayManager.gdm.enable = true;
+      desktopManager.gnome.enable = true;
+      displayManager.defaultSession = "gnome";
+      gnome.gnome-remote-desktop.enable = true;
+      printing.enable = true;
     };
 
-    xserver = {
+    security.rtkit.enable = true;
+
+    hardware.logitech.wireless = {
       enable = true;
-      xkb = {
-        layout = "us";
-        variant = "";
-      };
+      enableGraphical = true;
     };
-    displayManager.gdm.enable = true;
-    desktopManager.gnome.enable = true;
-    displayManager.defaultSession = "gnome";
-    gnome.gnome-remote-desktop.enable = true;
-    printing.enable = true;
-  };
 
-  security.rtkit.enable = true;
-
-  hardware.logitech.wireless = {
-    enable = true;
-    enableGraphical = true;
-  };
-
-  security.pam.loginLimits = [
-    {
-      domain = "@users";
-      type = "-";
-      item = "rtprio";
-      value = "95";
-    }
-    {
-      domain = "@users";
-      type = "-";
-      item = "nice";
-      value = "-11";
-    }
-    {
-      domain = "@users";
-      type = "-";
-      item = "memlock";
-      value = "unlimited";
-    }
-  ];
-
-  environment = {
-    systemPackages = [
-      pkgs.gnome-icon-theme
-      pkgs.gnome-power-manager
-      pkgs.gnome-tweaks
-      pkgs.gnomeExtensions.appindicator
-      pkgs.gnomeExtensions.dash-to-dock
-      pkgs.gnomeExtensions.headsetcontrol
-      pkgs.gnomeExtensions.unlock-dialog-background
-      headsetcontrolPackage
-      pkgs.libva-utils
-      pkgs.qpwgraph
-      pkgs.remmina
-      pkgs.vlc
-      pkgs.wireshark
-      pkgs.xrandr
-      pkgs.yaru-theme
+    security.pam.loginLimits = [
+      {
+        domain = "@users";
+        type = "-";
+        item = "rtprio";
+        value = "95";
+      }
+      {
+        domain = "@users";
+        type = "-";
+        item = "nice";
+        value = "-11";
+      }
+      {
+        domain = "@users";
+        type = "-";
+        item = "memlock";
+        value = "unlimited";
+      }
     ];
 
-    sessionVariables = {
-      TERMINAL = "kitty";
-    };
-  };
+    environment = {
+      systemPackages = [
+        pkgs.gnome-icon-theme
+        pkgs.gnome-power-manager
+        pkgs.gnome-tweaks
+        pkgs.gnomeExtensions.appindicator
+        pkgs.gnomeExtensions.dash-to-dock
+        pkgs.gnomeExtensions.headsetcontrol
+        pkgs.gnomeExtensions.unlock-dialog-background
+        headsetcontrolPackage
+        pkgs.libva-utils
+        pkgs.qpwgraph
+        pkgs.remmina
+        pkgs.vlc
+        pkgs.wireshark
+        pkgs.xrandr
+        pkgs.yaru-theme
+      ];
 
-  rootFs.persistDirectories = [
-    "/etc/NetworkManager/system-connections"
-    "/var/lib/cups"
-    "/var/lib/bluetooth"
-    "/var/lib/flatpak"
-    "/var/lib/gdm"
-    "/var/lib/NetworkManager"
-    "/var/lib/tailscale"
-  ];
+      sessionVariables = {
+        TERMINAL = "kitty";
+      };
+    };
+
+    rootFs.persistDirectories = [
+      "/etc/NetworkManager/system-connections"
+      "/var/lib/cups"
+      "/var/lib/bluetooth"
+      "/var/lib/flatpak"
+      "/var/lib/gdm"
+      "/var/lib/NetworkManager"
+      "/var/lib/tailscale"
+    ];
+  };
 }

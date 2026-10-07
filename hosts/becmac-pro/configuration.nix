@@ -6,6 +6,10 @@
 }: let
   colors = config.lib.stylix.colors;
 in {
+  userProfiles = {
+    pbovbel = ["graphical"];
+    rbovbel = ["graphical"];
+  };
   imports = [
     ../site.nix
     ./hardware-configuration.nix

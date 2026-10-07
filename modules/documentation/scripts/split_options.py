@@ -15,6 +15,8 @@ def split_options(options: dict, module_names: list[str]) -> dict[str, dict]:
             parts = declaration.get("name", "").split("/")
             if len(parts) >= 2 and parts[0] == "modules":
                 owners.add(parts[1])
+            elif declaration.get("name") == "profiles/options.nix":
+                owners.add("profiles")
         for owner in owners & modules.keys():
             modules[owner][option_name] = option
     return modules

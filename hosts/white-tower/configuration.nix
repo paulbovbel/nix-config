@@ -1,4 +1,9 @@
 {pkgs, ...}: {
+  userProfiles = {
+    pbovbel = ["gaming"];
+    rbovbel = ["graphical"];
+    abovbel = ["gaming"];
+  };
   imports = [
     ../site.nix
     ./hardware-configuration.nix

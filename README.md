@@ -20,15 +20,17 @@ just switch <host>
 
 | Host | Purpose | Users and profiles |
 | --- | --- | --- |
-| `white-tower` | Primary desktop | `pbovbel: gaming`, `rbovbel: graphical`, `abovbel: gaming` |
-| `rainbow-wave` | Kids gaming desktop | `pbovbel: gaming`, `abovbel: gaming` |
-| `pbovbel-dell` | Work laptop | `pbovbel: work, gaming` |
-| `becmac-pro` | Personal laptop | `pbovbel: graphical`, `rbovbel: graphical` |
-| `media` | Media, game, cache, ingress, and storage server | `pbovbel: headless` |
+| `white-tower` | Primary desktop | pbovbel: [gaming](profiles/gaming/README.md); rbovbel: [graphical](profiles/graphical/README.md); abovbel: [gaming](profiles/gaming/README.md) |
+| `rainbow-wave` | Kids gaming desktop | pbovbel: [gaming](profiles/gaming/README.md); abovbel: [gaming](profiles/gaming/README.md) |
+| `pbovbel-dell` | Work laptop | pbovbel: [work](profiles/work/README.md), [gaming](profiles/gaming/README.md) |
+| `becmac-pro` | Personal laptop | pbovbel: [graphical](profiles/graphical/README.md); rbovbel: [graphical](profiles/graphical/README.md) |
+| `media` | Media, game, cache, ingress, and storage server | pbovbel: [headless](profiles/headless/README.md) |
 
 ## Architecture
 
-`hosts/default.nix` registers the fleet; `hosts/mk-host.nix` combines host settings with user and system profiles from `profiles/default.nix`. Reusable modules are imported globally and enabled in host configurations.
+`hosts/default.nix` registers the fleet; `hosts/mk-host.nix` assembles hosts. The profile module applies typed `userProfiles` selections from host configurations using the registry in `profiles/default.nix`. Reusable modules are imported globally and enabled in host configurations.
+
+See [Profiles](profiles/README.md) for selection, composition, and role behavior.
 
 Core modules (see the [module reference](https://paulbovbel.github.io/nix-config/) for options):
 
@@ -54,7 +56,7 @@ Document public options in `options.nix` and module usage in a local README. Nev
 
 - Machine policy and module enablement: `hosts/<host>/configuration.nix`
 - Hardware facts and device identities: `hosts/<host>/hardware-configuration.nix`
-- Host metadata, users, and profiles: `hosts/<host>/default.nix`
+- Host metadata and users: `hosts/<host>/default.nix`
 - Shared host inventory and composition: `hosts/{default,mk-host}.nix`
 - Local package overrides: `overlays/default.nix`
 - Shared site values: `hosts/site.nix`
@@ -62,7 +64,7 @@ Document public options in `options.nix` and module usage in a local README. Nev
 - Module scripts, tests, and static assets: `modules/<name>/{scripts,tests,assets}/`
 - Composite-module scripts and tests: `modules/<name>/<submodule>/{scripts,tests}/`
 - Profile-only Home Manager scripts: `profiles/<profile>/home/scripts/`
-- User and system profiles: `profiles/<profile>/`, selected through `profiles/default.nix`
+- User and system profiles: `profiles/<profile>/`, registered in `profiles/default.nix` and selected through `userProfiles`
 - Encrypted secrets and recipients: `secrets/`, `agenix-rules.nix`
 
 ## Runbooks

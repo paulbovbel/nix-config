@@ -35,6 +35,7 @@
     old.buildInputs;
   });
 in {
+  userProfiles.pbovbel = ["work" "gaming"];
   imports = [
     ../site.nix
     ./hardware-configuration.nix

@@ -13,4 +13,6 @@ Run `just docs-serve` in the development shell to preview at http://127.0.0.1:80
 
 Each module declares its documentation `title`, `summary`, and `category` in `default.nix`. Deployment runbooks declare page metadata in `modules/deployment/documentation.nix`. Both feed one page inventory for sidebar grouping, README link rewriting, and rendering; only module pages append options.
 
+Profile pages are derived from the registry through `profiles/documentation.nix`. The overview includes the generated `userProfiles` option reference; role pages use the same pipeline without option sections.
+
 `options.nix` declares the shared `moduleDocumentation` attribute set using `metadata-type.nix`; modules supply metadata as configuration. `category` is an enum from `categories.nix`, which also defines sidebar order. Isolated module tests import `options.nix` alongside the modules under test.
