@@ -6,6 +6,18 @@ The automatic upgrade module builds and activates guarded NixOS updates from the
 
 The configured repository must be reachable with the agenix-managed `nix-config-auto-upgrade-key`. Email reporting requires `programs.msmtp.enable = true`, and deployments must record their source branch through `NIX_CONFIG_BRANCH`; the `just switch` and `just boot` recipes do this automatically.
 
+## Minimal Configuration
+
+```nix
+autoUpgrade = {
+  enable = true;
+  repository = "ssh://git@github.com/example/nix-config.git";
+  email = "admin@example.com";
+};
+```
+
+Declare the `nix-config-auto-upgrade-key` agenix secret and configure msmtp for report delivery. The fallback branch defaults to `main`.
+
 ## Safety Gates
 
 Before activation, the service verifies that the active generation came from a clean revision and that the candidate revision descends from it. It also refuses to activate while an unlocked graphical session exists. If kernel, initrd, or kernel modules change outside the 03:00 to 05:00 reboot window, activation is deferred instead of leaving the running and booted systems inconsistent.

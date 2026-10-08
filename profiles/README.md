@@ -18,7 +18,7 @@ The registry in `profiles/default.nix` defines supported users, inheritance, sys
 
 Gaming and work inherit the graphical baseline; graphical and headless share common system behavior. You do not need to select those baselines separately. With no selections, profile-provided system settings are disabled.
 
-Home Manager receives the explicitly selected names through `profiles.selected`. Inherited profiles are not added to that list. Modules can use it to adapt to combinations, such as disabling gaming autostart when work is selected.
+Home Manager receives the selected names and all inherited profiles through `profiles.selected`, with duplicates removed. For example, selecting `["work" "gaming"]` produces `["work" "gaming" "graphical"]`. Modules can use it to adapt to combinations, such as disabling gaming autostart when work is selected.
 
 ## Placement
 

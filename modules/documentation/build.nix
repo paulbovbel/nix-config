@@ -12,9 +12,11 @@
   modulesRootString = toString modulesRoot;
   sourceRootString = toString sourceRoot;
   moduleEntries = builtins.readDir modulesRoot;
+  excludedModuleNames = ["site"];
   discoveredModuleNames = builtins.filter (name:
     moduleEntries.${name}
     == "directory"
+    && !(builtins.elem name excludedModuleNames)
     && builtins.pathExists (modulesRoot + "/${name}/default.nix")) (builtins.attrNames moduleEntries);
   moduleMetadataByName = config.moduleDocumentation;
   metadataNames = builtins.attrNames moduleMetadataByName;
@@ -27,7 +29,8 @@
   isModuleDeclaration = declaration: let
     path = toString declaration;
   in
-    path == modulesRootString || lib.hasPrefix "${modulesRootString}/" path || path == "${sourceRootString}/profiles/options.nix";
+    (path == modulesRootString || lib.hasPrefix "${modulesRootString}/" path || path == "${sourceRootString}/profiles/options.nix")
+    && !(lib.any (name: lib.hasPrefix "${modulesRootString}/${name}/" path) excludedModuleNames);
 
   mkOptionsDoc = declarationFilter:
     pkgs.nixosOptionsDoc {

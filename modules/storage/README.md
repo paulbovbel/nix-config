@@ -14,6 +14,18 @@ datasets use these global defaults rather than inheriting a parent's owner.
 Enabling storage creates no workload datasets. Hosts declare backup datasets and
 site-wide snapshot policy; enabled workloads declare their own state datasets.
 
+## Minimal Configuration
+
+```nix
+storage = {
+  enable = true;
+  pool = "storage";
+  datasets.media.children.movies = {};
+};
+```
+
+This declares `storage/media` and `storage/media/movies` on the existing pool. Consumers can use `config.storage.datasets.media.children.movies.path`, which resolves to `/storage/media/movies`.
+
 ## Invariants
 
 - Child dataset mount paths are derived from their position in the declaration tree.
