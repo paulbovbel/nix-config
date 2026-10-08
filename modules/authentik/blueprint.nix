@@ -129,6 +129,19 @@
     ++ map (role: entry "authentik_core.group" "group-${role}" {name = role;} {})
     cfg.roles
     ++ [
+      (entry "authentik_brands.brand" "brand" {inherit (cfg) domain;} ({
+          branding_title = cfg.title;
+          branding_logo =
+            if cfg.logo != null
+            then "/static/dist/assets/icons/nix-config-${builtins.baseNameOf cfg.logo}"
+            else cfg.logoUrl;
+          branding_custom_css = cfg.customCss;
+        }
+        // lib.optionalAttrs (cfg.background != null) {
+          branding_default_flow_background = "/static/dist/assets/images/nix-config-${builtins.baseNameOf cfg.background}";
+        }))
+    ]
+    ++ [
       (entry "authentik_core.group" "authentik-admins" {name = "nix-config Authentik Admins";} {
         is_superuser = true;
       })

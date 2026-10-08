@@ -69,6 +69,9 @@ in {
           };
         };
         config = {pkgs, ...}: {
+          # Use the newer release package with GitHub LFS endpoint normalization.
+          nix.package = pkgs.nixVersions.latest;
+
           nix.settings = {
             fallback = true;
             extra-platforms = config.boot.binfmt.emulatedSystems;

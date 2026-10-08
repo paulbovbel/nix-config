@@ -20,6 +20,31 @@
       default = [];
       description = "Provisioned user emails granted Authentik superuser access.";
     };
+    background = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Local image mounted as a static asset for the brand's default login-flow background.";
+    };
+    title = lib.mkOption {
+      type = lib.types.str;
+      default = "authentik";
+      description = "Brand title displayed in the interface and browser tab.";
+    };
+    logoUrl = lib.mkOption {
+      type = lib.types.str;
+      default = "/static/dist/assets/icons/icon_left_brand.svg";
+      description = "Brand logo URL.";
+    };
+    logo = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Local brand logo mounted as a static asset; takes precedence over logoUrl.";
+    };
+    customCss = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Custom brand CSS applied to the Authentik interface.";
+    };
     roles = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = ["admin" "user"];

@@ -116,6 +116,17 @@ in {
   authentik = {
     enable = true;
     domain = "auth.bovbel.com";
+    background =
+      pkgs.runCommand "pbovbel-tropicanair.jpg" {
+        nativeBuildInputs = [pkgs.imagemagick];
+      } ''
+        magick ${../../assets/wallpapers/pbovbel-tropicanair.jpg} \
+          -auto-orient -resize '2560x1440>' -strip -sampling-factor 4:2:0 \
+          -interlace Plane -quality 82 "jpg:$out"
+      '';
+    title = "bovbel.com";
+    logo = ../../assets/avatars/HAL9000.svg;
+    customCss = builtins.readFile ./authentik.css;
     adminUsers = ["paul@bovbel.com"];
     users = [
       {
