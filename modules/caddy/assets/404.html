@@ -1,62 +1,74 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
-  <title>Page Not Found</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>404 — Page Not Found</title>
   <style>
-    * {
-      line-height: 1.2;
-      margin: 0;
+    @theme@
+    :root {
+      line-height: 1.5;
     }
 
-    html {
-      color: #888;
-      display: table;
-      font-family: sans-serif;
-      height: 100%;
-      text-align: center;
-      width: 100%;
-    }
+    * { box-sizing: border-box; }
 
     body {
-      display: table-cell;
-      vertical-align: middle;
-      margin: 2em auto;
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 2rem 1rem;
+      color: var(--hal-text);
+      background: var(--hal-background);
+    }
+
+    main {
+      width: 100%;
+      max-width: 36rem;
+      padding: clamp(1.5rem, 5vw, 3rem);
+      border: 1px solid var(--hal-border);
+      border-radius: var(--hal-radius);
+      box-shadow: var(--hal-shadow);
+      text-align: center;
+    }
+
+    .avatar {
+      display: block;
+      width: min(65vw, 18rem);
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto 2rem;
     }
 
     h1 {
-      color: #555;
-      font-size: 2em;
-      font-weight: 400;
+      margin: 0 0 1.5rem;
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-weight: 500;
+      letter-spacing: 0.15em;
     }
 
-    p {
-      margin: 0 auto;
-      width: 280px;
+    .message {
+      margin: 0 0 2rem;
+      font-size: clamp(1rem, 4vw, 1.25rem);
     }
 
-    @media only screen and (max-width: 280px) {
-
-      body,
-      p {
-        width: 95%;
-      }
-
-      h1 {
-        font-size: 1.5em;
-        margin: 0 0 0.3em;
-      }
-
+    .dashboard {
+      display: inline-block;
+      padding: 0.5rem;
+      color: var(--hal-text);
+      text-underline-offset: 0.25em;
     }
+
   </style>
 </head>
-
 <body>
-  <h1>Page Not Found</h1>
-  <p>Sorry, but the page you were trying to view does not exist.</p>
+  <main aria-labelledby="title">
+    <h1 id="title">404</h1>
+    <img class="avatar" src="@avatar@" alt="HAL 9000" width="288" height="288" @avatar-hidden@>
+    <p class="message">I'm sorry Dave, I can't find that page.</p>
+    <a class="dashboard" href="@dashboard@">Application Dashboard</a>
+  </main>
 </body>
-
 </html>
-<!-- IE needs 512+ bytes: https://docs.microsoft.com/archive/blogs/ieinternals/friendly-http-error-pages -->

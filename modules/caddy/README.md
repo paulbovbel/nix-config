@@ -68,6 +68,10 @@ network. Containers can use the same public HTTPS URLs as browsers, including OI
 discovery and token endpoints, while connecting directly to Caddy internally.
 Aliases are deduplicated across sites; custom listener ports remain part of the URL.
 
+## Not-found page
+
+`caddy.notFoundPage.avatarUrl` and `dashboardUrl` configure the 404 page used by unmatched routes and wildcard hosts. Use a public avatar URL so the page works before sign-in. The media host reuses Authentik's HAL avatar on a black background with the message “I'm sorry Dave, I can't find that page.”
+
 ## Persistence
 
 Preserve `storage.datasets.app.children.caddy` for Caddy runtime state and `/var/lib/acme` for certificates and ACME account keys. The module declares ACME persistence through `rootFs.persistDirectories`.

@@ -146,7 +146,20 @@
 
   publicTls = renderBlock "(public-tls)" "tls /certs/fullchain.pem /certs/key.pem\n";
 
-  notFoundHtml = builtins.readFile ./assets/404.html;
+  notFoundHtml =
+    lib.replaceStrings
+    ["@avatar@" "@avatar-hidden@" "@dashboard@" "@theme@"]
+    [
+      cfg.notFoundPage.avatarUrl
+      (
+        if cfg.notFoundPage.avatarUrl == ""
+        then "hidden"
+        else ""
+      )
+      cfg.notFoundPage.dashboardUrl
+      (builtins.readFile ../../assets/themes/hal.css)
+    ]
+    (builtins.readFile ./assets/404.html);
 
   notFound = renderBlock "(not-found)" (renderBlock "route" (''
       header Content-Type text/html

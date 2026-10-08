@@ -110,6 +110,12 @@ in {
   caddy = {
     enable = true;
     share.enable = true;
+    notFoundPage = let
+      base = "https://${config.authentik.domain}${config.authentik.path}";
+    in {
+      avatarUrl = "${base}static/dist/assets/icons/nix-config-${builtins.baseNameOf config.authentik.logo}";
+      dashboardUrl = "${base}if/user/";
+    };
   };
 
   authentik = {
@@ -117,6 +123,18 @@ in {
     domain = "media.bovbel.com";
     path = "/auth/";
     site = "media";
+    background =
+      pkgs.runCommand "pbovbel-tropicanair.jpg" {
+        nativeBuildInputs = [pkgs.imagemagick];
+      } ''
+        magick ${../../assets/wallpapers/pbovbel-tropicanair.jpg} \
+          -auto-orient -resize '2560x1440>' -strip -sampling-factor 4:2:0 \
+          -interlace Plane -quality 82 "jpg:$out"
+      '';
+    title = "bovbel.com";
+    logo = ../../assets/avatars/HAL9000.svg;
+    favicon = ../../assets/avatars/HAL9000.svg;
+    customCss = builtins.readFile ../../assets/themes/hal.css + "\n" + builtins.readFile ./authentik.css;
     users = [
       {
         email = "paul@bovbel.com";

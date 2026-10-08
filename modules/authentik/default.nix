@@ -54,10 +54,14 @@
             # Blueprint imports and outpost permission rebuilds share database rows.
             AUTHENTIK_WORKER__THREADS = "1";
           };
-        volumes = [
-          "${state}/data:/data"
-          "${cfg.blueprint}:/blueprints/custom/nix-config.yaml:ro"
-        ];
+        volumes =
+          [
+            "${state}/data:/data"
+            "${cfg.blueprint}:/blueprints/custom/nix-config.yaml:ro"
+          ]
+          ++ lib.optional (cfg.background != null) "${cfg.background}:/web/dist/assets/images/nix-config-${builtins.baseNameOf cfg.background}:ro"
+          ++ lib.optional (cfg.logo != null) "${cfg.logo}:/web/dist/assets/icons/nix-config-${builtins.baseNameOf cfg.logo}:ro"
+          ++ lib.optional (cfg.favicon != null) "${cfg.favicon}:/web/dist/assets/icons/nix-config-favicon-${builtins.baseNameOf cfg.favicon}:ro";
         podmanArgs = ["--shm-size=512m"] ++ lib.optional (command == "worker") "--user=0:0";
       };
       serviceConfig.RestartSec = "10s";

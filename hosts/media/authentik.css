@@ -1,0 +1,174 @@
+:root,
+:host,
+:root[data-theme="dark"],
+:host([theme="dark"]) {
+  --pf-global--primary-color--100: var(--hal-text);
+  --pf-global--primary-color--200: var(--hal-hover);
+  --pf-global--active-color--100: var(--hal-text);
+  --pf-global--Color--100: var(--hal-text);
+  --pf-global--Color--200: var(--hal-muted);
+  --pf-global--BackgroundColor--100: var(--hal-background);
+  --pf-global--BackgroundColor--200: var(--hal-raised);
+  --pf-global--BorderColor--100: var(--hal-border);
+  --pf-global--BorderColor--200: var(--hal-border);
+  --pf-global--BorderColor--300: var(--hal-border);
+  --pf-global--FontFamily--sans-serif: var(--hal-font);
+  --pf-global--FontFamily--monospace: var(--hal-font);
+  --bovbel-panel: var(--hal-background);
+  --bovbel-border: var(--hal-border);
+  --bovbel-surface: var(--hal-background);
+  --bovbel-text: var(--hal-text);
+  --bovbel-radius: var(--hal-radius);
+  --bovbel-shadow: var(--hal-shadow);
+}
+
+:host(ak-interface-user) [part="background-wrapper"] {
+  background: var(--hal-background);
+}
+
+:host(ak-interface-user) [part="background-default-slant"] {
+  display: none;
+}
+
+:host(ak-interface-user) [part="page__header"] {
+  position: relative;
+  z-index: 10;
+  background: var(--bovbel-panel);
+  border-bottom: 1px solid var(--bovbel-border);
+  box-shadow: var(--bovbel-shadow);
+}
+
+/* Keep dashboard panels below the header's account dropdown. */
+:host(ak-interface-user) .pf-c-page__drawer {
+  position: relative;
+  z-index: 0;
+}
+
+:host(ak-user-switcher) [part="menu"] {
+  background: var(--bovbel-surface);
+  color: var(--bovbel-text);
+  border: 1px solid var(--bovbel-border);
+  border-radius: var(--bovbel-radius);
+  max-width: calc(100vw - 2rem);
+  min-width: min(18rem, calc(100vw - 2rem));
+}
+
+:host(ak-user-switcher) [part="menu-item"] {
+  --pf-c-dropdown__menu-item--Color: var(--bovbel-text);
+}
+
+:host(ak-library-impl) .pf-c-page__header,
+:host(ak-library-impl) .pf-c-empty-state {
+  background: var(--bovbel-panel);
+  border: 1px solid var(--bovbel-border);
+  border-radius: var(--bovbel-radius);
+  box-shadow: var(--bovbel-shadow);
+}
+
+:host(ak-library-impl) [part="app-list"][data-view-mode="list"] [part="row"],
+:host(ak-library-impl) [part="card-wrapper"] {
+  background: var(--bovbel-panel);
+  color: var(--bovbel-text);
+  border: 1px solid var(--bovbel-border);
+  border-radius: var(--bovbel-radius);
+  box-shadow: var(--bovbel-shadow);
+}
+
+:host(ak-library-impl) .pf-c-page__header {
+  padding-inline: 1rem;
+}
+
+:host(ak-library-impl) .pf-c-page__title {
+  color: var(--bovbel-text);
+  font-family: var(--hal-font);
+}
+
+:host(ak-library-impl) [part="app-list"][data-view-mode="list"] .app-group-rows {
+  row-gap: 0.5rem;
+}
+
+:host(ak-library-impl) [part="row-link"],
+:host(ak-library-impl) [part="row-meta"],
+:host(ak-library-impl) [part="card-title"] {
+  color: var(--bovbel-text);
+}
+
+:host(ak-library-impl) [part="card"] {
+  --pf-c-card--BackgroundColor: var(--bovbel-surface);
+  background-color: transparent;
+  border-radius: var(--bovbel-radius);
+}
+
+:host(ak-library-impl) [part="search-input"] {
+  border-radius: var(--hal-control-radius);
+}
+
+:host .pf-c-form-control {
+  color: var(--bovbel-text);
+  background-color: var(--hal-raised);
+  border-color: var(--bovbel-border);
+  font-family: inherit;
+}
+
+:host .pf-c-form-control::placeholder {
+  color: var(--hal-muted);
+}
+
+:host .pf-c-button {
+  font-family: inherit;
+  border-radius: var(--hal-control-radius);
+  --pf-c-button--m-primary--Color: var(--hal-background);
+  --pf-c-button--m-primary--BackgroundColor: var(--hal-text);
+  --pf-c-button--m-primary--hover--Color: var(--hal-background);
+  --pf-c-button--m-primary--hover--BackgroundColor: var(--hal-hover);
+  --pf-c-button--m-secondary--Color: var(--hal-text);
+  --pf-c-button--m-secondary--BackgroundColor: transparent;
+  --pf-c-button--m-secondary--hover--Color: var(--hal-hover);
+  --pf-c-button--m-secondary--focus--Color: var(--hal-hover);
+  --pf-c-button--m-plain--Color: var(--hal-text);
+  --pf-c-button--m-plain--hover--Color: var(--hal-hover);
+  --pf-c-button--m-plain--focus--Color: var(--hal-hover);
+}
+
+:host(ak-user-switcher) [part="menu-item"]:hover,
+:host(ak-user-switcher) [part="menu-item"]:focus-visible,
+:host(ak-library-impl) [part="app-list"][data-view-mode="list"] [part="row"]:hover,
+:host(ak-library-impl) [part="app-list"][data-view-mode="list"] [part="row"]:focus-within {
+  background: var(--hal-raised);
+  color: var(--hal-hover);
+}
+
+:host(ak-library-impl) [part="row-meta"],
+:host(ak-user-switcher) [part="description"] {
+  color: var(--hal-muted);
+}
+
+:host(ak-flow-executor[data-layout="stacked"]) {
+  background: var(--hal-background);
+}
+
+:host(ak-flow-executor) .pf-c-login[data-layout="stacked"] {
+  --ak-c-login--BackgroundColorOverlay: var(--hal-background);
+  --ak-c-login__main--BackgroundColor: var(--hal-background);
+  --ak-c-login__main--Color: var(--hal-text);
+  --ak-c-login__main-ColumnWidth: minmax(0, min(35rem, calc(100vw - 2rem)));
+}
+
+:host(ak-flow-executor) [part="main"] {
+  border-radius: var(--bovbel-radius);
+  background: var(--bovbel-panel);
+  color: var(--bovbel-text);
+  border: 1px solid var(--bovbel-border);
+  box-shadow: var(--bovbel-shadow);
+  overflow: hidden;
+}
+
+:host(ak-flow-executor) [part="branding"] {
+  border-radius: var(--bovbel-radius);
+  overflow: hidden;
+}
+
+:host(ak-flow-executor) [part="footer"] {
+  --ak-c-login__footer--Color: var(--hal-text);
+  color: var(--hal-text);
+}

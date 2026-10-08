@@ -25,6 +25,36 @@
       defaultText = lib.literalExpression "containerImages.authentik";
       description = "Pinned Authentik image shared by server and worker.";
     };
+    background = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Local image mounted as a static asset for the brand's default login-flow background.";
+    };
+    title = lib.mkOption {
+      type = lib.types.str;
+      default = "authentik";
+      description = "Brand title displayed in the interface and browser tab.";
+    };
+    logoUrl = lib.mkOption {
+      type = lib.types.str;
+      default = "/static/dist/assets/icons/icon_left_brand.svg";
+      description = "Brand logo URL or /static/ asset reference; Authentik adds its URL prefix to static references.";
+    };
+    logo = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Local brand logo mounted as a static asset; takes precedence over logoUrl.";
+    };
+    favicon = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Local brand favicon mounted as a static asset.";
+    };
+    customCss = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Custom brand CSS applied to the Authentik interface.";
+    };
     roles = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = ["admin" "user"];

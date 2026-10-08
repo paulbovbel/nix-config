@@ -2,6 +2,9 @@
   description = "pbovbel NixOS configuration";
 
   inputs = {
+    # Fetch actual assets rather than Git LFS pointers for remote builds.
+    self.lfs = true;
+
     # nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1";
 

@@ -2,7 +2,6 @@
   config,
   headsetcontrolPackage,
   lib,
-  pkgs,
   ...
 }: let
   cfg = config.bovbel.background;

@@ -174,6 +174,19 @@ in {
       description = "Caddy sites keyed by logical service name.";
     };
 
+    notFoundPage = {
+      avatarUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        description = "Public avatar URL for the themed 404 page; empty hides the avatar.";
+      };
+      dashboardUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "/";
+        description = "Destination of the 404 page's application dashboard link.";
+      };
+    };
+
     caddyfile = lib.mkOption {
       type = lib.types.package;
       description = "Rendered Caddyfile template derivation.";

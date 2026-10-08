@@ -10,6 +10,12 @@ Set `authentik.path` to a prefix with leading and trailing slashes and `authenti
 
 The worker applies a generated blueprint that owns users, memberships, and providers. Make configuration changes in Nix. Removing a user prevents new authorization; revoke existing identity-provider and application sessions separately.
 
+## Branding
+
+`authentik.title`, `authentik.background`, `authentik.logo`, and `authentik.favicon` manage the brand title and local images. Images are mounted read-only under Authentik's static-assets directory. `authentik.logoUrl` supports a remote logo when no local logo is set; Authentik adds the configured URL prefix to static brand references.
+
+`authentik.customCss` styles the login and user interfaces. The media host's `hosts/media/authentik.css` applies the HAL theme: black backgrounds, red text and accents, and a terminal-style monospace font across login and portal pages.
+
 ## Integration
 
 Caddy endpoints with `auth = "oauth"` automatically provision forward-auth providers. Caddy checks each endpoint's required role and strips identity headers before proxying to applications.
