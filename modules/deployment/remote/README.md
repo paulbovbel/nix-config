@@ -20,8 +20,8 @@ just deploy boot media --build-host another-builder
 
 `localhost` builds on the controller; other builders must support the target
 architecture. Additional Nix/rebuild arguments are forwarded with their argument
-boundaries preserved. Apple Silicon evaluation requires `/boot/vendorfw` on the
-controller; installation uses the [USB path](../usb/README.md).
+boundaries preserved. Apple Silicon vendor firmware is supplied by its pinned
+flake input; installation uses the [USB path](../usb/README.md).
 
 Deploy from an attached branch. Dirty checkouts disable automatic upgrades until
 a clean configuration is activated.

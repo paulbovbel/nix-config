@@ -30,11 +30,6 @@ while (($#)); do
     ;;
   esac
 done
-installer="$(nix eval --impure --raw "$repo#lib.hosts.$host.installer")"
-if [[ "$installer" == apple-silicon && ! -d /boot/vendorfw ]]; then
-  printf "Apple Silicon evaluation requires this host's /boot/vendorfw on the controller; deploy from that host or stage its vendor firmware first.\n" >&2
-  exit 1
-fi
 case "$action" in
 build | build-plan)
   if [[ -n "$target" || -n "$builder" ]]; then
