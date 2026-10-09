@@ -16,6 +16,12 @@ Containers use `podmanServer.containers.<name>`. `dependsOn` names other declare
 containers; `derivedEnvironmentFiles` names entries in `podmanServer.derivedEnvFiles`.
 Both dependency graphs must be acyclic, and all references must exist.
 
+Containers share the `apps` network and use Podman's generated hosts entries
+without inheriting the host's `/etc/hosts`. This prevents host-local loopback
+mappings from shadowing network DNS. `host.containers.internal` remains available
+for services on the host. Changes to shared `containers.conf` settings recreate
+managed containers so their generated hosts files reflect the new policy.
+
 ## Image Pins And Updates
 
 The repository-root `images.Dockerfile` is the shared image catalog, not an application build.

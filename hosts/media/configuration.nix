@@ -85,7 +85,6 @@ in {
     zone = "bovbel.com";
     records = [
       "media.bovbel.com"
-      "auth.bovbel.com"
       "nix-cache.bovbel.com"
     ];
   };
@@ -115,8 +114,9 @@ in {
 
   authentik = {
     enable = true;
-    domain = "auth.bovbel.com";
-    adminUsers = ["paul@bovbel.com"];
+    domain = "media.bovbel.com";
+    path = "/auth/";
+    site = "media";
     users = [
       {
         email = "paul@bovbel.com";
@@ -124,7 +124,7 @@ in {
       }
       {
         email = "rebecca@bovbel.com";
-        roles = ["admin" "user"];
+        roles = ["user"];
       }
       {
         email = "andrew@bovbel.com";
@@ -136,7 +136,7 @@ in {
       }
       {
         email = "dmitri@bovbel.com";
-        roles = ["admin" "user"];
+        roles = ["user"];
       }
       {
         email = "arthur@bovbel.com";
@@ -195,7 +195,7 @@ in {
   environment.systemPackages = [pkgs.intel-gpu-tools];
 
   cockpit.enable = true;
-  caddy.sites.media.redirect = "/cockpit/";
+  caddy.sites.media.redirect = "/auth";
   smokeping.enable = true;
   grafanaCloud.role = "server";
 

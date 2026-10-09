@@ -139,7 +139,7 @@
         name = user.email;
         groups =
           map (role: key "group-${role}") user.roles
-          ++ lib.optional (lib.elem user.email cfg.adminUsers) (key "authentik-admins");
+          ++ lib.optional (lib.elem "admin" user.roles) (key "authentik-admins");
         is_active = true;
       })
     cfg.users
@@ -201,7 +201,7 @@
       (entry "authentik_outposts.outpost" "outpost" {name = "authentik Embedded Outpost";} {
         type = "proxy";
         providers = map (domain: key (providerId domain)) domains;
-        config = {authentik_host = "https://${cfg.domain}/";};
+        config = {authentik_host = "https://${cfg.domain}${cfg.path}";};
       })
     ]
     ++ lib.optional usesGroupsScope (entry "authentik_providers_oauth2.scopemapping" "groups-scope" {name = "nix-config groups";} {

@@ -6,6 +6,8 @@ from pathlib import Path
 from django.test import RequestFactory
 
 from authentik.blueprints.v1.importer import Importer
+from authentik.brands.models import Brand
+from authentik.brands.utils import get_brand_for_request
 from authentik.core.models import Application, Group, User
 from authentik.policies.engine import PolicyEngine
 from authentik.providers.oauth2.models import OAuth2Provider, ScopeMapping
@@ -23,6 +25,14 @@ original_expression = managed_email.expression
 
 
 def check_configuration():
+    brand = Brand.objects.get(domain="auth.example.test")
+    brand_request = RequestFactory().get("/auth/", HTTP_HOST="auth.example.test")
+    assert get_brand_for_request(brand_request) == brand
+    assert brand.branding_custom_css
+    assert brand.branding_logo.startswith("/static/")
+    assert brand.branding_default_flow_background.startswith("/static/")
+    assert brand.branding_logo_url().startswith("/auth/static/")
+    assert brand.branding_default_flow_background_url().startswith("/auth/static/")
     assert admin.is_superuser and not member.is_superuser
     assert (
         os.environ["AUTHENTIK_CONFIDENTIAL_CLIENT_SECRET"]

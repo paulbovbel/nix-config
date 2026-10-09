@@ -63,6 +63,11 @@ caddy.sites.example = {
 
 Domain TLS can be `public` or `tailscale`; `listenPort` can override the default listener. Prefer these declarations over hand-written Caddyfile fragments.
 
+Public site hostnames are also DNS aliases for Caddy on the shared Podman `apps`
+network. Containers can use the same public HTTPS URLs as browsers, including OIDC
+discovery and token endpoints, while connecting directly to Caddy internally.
+Aliases are deduplicated across sites; custom listener ports remain part of the URL.
+
 ## Persistence
 
 Preserve `storage.datasets.app.children.caddy` for Caddy runtime state and `/var/lib/acme` for certificates and ACME account keys. The module declares ACME persistence through `rootFs.persistDirectories`.

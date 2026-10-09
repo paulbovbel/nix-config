@@ -73,6 +73,7 @@
       [
         (pkgs.writeText "podman-server-${name}-config" (builtins.toJSON container))
         (pkgs.writeText "podman-server-${name}-derived-env-config" (builtins.toJSON (derivedEnvDefinitions container.derivedEnvironmentFiles)))
+        (pkgs.writeText "podman-server-containers-conf" (builtins.toJSON config.virtualisation.containers.containersConf.settings))
       ]
       ++ secretRestartTriggers container;
   };
@@ -156,18 +157,21 @@
   };
 in {
   config = lib.mkIf active {
-    virtualisation.podman = {
-      enable = true;
-      dockerCompat = true;
-    };
-
-    virtualisation.quadlet = {
-      networks.apps.networkConfig = {
-        name = "apps";
-        interfaceName = cfg.networkInterface;
+    virtualisation = {
+      # Host-local loopback mappings must not shadow container network DNS.
+      containers.containersConf.settings.containers.base_hosts_file = "none";
+      podman = {
+        enable = true;
+        dockerCompat = true;
       };
-      builds = mkQuadletBuilds cfg.containers;
-      containers = lib.mapAttrs mkQuadletContainer cfg.containers;
+      quadlet = {
+        networks.apps.networkConfig = {
+          name = "apps";
+          interfaceName = cfg.networkInterface;
+        };
+        builds = mkQuadletBuilds cfg.containers;
+        containers = lib.mapAttrs mkQuadletContainer cfg.containers;
+      };
     };
 
     networking.firewall =

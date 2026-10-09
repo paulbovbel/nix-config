@@ -61,7 +61,10 @@ in {
     authentik = {
       enable = true;
       domain = "auth.example.test";
-      adminUsers = ["admin@example.test"];
+      path = "/auth/";
+      logo = ../../../assets/avatars/HAL9000.svg;
+      background = ../../../assets/wallpapers/pbovbel-tropicanair.jpg;
+      customCss = ":root { --pf-global--primary-color--100: #147d86; }";
       users = [
         {
           email = "admin@example.test";

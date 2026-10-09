@@ -31,7 +31,6 @@
       variables.${name} = "\${${name}:-\${${legacyName}:-$(openssl rand -hex 32)}}";
     })
   generatedSecretApplications);
-  declaredUsers = map (user: user.email) cfg.users;
   inherit (config.podmanServer) user;
   mkContainer = command: {
     dependsOn = ["authentik-db"];
@@ -49,6 +48,7 @@
             AUTHENTIK_POSTGRESQL__USER = "authentik";
             AUTHENTIK_ERROR_REPORTING__ENABLED = "false";
             AUTHENTIK_DISABLE_UPDATE_CHECK = "true";
+            AUTHENTIK_WEB__PATH = cfg.path;
           }
           // lib.optionalAttrs (command == "worker") {
             # Blueprint imports and outpost permission rebuilds share database rows.
@@ -79,10 +79,6 @@ in {
           {
             assertion = config.caddy.enable;
             message = "Authentik requires Caddy ingress.";
-          }
-          {
-            assertion = lib.all (email: lib.elem email declaredUsers) cfg.adminUsers;
-            message = "authentik.adminUsers must only contain emails declared in authentik.users.";
           }
           {
             assertion = lib.all (role: builtins.match "[a-zA-Z0-9_-]+" role != null) cfg.roles;
@@ -175,13 +171,20 @@ in {
           };
         };
       };
-      caddy.sites.authentik = {
-        domains = [{host = cfg.domain;}];
+      caddy.sites.${
+        if cfg.site == null
+        then "authentik"
+        else cfg.site
+      } = {
+        domains = lib.mkIf (cfg.site == null) [{host = cfg.domain;}];
         endpoints.authentik = {
           dashboard.enable = false;
           type = "proxy";
           auth = null;
-          path = "/";
+          path =
+            if cfg.path == "/"
+            then "/"
+            else lib.removeSuffix "/" cfg.path;
           host = "authentik";
           port = 9000;
         };

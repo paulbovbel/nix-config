@@ -9,16 +9,21 @@
       type = lib.types.str;
       description = "Public hostname for Authentik and its Google OAuth callback.";
     };
+    path = lib.mkOption {
+      type = lib.types.strMatching "/([^/]+/)*";
+      default = "/";
+      description = "Public URL prefix, including leading and trailing slashes.";
+    };
+    site = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Existing Caddy site receiving the Authentik endpoint; null creates a dedicated site for authentik.domain.";
+    };
     image = lib.mkOption {
       type = lib.types.str;
       default = containerImages.authentik;
       defaultText = lib.literalExpression "containerImages.authentik";
       description = "Pinned Authentik image shared by server and worker.";
-    };
-    adminUsers = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [];
-      description = "Provisioned user emails granted Authentik superuser access.";
     };
     roles = lib.mkOption {
       type = lib.types.listOf lib.types.str;

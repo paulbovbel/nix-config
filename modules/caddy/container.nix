@@ -8,6 +8,7 @@
   datasets = config.storage.datasets;
   tailscaleSocket = "/run/tailscale/tailscaled.sock";
   domainListenPorts = lib.unique (lib.filter (port: port != null) (lib.concatMap (site: map (domain: domain.listenPort) site.domains) (lib.attrValues cfg.sites)));
+  publicDomainHosts = lib.unique (lib.concatMap (site: map (domain: domain.host) (lib.filter (domain: domain.tls == "public") site.domains)) (lib.attrValues cfg.sites));
   caddyfilePath = "${datasets.app.children.caddy.path}/Caddyfile";
   certificateDirectory = config.security.acme.certs.caddy.directory;
   certificateVolume = "${certificateDirectory}:/certs:ro";
@@ -50,6 +51,7 @@ in {
         }) (lib.unique ([80 443] ++ domainListenPorts));
         quadlet.containerConfig = {
           image = caddyImageRef;
+          networkAliases = publicDomainHosts;
           volumes = [
             certificateVolume
             "${caddyfilePath}:/etc/caddy/Caddyfile:ro"

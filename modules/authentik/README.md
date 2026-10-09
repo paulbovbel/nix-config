@@ -4,7 +4,9 @@ Authentik provides Google-backed sign-in, Caddy forward authentication, and nati
 
 ## Identity and configuration
 
-`authentik.users` and `authentik.roles` provision the login allowlist and group memberships. `authentik.adminUsers` separately grants identity-provider administration. Google links existing users by email; public enrollment is disabled. Register `https://<authentik.domain>/source/oauth/callback/google/` with Google and supply credentials through the agenix-managed `google-oauth-env` secret.
+`authentik.users` and `authentik.roles` provision the login allowlist and group memberships. The `admin` role grants both Caddy admin-route access and Authentik superuser access. Google links existing users by email; public enrollment is disabled. Register `https://<authentik.domain><authentik.path>source/oauth/callback/google/` with Google and supply credentials through the agenix-managed `google-oauth-env` secret.
+
+Set `authentik.path` to a prefix with leading and trailing slashes and `authentik.site` to an existing Caddy site to share its domains and routes.
 
 The worker applies a generated blueprint that owns users, memberships, and providers. Make configuration changes in Nix. Removing a user prevents new authorization; revoke existing identity-provider and application sessions separately.
 
