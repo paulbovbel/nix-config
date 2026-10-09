@@ -21,6 +21,11 @@
     text = builtins.readFile ./scripts/shuffle-plex-collections.py;
   };
   python = pkgs.python3.withPackages (ps: [ps.plexapi]);
+  waitForPlex = pkgs.writeShellScript "wait-for-plex" ''
+    ${pkgs.curl}/bin/curl --fail --silent --show-error --output /dev/null \
+      --retry 60 --retry-connrefused --retry-delay 2 --retry-max-time 120 \
+      --max-time 5 "''${PLEX_URL:-http://localhost:32400}/identity"
+  '';
   devisualizeConfig = {
     calendar = "*:0/5";
   };
@@ -138,6 +143,7 @@ in {
           User = user.name;
           Group = user.group;
           EnvironmentFile = config.age.secrets.plex-token-env.path;
+          ExecStartPre = waitForPlex;
         };
         script = ''
           ${python}/bin/python ${devisualizeScript}/bin/devisualize \
@@ -155,6 +161,7 @@ in {
           User = user.name;
           Group = user.group;
           EnvironmentFile = config.age.secrets.plex-token-env.path;
+          ExecStartPre = waitForPlex;
         };
         script = ''
           ${python}/bin/python ${shufflePlexCollectionsScript}/bin/shuffle-plex-collections \
