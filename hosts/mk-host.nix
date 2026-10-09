@@ -88,7 +88,10 @@ in
   in
     nixpkgsForHost.lib.nixosSystem {
       inherit system;
-      specialArgs = {inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan unstablePkgs containerImages;};
+      specialArgs = {
+        inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan unstablePkgs containerImages;
+        inherit (inputs) asahi-vendor-firmware;
+      };
       modules =
         [
           ./${name}/configuration.nix

@@ -24,6 +24,24 @@
         "type": "github"
       }
     },
+    "asahi-vendor-firmware": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791571538,
+        "lfs": true,
+        "narHash": "sha256-EdtcOsYmaOSabfCI9ITi4VE20acxlcTGmbWQsGt45nc=",
+        "ref": "refs/heads/main",
+        "rev": "f4bc2870a58c25d362698412e71797c42065b35e",
+        "revCount": 1,
+        "type": "git",
+        "url": "ssh://git@github.com/paulbovbel/asahi-vendor-firmware.git"
+      },
+      "original": {
+        "lfs": true,
+        "type": "git",
+        "url": "ssh://git@github.com/paulbovbel/asahi-vendor-firmware.git"
+      }
+    },
     "base16": {
       "inputs": {
         "fromYaml": "fromYaml"
@@ -491,6 +509,7 @@
     "root": {
       "inputs": {
         "agenix": "agenix",
+        "asahi-vendor-firmware": "asahi-vendor-firmware",
         "catppuccin": "catppuccin",
         "disko": "disko",
         "disko-zfs": "disko-zfs",

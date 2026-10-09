@@ -47,6 +47,10 @@
       url = "github:nix-community/nixos-apple-silicon/release-2026-07-30";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    asahi-vendor-firmware = {
+      url = "git+ssh://git@github.com/paulbovbel/asahi-vendor-firmware.git?lfs=1";
+      flake = false;
+    };
     impermanence = {
       url = "github:nix-community/impermanence";
       inputs.nixpkgs.follows = "nixpkgs";

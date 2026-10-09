@@ -1,5 +1,6 @@
 {
   lib,
+  asahi-vendor-firmware,
   nixos-apple-silicon,
   ...
 }: {
@@ -10,7 +11,7 @@
   hardware.asahi = {
     enable = true;
     extractPeripheralFirmware = true;
-    peripheralFirmwareDirectory = /boot/vendorfw;
+    peripheralFirmwareDirectory = asahi-vendor-firmware;
   };
 
   hardware.apple.touchBar = {
