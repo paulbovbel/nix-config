@@ -8,11 +8,11 @@ FROM lscr.io/linuxserver/bazarr:latest@sha256:c1673816321156b904af9b7e6415ea547a
 FROM docker.io/brainicism/bgutil-ytdlp-pot-provider:latest@sha256:d7d34108b76e52c7d3b575fe9e797e4bf41c1b2a08f80c5292eff6f851ce8472 AS bgutil-ytdlp-pot-provider
 FROM ghcr.io/flaresolverr/flaresolverr:latest@sha256:c80ae007ce2ccdcd217a12426e4f039ef763ff90738c808d38810c3e59323767 AS flaresolverr
 FROM ghcr.io/paulbovbel/grimmory:preview-c64879c@sha256:5b4bb004d16cb86f0978219c46a23660acc75e56cff04f9def92ef2f90511982 AS grimmory
-FROM lscr.io/linuxserver/jackett:latest@sha256:936c290aa22b3f5b10d8a6d434ac166d059d38640715da11683512cb97202223 AS jackett
+FROM lscr.io/linuxserver/jackett:latest@sha256:5f4e7bedec21002260746d7be3e590c2af703942a5db0a7f70f3517e283faf0a AS jackett
 FROM lscr.io/linuxserver/jellyfin:latest@sha256:1bb4f88d822a0510bb3604b68aacb80d77c1d2a30181e500090c65111b98723b AS jellyfin
 FROM ghcr.io/maintainerr/maintainerr:latest@sha256:8251a1f0ba5d71acc878846a727fba566ec87cbfbf6a914fb881a5953af53d46 AS maintainerr
 FROM lscr.io/linuxserver/mariadb:11.4.8@sha256:91de7f701bc7fc3a424b81beafca7a7c6c4c5b7c8be6afd2ae148698695c0b0c AS mariadb
-FROM ghcr.io/itzg/minecraft-server:java21@sha256:3da0b5e26a3adccc4ed8708f90058e84ebc09fc6f8ced0abc02a1156be656bf7 AS minecraft
+FROM ghcr.io/itzg/minecraft-server:java21@sha256:3bbbbe72f4ea0c988416c9f7833c2bdd6bd35446f3d1f7f1516fb83d09f45de9 AS minecraft
 FROM ghcr.io/kieraneglin/pinchflat:latest@sha256:01b4f98aabaf3f5fe394213f7a32578c9e84e42080f52e2f8334021a4473b202 AS pinchflat
 FROM docker.io/plexinc/pms-docker:plexpass@sha256:8aeb4a982ea564ad309861dd251cd9e218aac3f4e4d3da21375568341be1b16f AS plex
 FROM docker.io/library/postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea AS postgres
@@ -23,7 +23,7 @@ FROM lscr.io/linuxserver/readarr:0.4.18-develop@sha256:baf471a7101b58f361ef960de
 FROM ghcr.io/calibrain/shelfmark:latest@sha256:4ef757349c3c7a7d90ba95b1e2a46ce4dd460a4776efbcf2aa1b1c476e7d5de5 AS shelfmark
 FROM lscr.io/linuxserver/smokeping:latest@sha256:52ab5b6bb2cbe03e775f970ac110300964d4069917820fccdfd6db80dd5ac143 AS smokeping
 FROM lscr.io/linuxserver/sonarr:latest@sha256:f247545d23ba8b233d6604575347e48a623fe6ad75dda02348bf81917f3b5c06 AS sonarr
-FROM lscr.io/linuxserver/tautulli:latest@sha256:bfcd2f3f6f89d2171d161ac1780723d1633f8de3c4c993d0dc52aa9edb729e16 AS tautulli
+FROM lscr.io/linuxserver/tautulli:latest@sha256:d3c53deb09f6b8fffd1476c7154da538394193955d1e909f3b126068102fb7cf AS tautulli
 FROM docker.io/library/ubuntu:22.04@sha256:5ec03bb3441e8b0bf3b4f9cd4629a1ae763010dc3035bb8da3ae6cf026486401 AS ubuntu-jammy
 FROM docker.io/library/ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55 AS ubuntu-noble
 FROM docker.io/library/ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7 AS ubuntu-resolute
