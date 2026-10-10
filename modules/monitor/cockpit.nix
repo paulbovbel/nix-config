@@ -19,8 +19,8 @@ in {
       allowed-origins = [
         "https://${config.networking.hostName}.${config.networking.domain}"
         "wss://${config.networking.hostName}.${config.networking.domain}"
-        "https://${config.networking.hostName}.${config.tailscale.domain}"
-        "wss://${config.networking.hostName}.${config.tailscale.domain}"
+        "https://${config.networking.hostName}.${config.tailnet.domain}"
+        "wss://${config.networking.hostName}.${config.tailnet.domain}"
       ];
       plugins = [pkgs.cockpit-files pkgs.cockpit-podman];
       settings.WebService = {

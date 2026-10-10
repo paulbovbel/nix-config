@@ -6,23 +6,7 @@
   inherit (config.podmanServer) user;
 in {
   config = lib.mkIf (builtins.elem "headless" config.systemProfiles) {
-    age.secrets.tailscale-oauth-authkey = {
-      file = ../../secrets/server/tailscale-oauth-authkey.age;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
-
-    services.tailscale = {
-      enable = true;
-      authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
-      authKeyParameters.ephemeral = false;
-      useRoutingFeatures = "server";
-      extraUpFlags = [
-        "--advertise-tags=tag:headless"
-        "--advertise-exit-node"
-      ];
-    };
+    services.tailscale.useRoutingFeatures = "server";
 
     systemd.services.tailscaled-autoconnect = {
       description = "Authenticate Tailscale after network and DNS are online";
@@ -32,10 +16,6 @@ in {
 
     systemd.services.tailscaled.serviceConfig.Environment = [
       "TS_PERMIT_CERT_UID=${toString user.uid}"
-    ];
-
-    rootFs.persistDirectories = [
-      "/var/lib/tailscale"
     ];
   };
 }

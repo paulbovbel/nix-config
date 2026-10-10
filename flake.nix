@@ -97,6 +97,14 @@
     readImages = import ./modules/podman-server/read-images.nix;
     containerImages = readImages ./images.Dockerfile;
     hosts = import ./hosts;
+    siteConfig =
+      (lib.evalModules {
+        modules = [
+          ./modules/tailnet/options.nix
+          {options.networking.domain = lib.mkOption {type = lib.types.str;};}
+          ./hosts/site.nix
+        ];
+      }).config;
     hostEvaluations = lib.mapAttrs (name: metadata:
       import ./modules/deployment/tests/evaluate-host.nix {
         inherit metadata;
@@ -127,6 +135,11 @@
     in {
       inherit (pkgs) attic-client;
       inherit (docs) module-docs;
+      tailnet-policy = pkgs.writeText "tailnet-policy.json" (builtins.toJSON (import ./modules/tailnet/policy.nix {
+        inherit lib;
+        inherit (self) nixosConfigurations;
+        inherit (siteConfig.tailnet) policy containerGrants;
+      }));
       ci-hosts = pkgs.linkFarm "ci-hosts" (
         map (name: {
           inherit name;
@@ -146,6 +159,7 @@
     in
       {
         inherit (mkDocs system) module-docs-check;
+        tailnet-policy-contracts = import ./modules/tailnet/tests/contracts.nix {inherit pkgs;};
         # Force evaluation of every host without making their derivations build dependencies.
         host-evaluations = pkgs.writeText "host-evaluations.json" (
           builtins.unsafeDiscardStringContext (builtins.toJSON hostEvaluations)
@@ -168,6 +182,8 @@
         packages = with pkgs; [
           actionlint
           agenix.packages.${system}.default
+          curl
+          jq
           alejandra
           deadnix
           fd

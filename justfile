@@ -49,6 +49,16 @@ installer-iso host key_mode *args:
 installer-write image device="":
     modules/deployment/scripts/usb/write-usb.sh "{{ image }}" "{{ device }}"
 
+# Generate the Tailscale policy JSON file.
+[group('tailscale')]
+tailnet-policy:
+    @nix build .#tailnet-policy --no-link --print-out-paths
+
+# Validate and apply the generated Tailscale policy using the agenix MCP credential.
+[group('tailscale')]
+tailnet-policy-apply:
+    @policy="$(just tailnet-policy)"; bash modules/tailnet/scripts/apply-policy.sh "$policy"
+
 # Apply Grafana dashboards.
 [confirm]
 [group('grafana')]
