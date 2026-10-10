@@ -6,6 +6,18 @@ Profiles combine system behavior with a user's Home Manager environment. Select 
 userProfiles.pbovbel = ["work" "gaming"];
 ```
 
+Each user entry has `profiles` (default `[]`). Child status is shared account
+metadata under `accounts.<user>.isKid`; it defaults to true for `abovbel` and
+false for adult accounts:
+
+```nix
+userProfiles.abovbel = ["gaming"];
+```
+
+Unless `tailnet.tags` is explicitly configured, any selected child account makes the entire machine a restricted
+`tag:kids-device`; otherwise selected adults use `tag:adult-device`. Empty
+profile selections contribute neither system behavior nor a tailnet role.
+
 ## Available profiles
 
 The generated profile reference lists each role's purpose and supported users from the registry in `default.nix`. Role documentation lives in each profile's README.

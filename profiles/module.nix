@@ -4,7 +4,7 @@
   ...
 }: let
   registry = import ./default.nix;
-  selections = lib.filterAttrs (_: selected: selected != []) config.userProfiles;
+  selections = lib.filterAttrs (_: profiles: profiles != []) config.userProfiles;
   selected = lib.unique (lib.concatLists (lib.attrValues selections));
   resolveProfiles = names:
     map (item: item.key) (builtins.genericClosure {

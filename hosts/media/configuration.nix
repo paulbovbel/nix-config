@@ -46,6 +46,8 @@
     // appBackupPaths;
 in {
   userProfiles.pbovbel = ["headless"];
+  tailnet.tags = ["tag:media" "tag:exit-node"];
+  services.tailscale.extraUpFlags = ["--advertise-exit-node"];
   imports = [
     ../site.nix
     ./hardware-configuration.nix

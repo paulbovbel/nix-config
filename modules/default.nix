@@ -17,7 +17,7 @@ in {
     ./monitor
     ./podman-server
     ./root-fs
-    ./site
+    ./tailnet
     ./nvidia
     ./netboot
     ./llama-cpp
