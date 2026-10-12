@@ -5,7 +5,7 @@
   unstablePkgs,
   ...
 }: let
-  cliPackages = import ../../common/cli-packages.nix {inherit pkgs;};
+  cliPackages = import ../../base/cli-packages.nix {inherit pkgs;};
   pythonWithPsutil = pkgs.python3.withPackages (pythonPackages: [
     pythonPackages.psutil
   ]);

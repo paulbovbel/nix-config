@@ -277,7 +277,7 @@ in {
             host = "${config.networking.hostName}.${config.networking.domain}";
           }
           {
-            host = "${config.networking.hostName}.${config.tailscale.domain}";
+            host = "${config.networking.hostName}.${config.tailnet.domain}";
             tls = "tailscale";
           }
         ];

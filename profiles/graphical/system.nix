@@ -14,29 +14,12 @@ in {
   config = lib.mkIf (builtins.elem "graphical" config.systemProfiles) {
     home-manager.extraSpecialArgs = {inherit headsetcontrolPackage;};
 
-    age.secrets.tailscale-oauth-authkey = {
-      file = ../../secrets/laptop/tailscale-oauth-authkey.age;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
-
     networking.networkmanager = {
       enable = true;
       dns = "systemd-resolved";
     };
 
     services = {
-      tailscale = {
-        enable = true;
-        authKeyFile = config.age.secrets.tailscale-oauth-authkey.path;
-        authKeyParameters.ephemeral = false;
-        extraUpFlags = [
-          "--advertise-tags=tag:graphical"
-          "--hostname=${config.networking.hostName}"
-        ];
-      };
-
       pulseaudio.enable = false;
       pipewire = {
         enable = true;
@@ -153,7 +136,6 @@ in {
       "/var/lib/flatpak"
       "/var/lib/gdm"
       "/var/lib/NetworkManager"
-      "/var/lib/tailscale"
     ];
   };
 }

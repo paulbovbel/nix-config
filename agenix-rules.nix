@@ -9,8 +9,7 @@ let
   becmac_pro = hosts.becmac-pro.ageRecipient;
 in {
   "secrets/common/pbovbel-id_rsa.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell media becmac_pro];
-  "secrets/laptop/tailscale-oauth-authkey.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell becmac_pro];
-  "secrets/server/tailscale-oauth-authkey.age".publicKeys = [pbovbel media];
+  "secrets/common/tailscale-oauth-authkey.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell media becmac_pro];
   "secrets/common/gmail-password.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell media becmac_pro];
   "secrets/common/grafana-cloud-env.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell media becmac_pro];
   "secrets/common/attic-watch-store-token.age".publicKeys = [pbovbel rainbow_wave white_tower pbovbel_dell media becmac_pro];

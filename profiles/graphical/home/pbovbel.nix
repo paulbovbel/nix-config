@@ -6,7 +6,7 @@
   mkAutostart = import ../autostart.nix;
 in {
   imports = [
-    ../../common/home/pbovbel.nix
+    ../../base/home/pbovbel.nix
     ../home.nix
     ../vscode.nix
     ../avatar.nix

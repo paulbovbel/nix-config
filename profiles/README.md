@@ -6,6 +6,18 @@ Profiles combine system behavior with a user's Home Manager environment. Select 
 userProfiles.pbovbel = ["work" "gaming"];
 ```
 
+Each user entry is a list of profile names (default `[]`). Child status is shared account
+metadata under `accounts.<user>.isKid`; it defaults to true for `abovbel` and
+false for adult accounts:
+
+```nix
+userProfiles.abovbel = ["gaming"];
+```
+
+Unless `tailnet.tags` is explicitly configured, any selected child account makes the entire machine a restricted
+`tag:kids-device`; otherwise selected adults use `tag:adult-device`. Empty
+profile selections contribute neither system behavior nor a tailnet role.
+
 ## Available profiles
 
 The generated profile reference lists each role's purpose and supported users from the registry in `default.nix`. Role documentation lives in each profile's README.
@@ -16,7 +28,7 @@ The registry in `profiles/default.nix` defines supported users, inheritance, sys
 
 `profiles/module.nix` statically imports the registered system modules and computes effective `systemProfiles` from user selections and inheritance. Each system profile gates its settings on that result. It supplies Home Manager imports in the separate user evaluation. System settings affect the whole machine, even when only one user selects the profile; Home Manager settings remain user-specific.
 
-Gaming and work inherit the graphical baseline; graphical and headless share common system behavior. You do not need to select those baselines separately. With no selections, profile-provided system settings are disabled.
+Gaming and work inherit graphical, which inherits the base system and command-line baseline. Select base directly for servers and command-line environments. You do not need to select inherited baselines separately. With no selections, profile-provided system settings are disabled.
 
 Home Manager receives the selected names and all inherited profiles through `profiles.selected`, with duplicates removed. For example, selecting `["work" "gaming"]` produces `["work" "gaming" "graphical"]`. Modules can use it to adapt to combinations, such as disabling gaming autostart when work is selected.
 

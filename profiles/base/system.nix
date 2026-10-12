@@ -11,6 +11,8 @@
   ];
 
   config = lib.mkIf (config.systemProfiles != []) {
+    tailnet.enable = true;
+
     grafanaCloud = {
       enable = true;
       smartctl.enable = true;

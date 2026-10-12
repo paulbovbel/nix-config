@@ -4,7 +4,7 @@
   ...
 }: let
   registry = import ./default.nix;
-  selections = lib.filterAttrs (_: selected: selected != []) config.userProfiles;
+  selections = lib.filterAttrs (_: profiles: profiles != []) config.userProfiles;
   selected = lib.unique (lib.concatLists (lib.attrValues selections));
   resolveProfiles = names:
     map (item: item.key) (builtins.genericClosure {
@@ -12,7 +12,7 @@
       operator = item: map (key: {inherit key;}) registry.${item.key}.extends;
     });
 in {
-  imports = [./options.nix ./common/system.nix] ++ map (profile: profile.systemModule) (lib.attrValues registry);
+  imports = [./options.nix] ++ map (profile: profile.systemModule) (lib.attrValues registry);
 
   config = {
     systemProfiles = resolveProfiles selected;

@@ -20,11 +20,11 @@ just switch <host>
 
 | Host | Purpose | Users and profiles |
 | --- | --- | --- |
-| `white-tower` | Primary desktop | pbovbel: [gaming](profiles/gaming/README.md); rbovbel: [graphical](profiles/graphical/README.md); abovbel: [gaming](profiles/gaming/README.md) |
+| `white-tower` | Primary desktop | pbovbel: [gaming](profiles/gaming/README.md); rbovbel: [graphical](profiles/graphical/README.md) |
 | `rainbow-wave` | Kids gaming desktop | pbovbel: [gaming](profiles/gaming/README.md); abovbel: [gaming](profiles/gaming/README.md) |
 | `pbovbel-dell` | Work laptop | pbovbel: [work](profiles/work/README.md), [gaming](profiles/gaming/README.md) |
 | `becmac-pro` | Personal laptop | pbovbel: [graphical](profiles/graphical/README.md); rbovbel: [graphical](profiles/graphical/README.md) |
-| `media` | Media, game, cache, ingress, and storage server | pbovbel: [headless](profiles/headless/README.md) |
+| `media` | Media, game, cache, ingress, and storage server | pbovbel: [base](profiles/base/README.md) |
 
 ## Architecture
 

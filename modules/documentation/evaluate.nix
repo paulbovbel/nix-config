@@ -23,7 +23,7 @@
       {
         networking.hostName = "module-docs";
         networking.domain = "example.invalid";
-        tailscale.domain = "tailnet.example.invalid";
+        tailnet.domain = "tailnet.example.invalid";
         time.timeZone = "UTC";
         system.stateVersion = "26.05";
       }

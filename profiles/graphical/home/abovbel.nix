@@ -1,6 +1,6 @@
 _: {
   imports = [
-    ../../common/home/abovbel.nix
+    ../../base/home/abovbel.nix
     ../home.nix
     ../avatar.nix
   ];
