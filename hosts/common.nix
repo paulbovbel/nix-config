@@ -1,5 +1,6 @@
 {
-  inputs,
+  catppuccin,
+  vscode-workspace-populator,
   overlays,
   configurationBranch,
   configurationRevision,
@@ -12,7 +13,6 @@
   lib,
   ...
 }: let
-  inherit (inputs) catppuccin vscode-workspace-populator;
   configuredUserNames = map (user: user.name) users;
   hiddenUserNames = map (user: user.name) (builtins.filter (user: user.hideFromLogin or false) users);
   catppuccinPaletteSource = let

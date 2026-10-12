@@ -38,7 +38,8 @@ in
           ../modules
           ../profiles/module.nix
           (import ./common.nix {
-            inherit inputs overlays configurationBranch configurationRevision containerImages name unstablePkgs;
+            inherit overlays configurationBranch configurationRevision containerImages name unstablePkgs;
+            inherit (inputs) catppuccin vscode-workspace-populator;
             inherit (cfg) users;
           })
         ]
