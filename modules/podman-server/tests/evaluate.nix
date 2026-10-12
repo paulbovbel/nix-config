@@ -21,9 +21,9 @@ nixpkgs.lib.nixosSystem {
         };
       };
       config = {
-        _module.args = {
-          lanAddressCommand = "printf 192.0.2.1";
-          lanNetworkCommand = "printf 192.0.2.0/24";
+        podmanServer.derivedEnvFiles.lan.variables = {
+          LAN_ADDRESS = lib.mkForce "192.0.2.1";
+          LAN_NETWORK = lib.mkForce "192.0.2.0/24";
         };
         boot.loader.grub.enable = false;
         fileSystems."/" = {

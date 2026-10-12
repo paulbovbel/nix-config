@@ -1,10 +1,10 @@
 {
   config,
-  lanAddressCommand,
   lib,
   pkgs,
   ...
 }: let
+  lan = import ../../lib/lan-commands.nix;
   forwardType = lib.types.submodule {
     options = {
       from = lib.mkOption {
@@ -53,7 +53,7 @@ in {
         };
         script =
           ''
-            LAN_ADDRESS="$(${lanAddressCommand})"
+             LAN_ADDRESS="$(${lan.address})"
 
             if [ -z "$LAN_ADDRESS" ]; then
               echo "Could not determine LAN_ADDRESS" >&2
