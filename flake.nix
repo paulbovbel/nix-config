@@ -70,11 +70,6 @@
   outputs = inputs @ {
     self,
     nixpkgs,
-    agenix,
-    disko,
-    disko-zfs,
-    impermanence,
-    quadlet-nix,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -91,17 +86,16 @@
       then revision
       else self.rev or self.dirtyRev or null;
     systems = ["aarch64-linux" "x86_64-linux"];
-    forAllSystems = lib.genAttrs systems;
-    pkgsFor = forAllSystems (system: import nixpkgs {inherit system;});
     overlays = [inputs.nix-vscode-extensions.overlays.default (import ./overlays)];
     readImages = import ./modules/podman-server/read-images.nix;
     containerImages = readImages ./images.Dockerfile;
     hosts = import ./hosts;
-    tailnetPolicy = import ./hosts/tailnet-policy.nix;
+    nixosConfigurations = lib.mapAttrs (name: cfg: mkHost name cfg []) hosts;
+    ciHostNames = lib.attrNames (lib.filterAttrs (_: host: host.ciBuild) hosts);
     hostEvaluations = lib.mapAttrs (name: metadata:
       import ./modules/deployment/tests/evaluate-host.nix {
         inherit metadata;
-        host = self.nixosConfigurations.${name};
+        host = nixosConfigurations.${name};
       })
     hosts;
     mkHost = import ./hosts/mk-host.nix {
@@ -111,90 +105,20 @@
       inherit nixpkgs hosts mkHost;
       inherit (inputs) nixos-apple-silicon;
     };
-    mkDocs = import ./modules/documentation/evaluate.nix {
-      inherit inputs containerImages;
-      sourceRoot = ./.;
-    };
-  in {
-    nixosConfigurations = lib.mapAttrs (name: cfg: mkHost name cfg []) hosts;
-    lib = {
-      inherit hosts mkInstaller;
-      hostNames = lib.attrNames hosts;
-      ciHostNames = lib.attrNames (lib.filterAttrs (_: host: host.ciBuild) hosts);
-    };
-    packages = forAllSystems (system: let
-      pkgs = pkgsFor.${system};
-      docs = mkDocs system;
-    in {
-      inherit (pkgs) attic-client;
-      inherit (docs) module-docs;
-      tailnet-policy = pkgs.writeText "tailnet-policy.json" (builtins.toJSON (import ./modules/tailnet/policy.nix {
-        inherit lib;
-        inherit (self) nixosConfigurations;
-        inherit (tailnetPolicy) policy containerGrants;
-      }));
-      ci-hosts = pkgs.linkFarm "ci-hosts" (
-        map (name: {
-          inherit name;
-          path = self.nixosConfigurations.${name}.config.system.build.toplevel;
-        })
-        self.lib.ciHostNames
-      );
-      ci-checks = pkgs.linkFarm "ci-checks" self.checks.${system};
-    });
-    checks = forAllSystems (system: let
-      pkgs = pkgsFor.${system};
-      rootFsImpermanenceTest = backend:
-        import ./modules/root-fs/tests/root-fs-impermanence.nix {
-          inherit backend disko disko-zfs impermanence nixpkgs pkgs;
-          root = ./.;
-        };
-    in
-      {
-        inherit (mkDocs system) module-docs-check;
-        tailnet-policy-contracts = import ./modules/tailnet/tests/contracts.nix {inherit pkgs;};
-        tailnet-policy = self.packages.${system}.tailnet-policy;
-        # Force evaluation of every host without making their derivations build dependencies.
-        host-evaluations = pkgs.writeText "host-evaluations.json" (
-          builtins.unsafeDiscardStringContext (builtins.toJSON hostEvaluations)
-        );
-        podman-server-contracts = import ./modules/podman-server/tests/contracts.nix {inherit pkgs nixpkgs quadlet-nix agenix containerImages readImages;};
-        storage-contracts = import ./modules/storage/tests/contracts.nix {inherit pkgs nixpkgs disko disko-zfs;};
-        alloy-config = import ./modules/monitor/tests/alloy-config.nix {
-          inherit pkgs;
-          inherit (self) nixosConfigurations;
-        };
-      }
-      // lib.optionalAttrs (system == "x86_64-linux") {
-        podman-server-exposure = import ./modules/podman-server/tests/exposure.nix {inherit pkgs quadlet-nix agenix;};
-        game-streaming-contracts = import ./modules/game-streaming/tests/contracts.nix {inherit pkgs nixpkgs;};
-        authentik-blueprint = import ./modules/authentik/tests/blueprint.nix {inherit pkgs quadlet-nix;};
-        # TODO: Add end-to-end Btrfs and ZFS USB installer state-migration tests.
-        root-fs-btrfs-impermanence = rootFsImpermanenceTest "btrfs";
-        root-fs-zfs-impermanence = rootFsImpermanenceTest "zfs";
+    perSystem = lib.genAttrs systems (system:
+      import ./lib/per-system.nix {
+        inherit inputs system nixosConfigurations ciHostNames hostEvaluations containerImages readImages;
+        sourceRoot = ./.;
       });
-    devShells = forAllSystems (system: let
-      pkgs = pkgsFor.${system};
-    in {
-      default = pkgs.mkShell {
-        packages = with pkgs; [
-          actionlint
-          agenix.packages.${system}.default
-          curl
-          jq
-          alejandra
-          deadnix
-          fd
-          gcx
-          just
-          prometheus.cli
-          (python3.withPackages (ps: [ps.tenacity]))
-          ruff
-          shellcheck
-          shfmt
-          statix
-        ];
+  in
+    {
+      inherit nixosConfigurations;
+      lib = {
+        inherit hosts mkInstaller ciHostNames;
+        hostNames = lib.attrNames hosts;
       };
-    });
-  };
+    }
+    // lib.genAttrs ["packages" "checks" "devShells"] (
+      output: lib.mapAttrs (_: outputs: outputs.${output}) perSystem
+    );
 }

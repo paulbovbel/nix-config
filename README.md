@@ -54,10 +54,13 @@ Document public options in `options.nix` and module usage in a local README. Nev
 
 ## Repository Layout
 
+- Flake inputs and host assembly: `flake.nix`; per-platform packages, checks, and development shells: `lib/per-system.nix`
+- Shared runtime LAN discovery commands: `lib/lan-commands.nix`, imported by Podman and UPnP
 - Machine policy and module enablement: `hosts/<host>/configuration.nix`
 - Hardware facts and device identities: `hosts/<host>/hardware-configuration.nix`
 - Host metadata and users: `hosts/<host>/default.nix`
-- Shared host inventory and composition: `hosts/{default,mk-host}.nix`
+- Shared host inventory and composition: `hosts/{default,mk-host}.nix`; shared host settings: `hosts/common.nix`
+- Supported accounts, module paths, and child-account defaults: `modules/accounts/registry.nix`
 - Local package overrides: `overlays/default.nix`
 - Shared container image pins: `images.Dockerfile`, parsed by `modules/podman-server/read-images.nix` and passed to workloads by `flake.nix`
 - Shared site values: `hosts/site.nix`

@@ -1,10 +1,11 @@
 {
   inputs,
+  pkgs,
   containerImages,
   sourceRoot,
-}: system: let
+}: let
   inherit (inputs) self nixpkgs nixpkgs-unstable agenix disko disko-zfs impermanence quadlet-nix;
-  pkgs = import nixpkgs {inherit system;};
+  inherit (pkgs.stdenv.hostPlatform) system;
   unstablePkgs = import nixpkgs-unstable {
     inherit system;
     config.allowUnfree = true;

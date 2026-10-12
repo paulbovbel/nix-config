@@ -1,4 +1,4 @@
-{
+import ./validate.nix {
   base = {
     title = "Base";
     extends = [];
