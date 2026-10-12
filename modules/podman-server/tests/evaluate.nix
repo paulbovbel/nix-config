@@ -13,26 +13,30 @@ nixpkgs.lib.nixosSystem {
     ../default.nix
     ../../upnp
     ../../storage/options.nix
-    ({lib, ...}: {
+    ({config, lib, ...}: {
       options = {
         rootFs.persistDirectories = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [];
         };
       };
-      config = {
-        podmanServer.derivedEnvFiles.lan.variables = {
-          LAN_ADDRESS = lib.mkForce "192.0.2.1";
-          LAN_NETWORK = lib.mkForce "192.0.2.0/24";
-        };
-        boot.loader.grub.enable = false;
-        fileSystems."/" = {
-          device = "none";
-          fsType = "tmpfs";
-        };
-        users.users.pbovbel.isNormalUser = true;
-        system.stateVersion = "26.05";
-      };
+      config = lib.mkMerge [
+        (lib.mkIf (config.podmanServer.containers != {}) {
+          podmanServer.derivedEnvFiles.lan.variables = {
+            LAN_ADDRESS = lib.mkForce "192.0.2.1";
+            LAN_NETWORK = lib.mkForce "192.0.2.0/24";
+          };
+        })
+        {
+          boot.loader.grub.enable = false;
+          fileSystems."/" = {
+            device = "none";
+            fsType = "tmpfs";
+          };
+          users.users.pbovbel.isNormalUser = true;
+          system.stateVersion = "26.05";
+        }
+      ];
     })
     extra
   ];
