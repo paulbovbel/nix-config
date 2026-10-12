@@ -1,4 +1,8 @@
-{pkgs, ...}: let
+{
+  lib,
+  pkgs,
+  ...
+}: let
   graphicalSessions = pkgs.writeShellApplication {
     name = "graphical-sessions";
     runtimeInputs = [pkgs.coreutils pkgs.glib pkgs.sudo pkgs.systemd];
@@ -13,12 +17,7 @@ in {
     summary = "Local user accounts, SSH access, and account-specific secrets.";
   };
 
-  imports = [
-    ./options.nix
-    ./abovbel.nix
-    ./pbovbel.nix
-    ./rbovbel.nix
-  ];
+  imports = [./options.nix] ++ map (account: account.module) (lib.attrValues (import ./registry.nix));
 
   config._module.args = {inherit graphicalSessions;};
 }
