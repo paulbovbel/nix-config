@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  osConfig,
   unstablePkgs,
   ...
 }: let
@@ -54,14 +55,35 @@ in {
       enable = true;
       package = unstablePkgs.opencode;
       settings = {
+        "$schema" = "https://opencode.ai/config.json";
         permission.external_directory."/nix/store/**" = "allow";
-        mcp.nixos = {
-          type = "local";
-          command = ["${pkgs.mcp-nixos}/bin/mcp-nixos"];
-        };
-        mcp.plex = {
-          type = "remote";
-          url = "http://media:3001/sse";
+        mcp = {
+          nixos = {
+            type = "local";
+            command = ["${pkgs.mcp-nixos}/bin/mcp-nixos"];
+          };
+          plex = {
+            type = "remote";
+            url = "http://media:3001/sse";
+          };
+          tailscale = {
+            type = "local";
+            command = [
+              "${pkgs.writeShellScript "tailscale-mcp" ''
+                set -e
+                set -a
+                source ${lib.escapeShellArg osConfig.age.secrets.tailscale-mcp-env.path}
+                set +a
+                export PATH=${lib.makeBinPath [pkgs.nodejs]}:$PATH
+                exec ${pkgs.nodejs}/bin/npx --yes @hexsleeves/tailscale-mcp-server@1.3.4
+              ''}"
+            ];
+            environment = {
+              TAILSCALE_TAILNET = "-";
+              TAILSCALE_ALLOWED_TOOL_RISK = "write";
+              TAILSCALE_CLI_PATH = "${pkgs.tailscale}/bin/tailscale";
+            };
+          };
         };
       };
     };
