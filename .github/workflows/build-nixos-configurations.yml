@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   check:
+    name: Check repository
     # Never execute fork code on the persistent runner.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, nix-media]
@@ -26,7 +27,8 @@ jobs:
     outputs:
       build-hosts: ${{ steps.inventory.outputs.build-hosts }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Read CI inventory
@@ -44,7 +46,8 @@ jobs:
     runs-on: [self-hosted, nix-media]
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Build flake checks
@@ -69,7 +72,8 @@ jobs:
       matrix:
         host: ${{ fromJSON(needs.check.outputs.build-hosts) }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Build host
@@ -88,7 +92,8 @@ jobs:
       queue: max
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Apply validated policy
@@ -110,7 +115,8 @@ jobs:
     runs-on: [self-hosted, nix-media]
     timeout-minutes: 240
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: Publish validated hosts
@@ -127,6 +133,7 @@ jobs:
         run: printf '::warning::Cache publication failed; see the publication job logs.\n'
 
   publish-docs:
+    name: Publish documentation
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [check, test, build]
     permissions:
