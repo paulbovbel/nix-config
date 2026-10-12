@@ -2,7 +2,10 @@
   "apiVersion": "dashboard.grafana.app/v1beta1",
   "kind": "Dashboard",
   "metadata": {
-    "name": "home-fleet-overview"
+    "name": "home-fleet-overview",
+    "annotations": {
+      "grafana.app/folder": "f4fzcd"
+    }
   },
   "spec": {
     "annotations": {
@@ -10,7 +13,16 @@
     },
     "editable": false,
     "graphTooltip": 1,
-    "links": [],
+    "description": "Fleet health and resource usage. Counts reflect reporting hosts, not the expected inventory; sleeping or disconnected hosts disappear after metrics become stale.",
+    "links": [
+      {
+        "title": "Host detail",
+        "type": "link",
+        "url": "/d/home-host-detail",
+        "includeVars": false,
+        "keepTime": true
+      }
+    ],
     "panels": [
       {
         "datasource": {
@@ -20,19 +32,16 @@
         "fieldConfig": {
           "defaults": {
             "color": {
-              "mode": "thresholds"
+              "mode": "fixed",
+              "fixedColor": "blue"
             },
             "mappings": [],
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
-                  "color": "red",
+                  "color": "blue",
                   "value": null
-                },
-                {
-                  "color": "green",
-                  "value": 5
                 }
               ]
             }
@@ -64,7 +73,7 @@
         "targets": [
           {
             "editorMode": "code",
-            "expr": "count(count by (host) (node_uname_info{role=~\"$role\"}))",
+            "expr": "count(count by (host) (node_uname_info{role=~\"$role\"})) or vector(0)",
             "instant": true,
             "legendFormat": "Hosts",
             "range": false,
@@ -128,7 +137,7 @@
         "targets": [
           {
             "editorMode": "code",
-            "expr": "sum(max by (host) (node_systemd_unit_state{role=~\"$role\",state=\"failed\"}))",
+            "expr": "sum(max by (host, name) (node_systemd_unit_state{role=~\"$role\",state=\"failed\"}))",
             "instant": true,
             "legendFormat": "Failed units",
             "range": false,
@@ -191,14 +200,14 @@
         "targets": [
           {
             "editorMode": "code",
-            "expr": "sum(smartctl_device_smart_status{role=~\"$role\"} == 0)",
+            "expr": "sum(min by (host, device) (smartctl_device_smart_status{role=~\"$role\"}) == bool 0)",
             "instant": true,
             "legendFormat": "Unhealthy disks",
             "range": false,
             "refId": "A"
           }
         ],
-        "description": "Number of disks reporting a failed SMART health status.",
+        "description": "Number of reporting disks with failed SMART health. No data means SMART metrics are unavailable, not that disks are healthy.",
         "title": "SMART Failures",
         "type": "stat"
       },
@@ -259,7 +268,7 @@
         "targets": [
           {
             "editorMode": "code",
-            "expr": "max(100 * (1 - node_filesystem_avail_bytes{role=~\"$role\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{role=~\"$role\",fstype!~\"tmpfs|overlay|squashfs\"}))",
+            "expr": "max(100 * (1 - node_filesystem_avail_bytes{role=~\"$role\",fstype!~\"tmpfs|ramfs|overlay|squashfs\"} / (node_filesystem_size_bytes{role=~\"$role\",fstype!~\"tmpfs|ramfs|overlay|squashfs\"} > 0)))",
             "instant": true,
             "legendFormat": "Maximum",
             "range": false,
@@ -280,6 +289,12 @@
             "color": {
               "mode": "palette-classic"
             },
+            "links": [
+              {
+                "title": "View host",
+                "url": "/d/home-host-detail?var-host=${__field.labels.host}&${__url_time_range}"
+              }
+            ],
             "custom": {
               "axisCenteredZero": false,
               "axisColorMode": "text",
@@ -326,6 +341,7 @@
           {
             "editorMode": "code",
             "expr": "1 - avg by (host) (rate(node_cpu_seconds_total{role=~\"$role\",mode=\"idle\"}[$__rate_interval]))",
+            "interval": "1m",
             "legendFormat": "{{host}}",
             "range": true,
             "refId": "A"
@@ -345,6 +361,12 @@
             "color": {
               "mode": "palette-classic"
             },
+            "links": [
+              {
+                "title": "View host",
+                "url": "/d/home-host-detail?var-host=${__field.labels.host}&${__url_time_range}"
+              }
+            ],
             "custom": {
               "axisCenteredZero": false,
               "axisColorMode": "text",
@@ -410,6 +432,12 @@
             "color": {
               "mode": "palette-classic"
             },
+            "links": [
+              {
+                "title": "View host",
+                "url": "/d/home-host-detail?var-host=${__field.labels.host}&${__url_time_range}"
+              }
+            ],
             "custom": {
               "axisCenteredZero": false,
               "axisColorMode": "text",
@@ -476,6 +504,12 @@
             "color": {
               "mode": "palette-classic"
             },
+            "links": [
+              {
+                "title": "View host",
+                "url": "/d/home-host-detail?var-host=${__field.labels.host}&${__url_time_range}"
+              }
+            ],
             "custom": {
               "axisCenteredZero": false,
               "axisColorMode": "text",
@@ -521,7 +555,7 @@
         "targets": [
           {
             "editorMode": "code",
-            "expr": "max by (host) (100 * (1 - node_filesystem_avail_bytes{role=~\"$role\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{role=~\"$role\",fstype!~\"tmpfs|overlay|squashfs\"}))",
+            "expr": "max by (host) (100 * (1 - node_filesystem_avail_bytes{role=~\"$role\",fstype!~\"tmpfs|ramfs|overlay|squashfs\"} / (node_filesystem_size_bytes{role=~\"$role\",fstype!~\"tmpfs|ramfs|overlay|squashfs\"} > 0)))",
             "legendFormat": "{{host}}",
             "range": true,
             "refId": "A"
@@ -560,7 +594,7 @@
             "query": "label_values(node_uname_info, role)",
             "refId": "PrometheusVariableQueryEditor-VariableQuery"
           },
-          "refresh": 1,
+          "refresh": 2,
           "regex": "",
           "sort": 1,
           "type": "query"

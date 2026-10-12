@@ -60,20 +60,15 @@ tailnet-policy-apply:
     @policy="$(just tailnet-policy)"; bash modules/tailnet/scripts/apply-policy.sh "$policy"
 
 # Apply Grafana dashboards.
-[confirm]
 [group('grafana')]
 dashboards-apply:
-    modules/monitor/scripts/grafana-dashboards.sh
+    @: "${GRAFANA_TOKEN:?GRAFANA_TOKEN must be set}"
+    gcx resources push --config modules/monitor/gcx.yaml --context monitoring --path modules/monitor/grafana --on-error abort
 
 # Lint Grafana dashboards.
 [group('grafana')]
 dashboards-check:
     gcx dev lint run modules/monitor/grafana
-
-# Preview Grafana dashboard changes.
-[group('grafana')]
-dashboards-dry-run:
-    modules/monitor/scripts/grafana-dashboards.sh --dry-run
 
 # Check justfile formatting.
 [group('checks')]
@@ -111,6 +106,7 @@ python-test:
     PYTHONPATH=modules/auto-upgrade/scripts python3 -m unittest discover -s modules/auto-upgrade/tests -p 'test_*.py'
     python3 -m unittest discover -s modules/media-server/download/tests -p 'test_*.py'
     python3 -m unittest discover -s modules/media-server/library/tests -p 'test_*.py'
+    python3 -m unittest discover -s modules/monitor/tests -p 'test_*.py'
 
 # Lint and format-check shell scripts.
 [group('checks')]

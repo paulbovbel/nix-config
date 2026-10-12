@@ -119,6 +119,8 @@
       inherit (metadataByName.${name}) title category;
       optionsModule = name;
       source = "modules/${name}/README.md";
+      linkSources = map (other: "(../${other}/README.md)") moduleNames;
+      linkTargets = map (other: "(${other}.html)") moduleNames;
       modulePage = true;
     })
     moduleNames

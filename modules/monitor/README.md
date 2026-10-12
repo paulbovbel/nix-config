@@ -1,55 +1,56 @@
 # Monitoring
 
-The monitoring module exports host metrics to Grafana Cloud through Alloy, provides Cockpit for host administration, and runs Smokeping for network latency history.
+## Services
 
-## Grafana Cloud
+- `grafanaCloud.enable` exports host metrics to Grafana Cloud through Alloy.
+  Set `grafanaCloud.role` to `desktop`, `laptop`, or `server`. Enable
+  `grafanaCloud.smartctl.enable` where physical disks are accessible.
+- `cockpit.enable` exposes host administration on port 9090.
+- `smokeping.enable` records network latency using Podman and shared storage.
 
-`grafanaCloud.enable` runs Alloy and exports host metrics through Prometheus remote write. Set `grafanaCloud.role` to `desktop`, `laptop`, or `server` to label metrics. The username is the Grafana Cloud tenant ID; the API key comes from `grafana-cloud-env`.
-
-### SMART Metrics
-
-Enable `grafanaCloud.smartctl.enable` only where it can inspect physical disks.
-
-## Cockpit
-
-`cockpit.enable` exposes Cockpit on port 9090 with origins derived from the host and tailnet domains.
-
-## Smokeping
-
-`smokeping.enable` runs Smokeping as a container with persistent configuration and latency history in shared storage.
-
-## Requirements
-
-Grafana Cloud needs the agenix-managed `grafana-cloud-env` secret containing `GRAFANA_CLOUD_API_KEY`. Smokeping needs the Podman server and shared storage.
-
-## Persistence
-
-Alloy persists `/var/lib/private/alloy`; Smokeping uses `storage.datasets.app.children.smokeping`.
-
-## Troubleshooting
-
-For Grafana Cloud, inspect `alloy.service`, `/etc/alloy/config.alloy`, `/run/agenix/grafana-cloud-env`, and persisted state at `/var/lib/private/alloy`. If SMART metrics are missing, check `prometheus-smartctl-exporter.service` and its loopback listener. Smokeping uses `smokeping.service`, `apps-network.service`, and `/storage/app/smokeping/{config,data}`; Cockpit uses `cockpit.socket` and `cockpit.service` on port 9090.
+Alloy uses the agenix-managed `grafana-cloud-env` secret containing
+`GRAFANA_CLOUD_API_KEY` and persists `/var/lib/private/alloy`. Smokeping stores
+its configuration and history in `storage.datasets.app.children.smokeping`.
+Grafana tenant settings live in `hosts/site.nix`. Alloy excludes loopback and
+container veth/Podman interfaces from network metrics; VPN interfaces are retained.
 
 ## Grafana dashboards
 
-Dashboards under `grafana/` are managed resources for `https://bovbel.grafana.net`.
-Changes made in the Grafana UI will be overwritten by the next deployment.
+Dashboards in `grafana/` are deployed to <https://bovbel.grafana.net> and use the
+`grafanacloud-prom` datasource and Monitoring folder (`f4fzcd`). Deployment
+overwrites changes made in the UI.
 
-Create a Grafana service account with the Editor role, then store its token in
-`secrets/management/grafana-cloud-env.age`:
+Deployment uses the explicit `gcx.yaml` context in this directory, with the
+Grafana server and Cloud stack ID pinned so a fresh runner does not depend on
+local gcx configuration or successful stack-ID discovery. Authentication comes
+from `GRAFANA_TOKEN` in the environment.
 
-```text
-GRAFANA_TOKEN=glsa_...
-```
-
-Validate and preview changes before applying them:
+Give the service account Edit access to the Monitoring folder, export its token
+as `GRAFANA_TOKEN`, then run:
 
 ```bash
 just dashboards-check
-just dashboards-dry-run
 just dashboards-apply
 ```
 
-The management secret is encrypted only to the `pbovbel` recipient and is not
-deployed to monitored hosts. The metrics publishing token remains separately
-managed in `secrets/common/grafana-cloud-env.age`.
+CI deploys after successful validation and host builds on `main`, using the
+`GRAFANA_TOKEN` Actions secret. The dashboard token is separate from Alloy's
+metrics-publishing token.
+
+Fleet charts link to host details and preserve the time range. Reporting hosts
+counts current telemetry; sleeping or disconnected hosts eventually disappear.
+Missing health metrics show **No data**. Host-detail tables identify failed
+systemd units and unhealthy disks.
+
+`just check` lints dashboards and tests queries without Grafana credentials.
+The `alloy-config` flake check validates every enabled host's generated Alloy
+configuration without publishing metrics.
+
+## Troubleshooting
+
+- **Metrics:** check `alloy.service`, `/etc/alloy/config.alloy`, and
+  `/run/agenix/grafana-cloud-env`. For SMART metrics, check
+  `prometheus-smartctl-exporter.service`.
+- **Cockpit:** check `cockpit.socket` and `cockpit.service`.
+- **Smokeping:** check `smokeping.service`, `apps-network.service`, and
+  `/storage/app/smokeping/{config,data}`.

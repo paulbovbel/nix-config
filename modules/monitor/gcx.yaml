@@ -1,0 +1,6 @@
+current-context: monitoring
+contexts:
+  monitoring:
+    grafana:
+      server: https://bovbel.grafana.net
+      stack-id: 505399

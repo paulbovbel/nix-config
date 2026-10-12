@@ -160,6 +160,10 @@
         );
         podman-server-contracts = import ./modules/podman-server/tests/contracts.nix {inherit pkgs nixpkgs quadlet-nix agenix containerImages readImages;};
         storage-contracts = import ./modules/storage/tests/contracts.nix {inherit pkgs nixpkgs disko disko-zfs;};
+        alloy-config = import ./modules/monitor/tests/alloy-config.nix {
+          inherit pkgs;
+          inherit (self) nixosConfigurations;
+        };
       }
       // lib.optionalAttrs (system == "x86_64-linux") {
         podman-server-exposure = import ./modules/podman-server/tests/exposure.nix {inherit pkgs quadlet-nix agenix;};
@@ -183,6 +187,7 @@
           fd
           gcx
           just
+          prometheus.cli
           (python3.withPackages (ps: [ps.tenacity]))
           ruff
           shellcheck

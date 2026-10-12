@@ -108,6 +108,32 @@ jobs:
           fi
           nix develop --command just tailnet-policy-apply
 
+  deploy-grafana:
+    name: Deploy Grafana dashboards
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, test, build]
+    runs-on: [self-hosted, nix-media]
+    timeout-minutes: 10
+    concurrency:
+      group: grafana-dashboards
+      queue: max
+      cancel-in-progress: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Apply validated dashboards
+        env:
+          GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
+        run: |
+          latest="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "$latest" != "$GITHUB_SHA" ]]; then
+            printf 'Skipping superseded dashboard deployment.\n'
+            exit 0
+          fi
+          nix develop --command just --yes dashboards-apply
+
   publish-cache:
     name: Publish cache
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
