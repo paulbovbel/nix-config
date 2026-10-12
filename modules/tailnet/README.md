@@ -37,6 +37,11 @@ Policy deployment requires explicitly exported `TAILSCALE_OAUTH_CLIENT_ID` and
 `TAILSCALE_OAUTH_CLIENT_SECRET` for a dedicated policy-write OAuth client.
 The apply script does not load credential files.
 
+`secrets/common/tailscale-mcp-env.age` is exclusively for the Tailscale MCP
+launcher. It contains a shell-compatible environment file with the MCP client's
+`TAILSCALE_OAUTH_CLIENT_ID` and `TAILSCALE_OAUTH_CLIENT_SECRET`. The base profile
+makes it readable by `pbovbel`.
+
 CI validates and applies policy after successful checks and host builds on
 `main`. Configure GitHub Actions secrets `TAILSCALE_OAUTH_CLIENT_ID` and
 `TAILSCALE_OAUTH_CLIENT_SECRET` with a dedicated policy-write OAuth client.
