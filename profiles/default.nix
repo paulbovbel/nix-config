@@ -1,14 +1,18 @@
 {
-  headless = {
-    title = "Headless";
+  base = {
+    title = "Base";
     extends = [];
-    systemModule = ./headless/system.nix;
-    summary = "Server and command-line environment";
-    homeModule.pbovbel = ./headless/home/pbovbel.nix;
+    systemModule = ./base/system.nix;
+    summary = "Shared system and command-line baseline";
+    homeModule = {
+      pbovbel = ./base/home/pbovbel.nix;
+      rbovbel = ./base/home/rbovbel.nix;
+      abovbel = ./base/home/abovbel.nix;
+    };
   };
   graphical = {
     title = "Graphical";
-    extends = [];
+    extends = ["base"];
     systemModule = ./graphical/system.nix;
     summary = "GNOME desktop and everyday applications";
     homeModule = {

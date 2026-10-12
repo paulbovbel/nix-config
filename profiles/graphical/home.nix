@@ -17,7 +17,7 @@
   lockscreenUri = "file://${config.home.homeDirectory}/.local/share/backgrounds/${lockscreenFileName}";
 in {
   imports = [
-    ../common/home.nix
+    ../base/home.nix
   ];
 
   options.bovbel.background = {

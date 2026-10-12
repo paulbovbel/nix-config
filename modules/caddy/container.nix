@@ -90,6 +90,9 @@ in {
       ];
 
       services = {
+        tailscaled.serviceConfig.Environment = [
+          "TS_PERMIT_CERT_UID=${toString config.podmanServer.user.uid}"
+        ];
         caddy = {
           restartTriggers = [
             config.caddy.caddyfile

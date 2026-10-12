@@ -2,7 +2,7 @@
   mkAutostart = import ../autostart.nix;
 in {
   imports = [
-    ../../common/home/rbovbel.nix
+    ../../base/home/rbovbel.nix
     ../home.nix
     ../avatar.nix
   ];

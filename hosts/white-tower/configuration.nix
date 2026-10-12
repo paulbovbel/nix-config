@@ -2,7 +2,6 @@
   userProfiles = {
     pbovbel = ["gaming"];
     rbovbel = ["graphical"];
-    abovbel = ["gaming"];
   };
   imports = [
     ../site.nix

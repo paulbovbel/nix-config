@@ -14,6 +14,7 @@ in {
   };
 
   imports = [
+    ./options.nix
     ./abovbel.nix
     ./pbovbel.nix
     ./rbovbel.nix
