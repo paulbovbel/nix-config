@@ -2,7 +2,10 @@
   "apiVersion": "dashboard.grafana.app/v1beta1",
   "kind": "Dashboard",
   "metadata": {
-    "name": "home-host-detail"
+    "name": "home-host-detail",
+    "annotations": {
+      "grafana.app/folder": "f4fzcd"
+    }
   },
   "spec": {
     "annotations": {
@@ -10,7 +13,16 @@
     },
     "editable": false,
     "graphTooltip": 1,
-    "links": [],
+    "description": "Resource usage and hardware health for a single host. Missing metrics remain no data; they are not treated as healthy.",
+    "links": [
+      {
+        "title": "Fleet overview",
+        "type": "link",
+        "url": "/d/home-fleet-overview",
+        "includeVars": false,
+        "keepTime": true
+      }
+    ],
     "panels": [
       {
         "datasource": {
@@ -45,7 +57,7 @@
         "id": 1,
         "options": {
           "colorMode": "value",
-          "graphMode": "area",
+          "graphMode": "none",
           "justifyMode": "auto",
           "orientation": "auto",
           "reduceOptions": {
@@ -124,7 +136,7 @@
         "targets": [
           {
             "editorMode": "code",
-            "expr": "sum(max by (name) (node_systemd_unit_state{host=~\"$host\",state=\"failed\"}))",
+            "expr": "sum(max by (host, name) (node_systemd_unit_state{host=~\"$host\",state=\"failed\"}))",
             "instant": true,
             "legendFormat": "Failed units",
             "range": false,
@@ -187,14 +199,14 @@
         "targets": [
           {
             "editorMode": "code",
-            "expr": "sum(smartctl_device_smart_status{host=~\"$host\"} == 0)",
+            "expr": "sum(min by (host, device) (smartctl_device_smart_status{host=~\"$host\"}) == bool 0)",
             "instant": true,
             "legendFormat": "Unhealthy disks",
             "range": false,
             "refId": "A"
           }
         ],
-        "description": "Number of disks reporting a failed SMART health status.",
+        "description": "Number of reporting disks with failed SMART health. No data means SMART metrics are unavailable, not that disks are healthy.",
         "title": "SMART Failures",
         "type": "stat"
       },
@@ -239,7 +251,7 @@
         "id": 4,
         "options": {
           "colorMode": "value",
-          "graphMode": "area",
+          "graphMode": "none",
           "justifyMode": "auto",
           "orientation": "auto",
           "reduceOptions": {
@@ -323,6 +335,7 @@
           {
             "editorMode": "code",
             "expr": "1 - avg(rate(node_cpu_seconds_total{host=~\"$host\",mode=\"idle\"}[$__rate_interval]))",
+            "interval": "1m",
             "legendFormat": "CPU",
             "range": true,
             "refId": "A"
@@ -473,7 +486,7 @@
         "targets": [
           {
             "editorMode": "code",
-            "expr": "100 * (1 - node_filesystem_avail_bytes{host=~\"$host\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{host=~\"$host\",fstype!~\"tmpfs|overlay|squashfs\"})",
+            "expr": "100 * (1 - node_filesystem_avail_bytes{host=~\"$host\",fstype!~\"tmpfs|ramfs|overlay|squashfs\"} / (node_filesystem_size_bytes{host=~\"$host\",fstype!~\"tmpfs|ramfs|overlay|squashfs\"} > 0))",
             "legendFormat": "{{mountpoint}}",
             "range": true,
             "refId": "A"
@@ -539,6 +552,7 @@
           {
             "editorMode": "code",
             "expr": "sum by (device) (rate(node_network_receive_bytes_total{host=~\"$host\",device!~\"lo|veth.*|podman.*\"}[$__rate_interval]))",
+            "interval": "1m",
             "legendFormat": "{{device}} receive",
             "range": true,
             "refId": "A"
@@ -546,12 +560,13 @@
           {
             "editorMode": "code",
             "expr": "sum by (device) (rate(node_network_transmit_bytes_total{host=~\"$host\",device!~\"lo|veth.*|podman.*\"}[$__rate_interval]))",
+            "interval": "1m",
             "legendFormat": "{{device}} transmit",
             "range": true,
             "refId": "B"
           }
         ],
-        "description": "Receive and transmit throughput by physical network interface.",
+        "description": "Receive and transmit throughput by interface, including VPNs; loopback and container veth/Podman interfaces are excluded.",
         "title": "Network Throughput",
         "type": "timeseries"
       },
@@ -611,6 +626,7 @@
           {
             "editorMode": "code",
             "expr": "sum by (device) (rate(node_disk_read_bytes_total{host=~\"$host\"}[$__rate_interval]))",
+            "interval": "1m",
             "legendFormat": "{{device}} read",
             "range": true,
             "refId": "A"
@@ -618,6 +634,7 @@
           {
             "editorMode": "code",
             "expr": "sum by (device) (rate(node_disk_written_bytes_total{host=~\"$host\"}[$__rate_interval]))",
+            "interval": "1m",
             "legendFormat": "{{device}} write",
             "range": true,
             "refId": "B"
@@ -699,6 +716,72 @@
         "description": "Hardware sensor and SMART disk temperatures.",
         "title": "Temperatures",
         "type": "timeseries"
+      },
+      {
+        "id": 11,
+        "title": "Failed Systemd Units — Details",
+        "description": "Units currently reporting a failed state. An empty table can also mean missing telemetry; check the failed-unit count above.",
+        "type": "table",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "grafanacloud-prom"
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+        "fieldConfig": { "defaults": {}, "overrides": [] },
+        "options": { "showHeader": true },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "max by (host, name) (node_systemd_unit_state{host=~\"$host\",state=\"failed\"}) == 1",
+            "format": "table",
+            "instant": true,
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": { "Time": true, "Value": true },
+              "indexByName": { "host": 0, "name": 1 },
+              "renameByName": { "host": "Host", "name": "Unit" }
+            }
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Unhealthy Disks — Details",
+        "description": "Disks currently reporting failed SMART health. An empty table can also mean missing telemetry; check the SMART failure count above.",
+        "type": "table",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "grafanacloud-prom"
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+        "fieldConfig": { "defaults": {}, "overrides": [] },
+        "options": { "showHeader": true },
+        "targets": [
+          {
+            "editorMode": "code",
+            "expr": "min by (host, device) (smartctl_device_smart_status{host=~\"$host\"}) == 0",
+            "format": "table",
+            "instant": true,
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": { "Time": true, "Value": true },
+              "indexByName": { "host": 0, "device": 1 },
+              "renameByName": { "host": "Host", "device": "Disk" }
+            }
+          }
+        ]
       }
     ],
     "refresh": "1m",
@@ -725,7 +808,7 @@
             "query": "label_values(node_uname_info, host)",
             "refId": "PrometheusVariableQueryEditor-VariableQuery"
           },
-          "refresh": 1,
+          "refresh": 2,
           "regex": "",
           "sort": 1,
           "type": "query"
