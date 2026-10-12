@@ -77,6 +77,32 @@ jobs:
           HOST: ${{ matrix.host }}
         run: nix build --no-link -L ".#nixosConfigurations.$HOST.config.system.build.toplevel"
 
+  deploy-tailnet-policy:
+    name: Deploy tailnet policy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, test, build]
+    runs-on: [self-hosted, nix-media]
+    timeout-minutes: 10
+    concurrency:
+      group: tailnet-policy
+      queue: max
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Apply validated policy
+        env:
+          TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          TAILSCALE_OAUTH_CLIENT_SECRET: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+        run: |
+          latest="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "$latest" != "$GITHUB_SHA" ]]; then
+            printf 'Skipping superseded policy deployment.\n'
+            exit 0
+          fi
+          nix develop --command just tailnet-policy-apply
+
   publish-cache:
     name: Publish cache
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
