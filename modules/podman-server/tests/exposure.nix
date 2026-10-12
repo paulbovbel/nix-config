@@ -19,9 +19,9 @@ in
         default = [];
       };
       config = {
-        _module.args = {
-          lanAddressCommand = "printf 192.0.2.1";
-          lanNetworkCommand = "printf 192.0.2.0/24";
+        podmanServer.derivedEnvFiles.lan.variables = {
+          LAN_ADDRESS = lib.mkForce "192.0.2.1";
+          LAN_NETWORK = lib.mkForce "192.0.2.0/24";
         };
         users.users.pbovbel.isNormalUser = true;
         services.tailscale.interfaceName = "tailnet-test";

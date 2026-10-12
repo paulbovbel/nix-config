@@ -1,11 +1,10 @@
 {
   config,
-  lanAddressCommand,
-  lanNetworkCommand,
   lib,
   pkgs,
   ...
 }: let
+  lan = import ../../lib/lan-commands.nix;
   cfg = config.podmanServer;
   active = cfg.containers != {};
   tailscaleNetwork = "100.64.0.0/10";
@@ -24,8 +23,8 @@ in {
       packages = [pkgs.gawk pkgs.iproute2];
       mode = "0644";
       variables = {
-        LAN_ADDRESS = "$(${lanAddressCommand})";
-        LAN_NETWORK = "$(${lanNetworkCommand})";
+        LAN_ADDRESS = "$(${lan.address})";
+        LAN_NETWORK = "$(${lan.network})";
         TAILSCALE_NETWORK = tailscaleNetwork;
       };
     };
