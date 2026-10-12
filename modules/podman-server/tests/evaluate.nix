@@ -13,7 +13,11 @@ nixpkgs.lib.nixosSystem {
     ../default.nix
     ../../upnp
     ../../storage/options.nix
-    ({lib, ...}: {
+    ({
+      config,
+      lib,
+      ...
+    }: {
       options = {
         rootFs.persistDirectories = lib.mkOption {
           type = lib.types.listOf lib.types.str;
@@ -21,9 +25,11 @@ nixpkgs.lib.nixosSystem {
         };
       };
       config = {
-        podmanServer.derivedEnvFiles.lan.variables = {
-          LAN_ADDRESS = lib.mkForce "192.0.2.1";
-          LAN_NETWORK = lib.mkForce "192.0.2.0/24";
+        podmanServer.derivedEnvFiles = lib.mkIf (config.podmanServer.containers != {}) {
+          lan.variables = {
+            LAN_ADDRESS = lib.mkForce "192.0.2.1";
+            LAN_NETWORK = lib.mkForce "192.0.2.0/24";
+          };
         };
         boot.loader.grub.enable = false;
         fileSystems."/" = {
