@@ -103,6 +103,7 @@ python-lint:
 python-test:
     PYTHONPATH=modules/documentation/scripts python3 -m unittest discover -s modules/documentation/tests -p 'test_*.py'
     PYTHONPATH=modules/accounts/scripts python3 -m unittest discover -s modules/accounts/tests -p 'test_*.py'
+    python3 -m unittest discover -s modules/game-streaming/tests -p 'test_*.py'
     PYTHONPATH=modules/auto-upgrade/scripts python3 -m unittest discover -s modules/auto-upgrade/tests -p 'test_*.py'
     python3 -m unittest discover -s modules/media-server/download/tests -p 'test_*.py'
     python3 -m unittest discover -s modules/media-server/library/tests -p 'test_*.py'

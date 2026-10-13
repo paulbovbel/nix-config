@@ -1,6 +1,6 @@
 {lib, ...}: {
   options.gameStreaming = {
-    enable = lib.mkEnableOption "Sunshine game streaming with the shared application menu";
+    enable = lib.mkEnableOption "Sunshine game streaming with the shared application menu and streaming sleep inhibition";
     encoder = lib.mkOption {
       type = lib.types.nullOr (lib.types.enum ["nvenc" "vaapi" "software"]);
       default = null;

@@ -10,7 +10,12 @@
   evaluate = extra:
     (nixpkgs.lib.nixosSystem {
       inherit (pkgs.stdenv.hostPlatform) system;
-      modules = [../../documentation/options.nix ../default.nix {nixpkgs.pkgs = streamingPkgs;} extra];
+      modules = [
+        ../../documentation/options.nix
+        ../default.nix
+        {nixpkgs.pkgs = streamingPkgs;}
+        extra
+      ];
     }).config;
   disabled = evaluate {};
   automatic = evaluate {gameStreaming.enable = true;};
@@ -27,11 +32,21 @@
     };
   };
   tests = {
+    enabledStartsStreaming = automatic.services.sunshine.enable;
+    disabledHasNoInhibitors =
+      !(disabled.systemd.user.services ? inhibit-sleep-while-sunshine)
+      && !(disabled.systemd.user.services ? inhibit-sleep-while-steam-remote-play);
+    steamHasSleepInhibitor =
+      automatic.systemd.user.services.inhibit-sleep-while-steam-remote-play.wantedBy == ["graphical-session.target"];
+    streamingHasSleepInhibitor =
+      automatic.systemd.user.services.inhibit-sleep-while-sunshine.wantedBy
+      == ["sunshine.service"]
+      && automatic.systemd.user.services.inhibit-sleep-while-sunshine.bindsTo == ["sunshine.service"];
     disabledDoesNotStartServer =
       !disabled.services.sunshine.enable
       && !(disabled.systemd.user.services ? sunshine)
       && disabled.networking.firewall.allowedTCPPorts == [];
-    automaticHasNoVendorPolicy =
+    automaticHasNoForcedEncoder =
       !(automatic.services.sunshine.settings ? encoder)
       && !(automatic.services.sunshine.settings ? nvenc_preset)
       && !(automatic.programs.gamemode.settings ? gpu);
