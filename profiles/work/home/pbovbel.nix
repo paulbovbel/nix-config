@@ -39,25 +39,47 @@ in {
     "com.slack.Slack.desktop"
   ];
 
-  home.packages = [
-    pkgs.chromium
-    # Unstable carries the NixOS spawn fix for the embedded bash tool.
-    unstablePkgs.github-copilot-cli
-  ];
+  home = {
+    packages = [
+      pkgs.chromium
+      # Unstable carries the NixOS spawn fix for the embedded bash tool.
+      unstablePkgs.github-copilot-cli
+    ];
 
-  # Use Kitty's Catppuccin palette instead of Copilot's fixed GitHub colors.
-  home.activation.copilotTheme = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    copilot_home="''${COPILOT_HOME:-$HOME/.copilot}"
-    mkdir -p "$copilot_home"
-    settings="$copilot_home/settings.json"
-    temporary=$(mktemp "$copilot_home/settings.json.XXXXXX")
-    if [ -f "$settings" ]; then
-      ${lib.getExe pkgs.jq} '.theme = "default"' "$settings" > "$temporary"
-    else
-      ${lib.getExe pkgs.jq} -n '{theme: "default"}' > "$temporary"
-    fi
-    mv "$temporary" "$settings"
-  '';
+    # Use Kitty's Catppuccin palette instead of Copilot's fixed GitHub colors.
+    activation.copilotTheme = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      copilot_home="''${COPILOT_HOME:-$HOME/.copilot}"
+      mkdir -p "$copilot_home"
+      settings="$copilot_home/settings.json"
+      temporary=$(mktemp "$copilot_home/settings.json.XXXXXX")
+      if [ -f "$settings" ]; then
+        ${lib.getExe pkgs.jq} '.theme = "default"' "$settings" > "$temporary"
+      else
+        ${lib.getExe pkgs.jq} -n '{theme: "default"}' > "$temporary"
+      fi
+      mv "$temporary" "$settings"
+    '';
+
+    activation.copilotMcp = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      copilot_home="''${COPILOT_HOME:-$HOME/.copilot}"
+      mkdir -p "$copilot_home"
+      settings="$copilot_home/mcp-config.json"
+      temporary=$(mktemp "$copilot_home/mcp-config.json.XXXXXX")
+      if [ -f "$settings" ]; then
+        cat "$settings"
+      else
+        printf '{}\n'
+      fi | ${lib.getExe pkgs.jq} \
+        --argjson server ${lib.escapeShellArg (builtins.toJSON {
+        type = "http";
+        url = "https://mcp.atlassian.com/v1/mcp";
+        headers = {};
+        tools = ["*"];
+      })} \
+        '.mcpServers["com.atlassian/atlassian-mcp-server"] = $server' > "$temporary"
+      mv "$temporary" "$settings"
+    '';
+  };
 
   programs.kitty.keybindings = {
     "ctrl+shift+e" = lib.mkForce (kittyDistroboxSplitBinding "vsplit");
