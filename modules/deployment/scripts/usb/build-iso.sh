@@ -1,35 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-if (($# < 2)); then
-  printf 'Usage: %s <host> <reuse|new> [nix build options...]\n' "$0" >&2
+if (($# < 1)); then
+  printf 'Usage: %s <host> [--state ARCHIVE.age] [nix build options...]\n' "$0" >&2
   exit 2
 fi
 host="$1"
-key_mode="$2"
-shift 2
+shift
+# shellcheck source=modules/deployment/scripts/source.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../source.sh"
 payload="$repo/secrets/installer/$host-host.agekey.age"
 unlock_payload="$repo/secrets/installer/$host-installer.agekey.age"
-installer_recipient_path="$repo/secrets/installer/$host-installer-recipient"
-
-case "$key_mode" in
-reuse | new) ;;
-*)
-  printf 'Key mode must be reuse or new, got: %s\n' "$key_mode" >&2
-  exit 2
-  ;;
-esac
-
-NIX_CONFIG_BRANCH="$(git -C "$repo" branch --show-current)"
-NIX_CONFIG_REVISION="$(git -C "$repo" rev-parse HEAD)"
-if [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
-  NIX_CONFIG_REVISION+="-dirty"
-  printf 'Warning: building from a dirty working tree; automatic upgrades will be disabled until a clean configuration is activated.\n' >&2
-fi
-export NIX_CONFIG_BRANCH NIX_CONFIG_REVISION
-if [[ -z "$NIX_CONFIG_BRANCH" ]]; then
-  printf 'Cannot build an installer from a detached HEAD.\n' >&2
+if [[ ! -f "$payload" || ! -f "$unlock_payload" ]]; then
+  printf 'Prepare the identity first: just installer-key %s reuse|new\n' "$host" >&2
   exit 1
 fi
 
@@ -39,6 +22,23 @@ export NIXOS_INSTALLER_KEY_PAYLOAD="$payload"
 export NIXOS_INSTALLER_UNLOCK_PAYLOAD="$unlock_payload"
 export NIXOS_INSTALLER_FIRMWARE=""
 export NIXOS_INSTALLER_STATE_BACKUP=""
+build_options=()
+while (($#)); do
+  case "$1" in
+  --state)
+    if (($# < 2)) || [[ ! -f "$2" ]]; then
+      printf '%s requires an existing encrypted archive\n' "$1" >&2
+      exit 2
+    fi
+    NIXOS_INSTALLER_STATE_BACKUP="$(realpath "$2")"
+    shift 2
+    ;;
+  *)
+    build_options+=("$1")
+    shift
+    ;;
+  esac
+done
 
 temporary_directory="$(mktemp -d --tmpdir "${host}-installer.XXXXXXXX")"
 cleanup_temporary_directory() {
@@ -55,35 +55,9 @@ if [[ "$installer_kind" == apple-silicon ]]; then
   export NIXOS_INSTALLER_FIRMWARE="$firmware_directory"
 fi
 
-"$repo/modules/deployment/scripts/usb/prepare-key.py" "$host" "$key_mode"
-installer_recipient="$(<"$installer_recipient_path")"
-
-if [[ "$host" == "$(hostname)" ]]; then
-  printf 'Embed encrypted home and persisted system state from this host? [y/N] '
-  backup_state=""
-  if read -r backup_state && [[ "$backup_state" == y || "$backup_state" == Y ]]; then
-    printf 'Close other graphical applications before archiving? [y/N] '
-    close_apps=""
-    if read -r close_apps && [[ "$close_apps" == y || "$close_apps" == Y ]]; then
-      "$repo/modules/deployment/scripts/usb/close-graphical-apps.sh"
-    fi
-    mapfile -t home_users < <(
-      nix eval --impure --raw \
-        "$NIXOS_INSTALLER_FLAKE#nixosConfigurations.$host.config.rootFs.homeUsers" \
-        --apply 'builtins.concatStringsSep "\n"'
-    )
-    state_backup="$temporary_directory/state.tar.zst.age"
-    "$repo/modules/deployment/scripts/usb/prepare-state.sh" \
-      "$state_backup" \
-      "$installer_recipient" \
-      "${home_users[@]}"
-    export NIXOS_INSTALLER_STATE_BACKUP="$state_backup"
-  fi
-fi
-
 # The Nix expression intentionally reads values from the exported environment.
 # shellcheck disable=SC2016
-nix build --impure --out-link "$repo/result" --expr '
+nix build --impure --out-link "$repo/result-installer-$host" --expr '
   let
     flake = builtins.getFlake (builtins.getEnv "NIXOS_INSTALLER_FLAKE");
     hostName = builtins.getEnv "NIXOS_INSTALLER_HOST";
@@ -113,13 +87,7 @@ nix build --impure --out-link "$repo/result" --expr '
       };
   in
     (flake.lib.mkInstaller { inherit firmwareDirectory hostName keyPayload stateBackup unlockPayload; }).config.system.build.isoImage
-' "$@"
+' "${build_options[@]}"
 
 printf 'Installer image:\n'
-printf '  %s\n' "$repo"/result/iso/*.iso
-
-printf '\nWrite this image to a USB disk now? [y/N] '
-write_usb=""
-if read -r write_usb && [[ "$write_usb" == y || "$write_usb" == Y ]]; then
-  "$repo/modules/deployment/scripts/usb/write-usb.sh" "$repo"/result/iso/*.iso
-fi
+printf '  %s\n' "$repo"/result-installer-"$host"/iso/*.iso

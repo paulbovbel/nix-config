@@ -38,7 +38,7 @@ ISO creation has two host-key modes.
 Use `reuse` when creating an installer for the machine running the build:
 
 ```bash
-just installer-iso becmac-pro reuse -L
+just installer-key becmac-pro reuse
 ```
 
 The selected host must match `hostname`. The script verifies the public recipient of `/persist/etc/agenix/host.agekey`, encrypts the key for the installer, and builds the ISO. It does not change recipients or rekey secrets.
@@ -48,12 +48,12 @@ The selected host must match `hostname`. The script verifies the public recipien
 Use `new` when the selected host is unavailable or should receive a replacement identity:
 
 ```bash
-just installer-iso white-tower new -L
+just installer-key white-tower new
 ```
 
-After confirmation with `ROTATE <host>`, the script generates a new host key, updates `ageRecipient`, rekeys affected secrets with `agenix -r`, and builds the ISO. Temporary unencrypted keys are removed after the build.
+After confirmation with `ROTATE <host>`, the script generates a new host key, updates `ageRecipient`, and rekeys affected secrets with `agenix -r`. Temporary unencrypted keys are removed after preparation.
 
-Review and commit the recipient, encrypted installer identity, and rekeyed secrets before erasing the target:
+Review and commit the host recipient and rekeyed secrets before erasing the target. Encrypted installer payloads stay in the ignored `secrets/installer/` directory:
 
 ```bash
 git diff -- hosts/<host>/default.nix secrets
@@ -62,11 +62,24 @@ git status --short
 
 Do not deploy the rekeyed configuration to the old installation because its old identity no longer matches the new recipient.
 
-Both modes prompt for a passphrase to unlock the encrypted installer payloads. The ISO is built under `result/iso/`; the script then offers to write a connected USB disk. Private keys are never copied into the Nix store in plaintext.
+Both modes prompt for a passphrase to unlock the encrypted installer payloads. After reviewing and committing preparation changes, build the ISO:
+
+```bash
+just installer-iso white-tower -L
+```
+
+The ISO is built under `result-installer-<host>/iso/`. Build retries reuse the prepared payloads without rotating keys or changing the passphrase. Private keys are never copied into the Nix store in plaintext.
 
 ### Migrate Application And System State
 
-For the current host, the build can include encrypted homes and selected `/persist` paths. It can stop graphical application scopes before capture, but not the build terminal, session services, or system services. The build fails if files change while `tar` reads them.
+For the current host, capture encrypted homes and selected `/persist` paths explicitly, then pass the archive to the build:
+
+```bash
+just installer-state white-tower /tmp/white-tower-state.tar.zst.age --close-apps
+just installer-iso white-tower --state /tmp/white-tower-state.tar.zst.age -L
+```
+
+Omit `--close-apps` to leave applications running. It stops graphical application scopes, but not the build terminal, session services, or system services. Capture fails if files change while `tar` reads them. Recreate the archive if you prepare a different installer identity.
 
 The archive preserves ownership, permissions, ACLs, extended attributes, and sparse files. It excludes personal XDG directories, `.cache`, Trash, and Flatpak caches; other application state remains included.
 
@@ -87,7 +100,7 @@ Upgrades require access to GitHub and configured binary caches.
 To select from connected whole USB disks interactively:
 
 ```bash
-just installer-write result/iso/nixos-<host>-offline-installer-*.iso
+just installer-write result-installer-<host>/iso/nixos-<host>-offline-installer-*.iso
 ```
 
 Alternatively, locate the whole USB device by its stable ID and provide it explicitly:
@@ -100,7 +113,7 @@ Write the installer image:
 
 ```bash
 just installer-write \
-  result/iso/nixos-<host>-offline-installer-*.iso \
+  result-installer-<host>/iso/nixos-<host>-offline-installer-*.iso \
   /dev/disk/by-id/usb-<device>
 ```
 

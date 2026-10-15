@@ -47,15 +47,25 @@ boot host=`hostname` *args:
 switch host=`hostname` *args:
     modules/deployment/scripts/remote/activate.sh switch "$@"
 
-# Build an offline installer ISO with a reused or new host identity.
+# Prepare an encrypted installer identity, optionally rotating the host key.
 [group('deployment')]
-installer-iso host key_mode *args:
-    modules/deployment/scripts/usb/build-iso.sh "{{ host }}" "{{ key_mode }}" {{ args }}
+installer-key host key_mode:
+    modules/deployment/scripts/usb/prepare-key.py "$@"
+
+# Capture encrypted state for an installer; optionally close graphical apps.
+[group('deployment')]
+installer-state host output *args:
+    bash modules/deployment/scripts/usb/capture-state.sh "$@"
+
+# Build an offline ISO from prepared identity payloads; optionally --state ARCHIVE.age.
+[group('deployment')]
+installer-iso host *args:
+    modules/deployment/scripts/usb/build-iso.sh "$@"
 
 # Interactively select or explicitly provide a USB drive to write.
 [group('deployment')]
 installer-write image device="":
-    modules/deployment/scripts/usb/write-usb.sh "{{ image }}" "{{ device }}"
+    modules/deployment/scripts/usb/write-usb.sh "$@"
 
 # Generate the Tailscale policy JSON file.
 [group('tailscale')]
