@@ -89,13 +89,45 @@ class DeploymentCommands(unittest.TestCase):
             "remote/activate.sh", "build-plan", "test", TEST_DIRTY="1"
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        (call,) = self.commands("nix")
+        (call,) = [call for call in self.commands("nix") if call["args"][0] == "build"]
         self.assertIn("--dry-run", call["args"])
         self.assertIn(str(self.root / "result-test"), call["args"])
         self.assertEqual(call["revision"], "abc123-dirty")
 
     def test_detached_head_stops_before_nix(self):
         result = self.run_script("remote/activate.sh", "switch", "test", TEST_BRANCH="")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.commands("nix"), [])
+
+    def test_iso_build_reuses_payloads_and_records_current_source(self):
+        archive = self.root / "state with spaces.age"
+        archive.write_text("encrypted archive")
+        payload = self.root / "secrets/installer/test-host.agekey.age"
+        for _ in range(2):
+            result = self.run_script(
+                "usb/build-iso.sh",
+                "test",
+                "--state",
+                str(archive),
+                "--option",
+                "name",
+                "two words",
+                TEST_DIRTY="1",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+        builds = [call for call in self.commands("nix") if call["args"][0] == "build"]
+        self.assertEqual(len(builds), 2)
+        for call in builds:
+            self.assertIn(str(self.root / "result-installer-test"), call["args"])
+            self.assertEqual(call["revision"], "abc123-dirty")
+            self.assertEqual(call["args"][-3:], ["--option", "name", "two words"])
+        self.assertEqual(payload.read_text(), "encrypted fixture")
+        self.assertEqual(self.commands("age"), [])
+        self.assertEqual(self.commands("age-keygen"), [])
+
+    def test_missing_payload_stops_iso_before_build(self):
+        (self.root / "secrets/installer/test-host.agekey.age").unlink()
+        result = self.run_script("usb/build-iso.sh", "test")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.commands("nix"), [])
 

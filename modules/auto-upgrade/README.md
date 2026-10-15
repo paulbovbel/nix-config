@@ -4,7 +4,7 @@ The automatic upgrade module builds and activates guarded NixOS updates from the
 
 ## Requirements
 
-The configured repository must be reachable with the agenix-managed `nix-config-auto-upgrade-key`. Email reporting requires `programs.msmtp.enable = true`, and deployments must record their source branch through `NIX_CONFIG_BRANCH`; the `just switch` and `just boot` recipes do this automatically.
+The configured repository must be reachable with the agenix-managed `nix-config-auto-upgrade-key`. Email reporting requires `programs.msmtp.enable = true`. Repository deployment commands record the source branch and revision through `NIX_CONFIG_BRANCH` and `NIX_CONFIG_REVISION`, including remote and USB installation. Build planning uses the same metadata as activation.
 
 ## Minimal Configuration
 

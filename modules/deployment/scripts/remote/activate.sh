@@ -30,8 +30,17 @@ while (($#)); do
     ;;
   esac
 done
+installer="$(nix eval --impure --raw "$repo#lib.hosts.$host.installer")"
+if [[ "$installer" == apple-silicon && ! -d /boot/vendorfw ]]; then
+  printf "Apple Silicon evaluation requires this host's /boot/vendorfw on the controller; deploy from that host or stage its vendor firmware first.\n" >&2
+  exit 1
+fi
 case "$action" in
 build | build-plan)
+  if [[ -n "$target" || -n "$builder" ]]; then
+    printf '%s builds on the controller; target and builder overrides apply to activation commands.\n' "$action" >&2
+    exit 2
+  fi
   build_options=(--out-link "$repo/result-$host" -L)
   if [[ "$action" == build-plan ]]; then build_options+=(--dry-run); fi
   exec nix build --impure "$repo#nixosConfigurations.$host.config.system.build.toplevel" "${build_options[@]}" "${options[@]}"

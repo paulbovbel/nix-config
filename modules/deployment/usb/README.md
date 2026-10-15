@@ -28,7 +28,7 @@ Enter the development shell and list available hosts:
 
 ```bash
 nix develop
-nix eval --json .#lib.hostNames
+just hosts
 ```
 
 ISO creation has two host-key modes.
@@ -41,7 +41,7 @@ Use `reuse` when creating an installer for the machine running the build:
 just installer-key becmac-pro reuse
 ```
 
-The selected host must match `hostname`. The script verifies the public recipient of `/persist/etc/agenix/host.agekey`, encrypts the key for the installer, and builds the ISO. It does not change recipients or rekey secrets.
+The selected host must match `hostname`. The script verifies the public recipient of `/persist/etc/agenix/host.agekey` and encrypts the key for the installer. It does not change recipients or rekey secrets.
 
 ### Create A New Key
 

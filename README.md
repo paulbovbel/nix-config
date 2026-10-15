@@ -10,11 +10,51 @@ Enter the development shell before running repository commands:
 nix develop
 just check
 just docs
-just dry-run <host>
+just hosts
+just build-plan <host>
 just switch <host>
 ```
 
 `just switch` activates locally or through SSH, depending on the host. Browse the [module reference](https://paulbovbel.github.io/nix-config/) online, or run `just docs-serve` and open http://127.0.0.1:8000/.
+
+## Deployment Commands
+
+| Command | Purpose |
+| --- | --- |
+| `just hosts` | List registered hosts |
+| `just build [host]` | Build without activation; output at `result-<host>` |
+| `just build-plan [host]` | Preview downloads and builds; `dry-run` is an alias |
+| `just dry-activate [host]` | Build and preview activation changes |
+| `just switch [host]` | Activate immediately |
+| `just boot [host]` | Activate on next boot |
+| `just installer-key <host> reuse\|new` | Prepare encrypted identity payloads |
+| `just installer-state <host> <archive> [--close-apps]` | Capture encrypted migration state |
+| `just installer-iso <host> [--state <archive>]` | Build from prepared payloads at `result-installer-<host>` |
+| `just installer-write <image> [device]` | Write an ISO to USB |
+| `just install <host> root@<address>` | Install remotely using the prepared identity |
+
+Build and activation commands default to the current hostname. Activation uses
+the target host as its builder for SSH deployments. Override the destination and
+builder independently:
+
+```bash
+just switch media --target pbovbel@192.168.1.10
+just switch media --build-host localhost
+just boot media --build-host another-builder
+```
+
+`localhost` builds on the controller; another builder must support the target
+architecture. There is no blanket restriction on remote aarch64 activation.
+Apple Silicon installation uses the USB path to preserve its existing partitions
+and stage vendor firmware. Evaluation for Apple Silicon activation also requires
+the host's `/boot/vendorfw` on the controller; the wrapper checks for it explicitly.
+
+Build planning and activation use the same checkout branch and revision metadata.
+Deploy from an attached branch. Dirty checkouts disable automatic upgrades until
+a clean configuration is activated. Prepare identities and review/commit recipient
+and secret changes before building installation media or installing remotely.
+The build and activation recipes forward additional Nix/rebuild arguments while
+preserving shell argument boundaries.
 
 ## Fleet
 
@@ -46,6 +86,9 @@ Hosts use pinned release nixpkgs by default, Home Manager for user environments,
 ## Development
 
 - `just check`: formatting, linting, and Python unit tests.
+- `just fmt`: format Just, Nix, Python, and shell sources.
+- `just host-eval`: evaluate the fleet without building host closures or VM tests.
+- `just nix-check <name>`: build one flake check for the current architecture.
 - `just nix-test`: host evaluation, module contracts, documentation checks, and NixOS VM tests.
 
 CI runs both and builds hosts marked `ciBuild`. Successful `main` runs publish documentation and host closures. See the [runner runbook](modules/github-runner/README.md) for CI access and branch protection.

@@ -5,6 +5,19 @@ set positional-arguments
 default:
     @just --list
 
+# List registered deployment hosts.
+[group('deployment')]
+hosts:
+    @nix eval --json .#lib.hostNames | jq -r '.[]'
+
+# Format repository sources.
+[group('checks')]
+fmt:
+    just --fmt
+    alejandra .
+    ruff format .
+    fd -e sh -X shfmt -i 2 -w
+
 # Run routine repository checks in parallel.
 [group('checks')]
 [parallel]
@@ -110,10 +123,18 @@ nix-lint:
 nix-test:
     nix build --no-link --keep-going -L .#ci-checks
 
+# Build one flake check for this machine's architecture.
+[group('checks')]
+nix-check name *args:
+    system="$(nix eval --impure --raw --expr builtins.currentSystem)"; nix build --no-link -L ".#checks.$system.$1" "${@:2}"
+
+# Evaluate every registered host without building system closures or VM tests.
+[group('checks')]
+host-eval: (nix-check "host-evaluations")
+
 # Test Authentik provisioning, dashboard, and reconciliation in a minimal NixOS VM.
 [group('checks')]
-authentik-test:
-    nix build --no-link -L .#checks.x86_64-linux.authentik-blueprint
+authentik-test: (nix-check "authentik-blueprint")
 
 # Lint and format-check Python files.
 [group('checks')]
