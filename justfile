@@ -47,6 +47,11 @@ boot host=`hostname` *args:
 switch host=`hostname` *args:
     modules/deployment/scripts/remote/activate.sh switch "$@"
 
+# Install a host remotely using its prepared encrypted identity (destructive).
+[group('deployment')]
+install host target:
+    bash modules/deployment/scripts/remote/install.sh "$@"
+
 # Prepare an encrypted installer identity, optionally rotating the host key.
 [group('deployment')]
 installer-key host key_mode:
@@ -119,6 +124,7 @@ python-lint:
 # Run Python unit tests.
 [group('checks')]
 python-test:
+    python3 -m unittest discover -s modules/deployment/tests -p 'test_*.py'
     PYTHONPATH=modules/documentation/scripts python3 -m unittest discover -s modules/documentation/tests -p 'test_*.py'
     PYTHONPATH=modules/accounts/scripts python3 -m unittest discover -s modules/accounts/tests -p 'test_*.py'
     python3 -m unittest discover -s modules/game-streaming/tests -p 'test_*.py'

@@ -18,7 +18,10 @@ def main() -> None:
         description="Prepare the selected host identity for an offline installer."
     )
     parser.add_argument("host")
-    parser.add_argument("mode", choices=("reuse", "new"))
+    parser.add_argument("mode", choices=("reuse", "new", "extract"))
+    parser.add_argument(
+        "--output", type=Path, help="Destination identity for extract mode"
+    )
     args = parser.parse_args()
 
     if args.mode == "reuse" and args.host != socket.gethostname():
@@ -45,6 +48,39 @@ def main() -> None:
         encrypted_payload = Path(tmp) / "host.agekey.age"
         installer_identity = Path(tmp) / "installer.agekey"
         encrypted_installer_identity = Path(tmp) / "installer.agekey.age"
+
+        if args.mode == "extract":
+            if args.output is None:
+                parser.error("extract requires --output")
+            run(
+                "age",
+                "--decrypt",
+                "--output",
+                str(installer_identity),
+                str(unlock_path),
+            )
+            run(
+                "age",
+                "--decrypt",
+                "--identity",
+                str(installer_identity),
+                "--output",
+                str(identity),
+                str(payload_path),
+            )
+            recipient = subprocess.run(
+                ["age-keygen", "-y", str(identity)],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            if recipient != expected_recipient:
+                raise SystemExit("installer identity does not match the host recipient")
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            with args.output.open("xb") as output:
+                args.output.chmod(0o600)
+                output.write(identity.read_bytes())
+            return
 
         if args.mode == "new":
             confirmation = input(

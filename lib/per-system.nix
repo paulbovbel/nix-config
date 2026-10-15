@@ -62,6 +62,7 @@ in {
   devShells.default = pkgs.mkShell {
     packages = with pkgs; [
       actionlint
+      age
       agenix.packages.${system}.default
       curl
       jq
@@ -70,6 +71,9 @@ in {
       fd
       gcx
       just
+      nixos-anywhere
+      nixos-rebuild
+      openssh
       prometheus.cli
       (python3.withPackages (ps: [ps.tenacity]))
       ruff
