@@ -1,4 +1,5 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set positional-arguments
 
 # List available recipes.
 default:
@@ -11,13 +12,20 @@ check: just-lint nix-lint python-lint python-test shell-lint workflows-lint dash
 
 # Build a host configuration.
 [group('deployment')]
-build host=`hostname`:
-    nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel"
+build host=`hostname` *args:
+    modules/deployment/scripts/remote/activate.sh build "$@"
 
 # Show what building a host configuration would download or build.
 [group('deployment')]
-dry-run host=`hostname`:
-    nix build ".#nixosConfigurations.{{ host }}.config.system.build.toplevel" --dry-run
+build-plan host=`hostname` *args:
+    modules/deployment/scripts/remote/activate.sh build-plan "$@"
+
+alias dry-run := build-plan
+
+# Build and preview activation changes.
+[group('deployment')]
+dry-activate host=`hostname` *args:
+    modules/deployment/scripts/remote/activate.sh dry-activate "$@"
 
 # Build generated module documentation.
 [group('documentation')]
@@ -31,13 +39,13 @@ docs-serve port="8000":
 
 # Activate a host configuration on the next boot.
 [group('deployment')]
-boot host=`hostname`:
-    modules/deployment/scripts/remote/activate.sh boot "{{ host }}"
+boot host=`hostname` *args:
+    modules/deployment/scripts/remote/activate.sh boot "$@"
 
 # Build and activate a host configuration immediately.
 [group('deployment')]
-switch host=`hostname`:
-    modules/deployment/scripts/remote/activate.sh switch "{{ host }}"
+switch host=`hostname` *args:
+    modules/deployment/scripts/remote/activate.sh switch "$@"
 
 # Build an offline installer ISO with a reused or new host identity.
 [group('deployment')]
