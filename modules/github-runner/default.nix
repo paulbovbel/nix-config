@@ -1,11 +1,9 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }: let
   cfg = config.githubRunner;
-  runnerPath = config.storage.datasets.app.children.github-runner.path;
   githubKnownHost.publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 in {
   imports = [./options.nix];
@@ -15,17 +13,10 @@ in {
       moduleDocumentation.github-runner = {
         title = "GitHub Runner";
         category = "Infrastructure";
-        summary = "Containerized self-hosted GitHub Actions runner.";
+        summary = "Disposable per-job self-hosted GitHub Actions runner.";
       };
     }
     (lib.mkIf cfg.enable {
-      assertions = [
-        {
-          assertion = config.storage.enable;
-          message = "githubRunner.enable requires storage.enable for persistent runner state.";
-        }
-      ];
-
       age.secrets = {
         github-runner-token.file = ../../secrets/server/github-runner-token.age;
         github-runner-ssh-key = {
@@ -38,8 +29,6 @@ in {
 
       programs.ssh.knownHosts."github.com" = githubKnownHost;
 
-      storage.datasets.app.children.github-runner = {};
-
       users.groups.github-runner.gid = 989;
       users.users.github-runner = {
         isSystemUser = true;
@@ -47,9 +36,11 @@ in {
         group = "github-runner";
       };
 
-      systemd.services."container@github-runner".serviceConfig.ExecStartPost = lib.mkAfter [
-        "${pkgs.systemd}/bin/systemctl --machine=github-runner is-active --quiet github-runner-nix-config.service"
-      ];
+      # Runner exit powers off the guest; the host replaces the entire job environment.
+      systemd.services."container@github-runner".serviceConfig = {
+        Restart = lib.mkForce "always";
+        RestartSec = "1s";
+      };
 
       containers.github-runner = {
         autoStart = true;
@@ -62,10 +53,6 @@ in {
           "/run/agenix/github-runner-ssh-key" = {
             hostPath = config.age.secrets.github-runner-ssh-key.path;
             isReadOnly = true;
-          };
-          "/var/lib/github-runner" = {
-            hostPath = runnerPath;
-            isReadOnly = false;
           };
         };
         config = {pkgs, ...}: {
@@ -94,6 +81,7 @@ in {
 
           services.github-runners.nix-config = {
             enable = true;
+            ephemeral = true;
             inherit (cfg) extraLabels url;
             name =
               if cfg.name == null
@@ -101,6 +89,7 @@ in {
               else cfg.name;
             replace = true;
             tokenFile = "/run/secrets/github-runner-token";
+            tokenType = "access";
             extraPackages = [pkgs.openssh];
             workDir = "/var/lib/github-runner/work";
             extraEnvironment.GIT_SSH_COMMAND = "${pkgs.openssh}/bin/ssh -i /run/agenix/github-runner-ssh-key -o IdentitiesOnly=yes";
@@ -108,7 +97,16 @@ in {
             group = "github-runner";
             serviceOverrides = {
               ReadWritePaths = ["/var/lib/github-runner/work"];
+              # Never register a second runner inside a used container, including
+              # after retryable listener failures (exit code 2).
+              Restart = lib.mkForce "no";
+              RestartForceExitStatus = lib.mkForce [];
             };
+          };
+
+          systemd.services.github-runner-nix-config = {
+            onSuccess = ["poweroff.target"];
+            onFailure = ["poweroff.target"];
           };
 
           systemd.tmpfiles.rules = [

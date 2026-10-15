@@ -42,6 +42,7 @@
       podman-server-exposure = import ../modules/podman-server/tests/exposure.nix {inherit pkgs quadlet-nix agenix;};
       game-streaming-contracts = import ../modules/game-streaming/tests/contracts.nix {inherit pkgs nixpkgs;};
       authentik-blueprint = import ../modules/authentik/tests/blueprint.nix {inherit pkgs quadlet-nix;};
+      github-runner-disposable = import ../modules/github-runner/tests/disposable.nix {inherit pkgs;};
       # TODO: Add end-to-end Btrfs and ZFS USB installer state-migration tests.
       root-fs-btrfs-impermanence = rootFsImpermanenceTest "btrfs";
       root-fs-zfs-impermanence = rootFsImpermanenceTest "zfs";
