@@ -91,6 +91,13 @@ in {
     bash = {
       enable = true;
       initExtra = ''
+        if github_token="$(${pkgs.gh}/bin/gh auth token --hostname github.com)"; then
+          export NIX_CONFIG="''${NIX_CONFIG:+$NIX_CONFIG$'\n'}access-tokens = github.com=$github_token"
+        else
+          printf '%s\n' 'Nix GitHub authentication unavailable; run gh auth login --hostname github.com.' >&2
+        fi
+        unset github_token
+
         if [ -d "$HOME/.bashrc.d" ]; then
           for bashrc_fragment in "$HOME"/.bashrc.d/*; do
             if [ -f "$bashrc_fragment" ] && [ -r "$bashrc_fragment" ]; then
