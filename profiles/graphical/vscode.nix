@@ -1,4 +1,6 @@
 {
+  lib,
+  options,
   pkgs,
   vscode-workspace-populator,
   ...
@@ -56,6 +58,15 @@
       workspacePopulatorExtension
     ];
 in {
+  # Catppuccin still requests the insecure pnpm_10 compatibility variant.
+  catppuccin.sources.vscode = options.catppuccin.sources.default.vscode.override {
+    # Translate Catppuccin's deprecated nodejs override to nodejs-slim.
+    pnpm_10 = lib.makeOverridable ({nodejs}:
+      pkgs.pnpm_10_latest.override {nodejs-slim = nodejs;}) {
+      nodejs = pkgs.nodejs_24;
+    };
+  };
+
   programs.vscode = {
     enable = true;
     package = pkgs.vscode;

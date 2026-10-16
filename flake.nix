@@ -21,7 +21,6 @@
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
     };
     nix-vscode-extensions = {
       url = "github:nix-community/nix-vscode-extensions";
