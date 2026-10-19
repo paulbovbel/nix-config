@@ -29,8 +29,8 @@ Give the service account Edit access to the Monitoring folder, export its token
 as `GRAFANA_TOKEN`, then run:
 
 ```bash
-just dashboards-check
-just dashboards-apply
+just monitor check
+just monitor apply
 ```
 
 CI deploys after successful validation and host builds on `main`, using the

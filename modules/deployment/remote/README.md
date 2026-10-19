@@ -1,11 +1,30 @@
 # Remote Deployment
 
-Install a clean NixOS host over SSH using the development shell's pinned
-`nixos-anywhere` and the repository's Disko configuration. For offline installation
-and Apple Silicon partition reuse, see [USB Deployment](../usb/README.md).
+Build and activate existing hosts locally or over SSH, or install a clean NixOS
+host remotely. For offline installation and Apple Silicon partition reuse, see
+[USB Deployment](../usb/README.md).
 
-Installation repartitions the target disk. Review the host's stable disk ID and
-back up required data before installing.
+## Deploy an Existing Host
+
+Enter `nix develop`, then use `just deploy switch [host]` to build and activate
+immediately, or `just deploy boot [host]` to activate on the next boot.
+
+The host defaults to the current hostname. Activation runs locally for that host
+and over SSH otherwise, using the target as its builder by default:
+
+```bash
+just deploy switch media --target pbovbel@192.168.1.10
+just deploy switch media --build-host localhost
+just deploy boot media --build-host another-builder
+```
+
+`localhost` builds on the controller; other builders must support the target
+architecture. Additional Nix/rebuild arguments are forwarded with their argument
+boundaries preserved. Apple Silicon evaluation requires `/boot/vendorfw` on the
+controller; installation uses the [USB path](../usb/README.md).
+
+Deploy from an attached branch. Dirty checkouts disable automatic upgrades until
+a clean configuration is activated.
 
 ## Define the Host
 
@@ -27,7 +46,7 @@ On the controller:
 
 ```bash
 nix develop
-just hosts
+just deploy hosts
 ssh root@<target-address> true
 ```
 
@@ -59,10 +78,9 @@ with its agenix-managed key.
 Both remote and USB installation consume the same encrypted identity payloads:
 
 ```bash
-just installer-key <host> new
+just installer key <host> new
 git diff -- hosts/<host>/default.nix secrets
 just check
-just build-plan <host>
 ```
 
 `new` requires `ROTATE <host>`, updates the public recipient, and rekeys affected
@@ -73,8 +91,12 @@ Do not deploy a rotated recipient to an old installation that still uses the old
 
 ## Install
 
+Remote installation uses the development shell's pinned `nixos-anywhere` and the
+repository's Disko configuration. It repartitions the target disk: review the
+host's stable disk ID and back up required data before installing.
+
 ```bash
-just install <host> root@<target-address>
+just installer install <host> root@<target-address>
 ```
 
 The command checks SSH access, decrypts and validates the prepared identity,
@@ -93,12 +115,11 @@ After reboot, use the installed account's SSH access:
 
 ```bash
 ssh <host> 'nixos-version --configuration-revision; systemctl --failed'
-just build-plan <host>
-just switch <host>
+just deploy switch <host>
 ```
 
 Confirm `/persist/etc/agenix/host.agekey` exists and declared filesystems or datasets
-are mounted. If needed, use `just switch <host> --target <user>@<address>`.
+are mounted. If needed, use `just deploy switch <host> --target <user>@<address>`.
 
 ## Enroll TPM2
 

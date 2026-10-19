@@ -28,7 +28,7 @@ Enter the development shell and list available hosts:
 
 ```bash
 nix develop
-just hosts
+just deploy hosts
 ```
 
 ISO creation has two host-key modes.
@@ -38,7 +38,7 @@ ISO creation has two host-key modes.
 Use `reuse` when creating an installer for the machine running the build:
 
 ```bash
-just installer-key becmac-pro reuse
+just installer key becmac-pro reuse
 ```
 
 The selected host must match `hostname`. The script verifies the public recipient of `/persist/etc/agenix/host.agekey` and encrypts the key for the installer. It does not change recipients or rekey secrets.
@@ -48,7 +48,7 @@ The selected host must match `hostname`. The script verifies the public recipien
 Use `new` when the selected host is unavailable or should receive a replacement identity:
 
 ```bash
-just installer-key white-tower new
+just installer key white-tower new
 ```
 
 After confirmation with `ROTATE <host>`, the script generates a new host key, updates `ageRecipient`, and rekeys affected secrets with `agenix -r`. Temporary unencrypted keys are removed after preparation.
@@ -65,7 +65,7 @@ Do not deploy the rekeyed configuration to the old installation because its old 
 Both modes prompt for a passphrase to unlock the encrypted installer payloads. After reviewing and committing preparation changes, build the ISO:
 
 ```bash
-just installer-iso white-tower -L
+just installer iso white-tower -L
 ```
 
 The ISO is built under `result-installer-<host>/iso/`. Build retries reuse the prepared payloads without rotating keys or changing the passphrase. Private keys are never copied into the Nix store in plaintext.
@@ -75,8 +75,8 @@ The ISO is built under `result-installer-<host>/iso/`. Build retries reuse the p
 For the current host, capture encrypted homes and selected `/persist` paths explicitly, then pass the archive to the build:
 
 ```bash
-just installer-state white-tower /tmp/white-tower-state.tar.zst.age --close-apps
-just installer-iso white-tower --state /tmp/white-tower-state.tar.zst.age -L
+just installer state white-tower /tmp/white-tower-state.tar.zst.age --close-apps
+just installer iso white-tower --state /tmp/white-tower-state.tar.zst.age -L
 ```
 
 Omit `--close-apps` to leave applications running. It stops graphical application scopes, but not the build terminal, session services, or system services. Capture fails if files change while `tar` reads them. Recreate the archive if you prepare a different installer identity.
@@ -100,7 +100,7 @@ Upgrades require access to GitHub and configured binary caches.
 To select from connected whole USB disks interactively:
 
 ```bash
-just installer-write result-installer-<host>/iso/nixos-<host>-offline-installer-*.iso
+just installer write result-installer-<host>/iso/nixos-<host>-offline-installer-*.iso
 ```
 
 Alternatively, locate the whole USB device by its stable ID and provide it explicitly:
@@ -112,7 +112,7 @@ ls -l /dev/disk/by-id/usb-*
 Write the installer image:
 
 ```bash
-just installer-write \
+just installer write \
   result-installer-<host>/iso/nixos-<host>-offline-installer-*.iso \
   /dev/disk/by-id/usb-<device>
 ```

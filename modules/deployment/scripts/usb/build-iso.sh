@@ -12,7 +12,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../source.sh"
 payload="$repo/secrets/installer/$host-host.agekey.age"
 unlock_payload="$repo/secrets/installer/$host-installer.agekey.age"
 if [[ ! -f "$payload" || ! -f "$unlock_payload" ]]; then
-  printf 'Prepare the identity first: just installer-key %s reuse|new\n' "$host" >&2
+  printf 'Prepare the identity first: just installer key %s reuse|new\n' "$host" >&2
   exit 1
 fi
 

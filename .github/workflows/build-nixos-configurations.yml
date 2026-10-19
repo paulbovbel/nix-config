@@ -51,11 +51,11 @@ jobs:
         with:
           persist-credentials: false
       - name: Build flake checks
-        run: nix develop --command just nix-test
+        run: nix develop --command just test all
       - name: Build documentation artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: nix build .#module-docs --out-link "$RUNNER_TEMP/result-docs"
-      - name: Upload validated documentation
+      - name: Upload Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
@@ -106,7 +106,7 @@ jobs:
             printf 'Skipping superseded policy deployment.\n'
             exit 0
           fi
-          nix develop --command just tailnet-policy-apply
+          nix develop --command just tailnet apply
 
   deploy-grafana:
     name: Deploy Grafana dashboards
@@ -132,7 +132,7 @@ jobs:
             printf 'Skipping superseded dashboard deployment.\n'
             exit 0
           fi
-          nix develop --command just --yes dashboards-apply
+          nix develop --command just --yes monitor apply
 
   publish-cache:
     name: Publish cache
@@ -159,7 +159,7 @@ jobs:
         run: printf '::warning::Cache publication failed; see the publication job logs.\n'
 
   publish-docs:
-    name: Publish documentation
+    name: Deploy GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [check, test, build]
     permissions:
