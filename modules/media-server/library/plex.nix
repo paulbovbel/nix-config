@@ -8,6 +8,10 @@
   cfg = config.mediaServer;
   datasets = config.storage.datasets;
   inherit (config.podmanServer) user;
+  plexMcpHosts = [
+    "${config.networking.hostName}:3001"
+    "${config.networking.hostName}.${config.tailnet.domain}:3001"
+  ];
   devisualizeScript = pkgs.writeTextFile {
     name = "devisualize";
     destination = "/bin/devisualize";
@@ -100,21 +104,13 @@ in {
           dependsOn = ["plex"];
           secretEnvironmentFiles = [config.age.secrets.plex-token-env.path];
           quadlet.containerConfig = {
-            image = containerImages.uv;
+            image = containerImages.plex-mcp;
             environments = {
+              MCP_ALLOWED_HOSTS = lib.concatStringsSep "," plexMcpHosts;
+              MCP_ALLOWED_ORIGINS = lib.concatMapStringsSep "," (host: "http://${host}") plexMcpHosts;
+              MCP_TRANSPORT = "sse";
               PLEX_URL = "http://plex:32400";
-              UV_LINK_MODE = "copy";
             };
-            exec = [
-              "uvx"
-              "plex-mcp-server"
-              "--transport"
-              "sse"
-              "--host"
-              "0.0.0.0"
-              "--port"
-              "3001"
-            ];
           };
         };
       };

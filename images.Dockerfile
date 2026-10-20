@@ -15,6 +15,7 @@ FROM lscr.io/linuxserver/mariadb:11.4.8@sha256:91de7f701bc7fc3a424b81beafca7a7c6
 FROM ghcr.io/itzg/minecraft-server:java21@sha256:763270702fc29fa0f657622a6a3f5d2a53add0672a312ec37eaedcc8d4e31bf9 AS minecraft
 FROM ghcr.io/kieraneglin/pinchflat:latest@sha256:01b4f98aabaf3f5fe394213f7a32578c9e84e42080f52e2f8334021a4473b202 AS pinchflat
 FROM docker.io/plexinc/pms-docker:plexpass@sha256:8aeb4a982ea564ad309861dd251cd9e218aac3f4e4d3da21375568341be1b16f AS plex
+FROM ghcr.io/vladimir-tutin/plex-mcp-server:latest@sha256:9d66f45ce5ff08eb144afac8de0b0727476fad6e048f94493a66a0fe9d82295a AS plex-mcp
 FROM docker.io/library/postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea AS postgres
 FROM lscr.io/linuxserver/prowlarr:latest@sha256:f9151e5bc1025c6d0a630d503210cdcb6bb55a7cc098562609d96a408d838902 AS prowlarr
 FROM ghcr.io/binhex/arch-qbittorrentvpn:latest@sha256:68155d839811904c61587741950f804baffc98fc06bce1bd1efe83342da1e760 AS qbittorrent
@@ -28,5 +29,4 @@ FROM docker.io/library/ubuntu:22.04@sha256:5ec03bb3441e8b0bf3b4f9cd4629a1ae76301
 FROM docker.io/library/ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55 AS ubuntu-noble
 FROM docker.io/library/ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7 AS ubuntu-resolute
 FROM docker.io/golift/unpackerr:latest@sha256:244fc45cb207308f60e8f52dd703c2b3463385752de0f9517c58ff9d331ed15e AS unpackerr
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm@sha256:47965cdc9d53a515f68f78241161c901e70051ce428f12e791bd7fe19f6a631a AS uv
 FROM ghcr.io/community-valheim-tools/valheim-server:latest@sha256:f3ccde9a4e292663cf5096d502ff33cc9617015f6d70b6a9ca0968543f165ef2 AS valheim
