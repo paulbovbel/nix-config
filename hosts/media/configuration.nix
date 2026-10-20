@@ -45,7 +45,7 @@
     }
     // appBackupPaths;
 in {
-  userProfiles.pbovbel = ["base"];
+  userProfiles.pbovbel.profiles = ["base"];
   tailnet.tags = ["tag:media" "tag:exit-node"];
   services.tailscale.extraUpFlags = ["--advertise-exit-node"];
   services.tailscale.useRoutingFeatures = "server";

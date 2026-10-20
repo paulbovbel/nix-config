@@ -3,7 +3,7 @@
   lib,
   ...
 }: let
-  selectedUsers = lib.attrNames (lib.filterAttrs (_: profiles: profiles != []) config.userProfiles);
+  selectedUsers = lib.attrNames (lib.filterAttrs (_: user: user.profiles != []) config.userProfiles);
   hasKids = builtins.any (user: config.accounts.${user}.isKid) selectedUsers;
   hasAdults = builtins.any (user: !config.accounts.${user}.isKid) selectedUsers;
 in {

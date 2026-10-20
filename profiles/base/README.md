@@ -4,7 +4,7 @@ Shared system and command-line baseline for all profiles. Select it directly
 for a server or command-line-only environment:
 
 ```nix
-userProfiles.pbovbel = ["base"];
+userProfiles.pbovbel.profiles = ["base"];
 ```
 
 Provides shared boot, core services, monitoring, mail, Tailscale enrollment,

@@ -1,7 +1,7 @@
 {pkgs, ...}: {
   userProfiles = {
-    abovbel = ["gaming"];
-    pbovbel = ["gaming"];
+    abovbel.profiles = ["gaming"];
+    pbovbel.profiles = ["gaming"];
   };
   imports = [
     ../site.nix

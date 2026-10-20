@@ -1,6 +1,7 @@
 {
   config,
   headsetcontrolPackage,
+  graphicalShell,
   lib,
   ...
 }: let
@@ -18,10 +19,11 @@
 in {
   imports = [
     ../base/home.nix
+    ./shells/hyprland/home.nix
   ];
 
   options.bovbel.background = {
-    enable = lib.mkEnableOption "GNOME desktop and lock screen background from local assets";
+    enable = lib.mkEnableOption "desktop and lock screen background from local assets";
     source = lib.mkOption {
       type = lib.types.path;
       description = "Desktop background image to deploy.";
@@ -84,7 +86,7 @@ in {
       };
     };
 
-    dconf.settings = {
+    dconf.settings = lib.mkIf (graphicalShell == "gnome") {
       "org/gnome/desktop/sound" = {
         allow-volume-above-100-percent = true;
       };

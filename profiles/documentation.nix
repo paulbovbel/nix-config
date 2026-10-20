@@ -26,7 +26,15 @@ in
     inherit (registry.${name}) title;
     category = "Profiles";
     source = "profiles/${name}/README.md";
-    linkSources = map (other: "(../${other}/README.md)") names;
-    linkTargets = map (other: "(profile-${other}.html)") names;
+    linkSources = map (other: "(../${other}/README.md)") names ++ ["(shells/hyprland/README.md)"];
+    linkTargets = map (other: "(profile-${other}.html)") names ++ ["(shell-hyprland.html)"];
   })
   names
+  ++ [
+    {
+      name = "shell-hyprland";
+      title = "Hyprland with Caelestia";
+      category = "Desktop shells";
+      source = "profiles/graphical/shells/hyprland/README.md";
+    }
+  ]

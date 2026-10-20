@@ -14,7 +14,7 @@ import ./validate.nix {
     title = "Graphical";
     extends = ["base"];
     systemModule = ./graphical/system.nix;
-    summary = "GNOME desktop and everyday applications";
+    summary = "Graphical shell and everyday applications";
     homeModule = {
       pbovbel = ./graphical/home/pbovbel.nix;
       rbovbel = ./graphical/home/rbovbel.nix;

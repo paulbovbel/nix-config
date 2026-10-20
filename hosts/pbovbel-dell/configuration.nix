@@ -35,7 +35,8 @@
     old.buildInputs;
   });
 in {
-  userProfiles.pbovbel = ["work" "gaming"];
+  userProfiles.pbovbel.profiles = ["work" "gaming"];
+  # userProfiles.pbovbel.shell = "hyprland";
   imports = [
     ../site.nix
     ./hardware-configuration.nix

@@ -2,17 +2,48 @@
   config,
   lib,
   pkgs,
+  graphicalSessions,
   unstablePkgs,
+  caelestia-shell,
+  caelestia-dots,
   ...
 }: let
   headsetcontrolPackage = unstablePkgs.headsetcontrol;
+  sessionDefaults = pkgs.writeText "graphical-user-sessions.json" (builtins.toJSON config.graphical.resolvedUserShells);
 in {
   imports = [
+    ./options.nix
     ./visual.nix
+    ./shells/gnome/system.nix
+    ./shells/hyprland/system.nix
   ];
 
   config = lib.mkIf (builtins.elem "graphical" config.systemProfiles) {
-    home-manager.extraSpecialArgs = {inherit headsetcontrolPackage;};
+    home-manager = {
+      extraSpecialArgs = {
+        inherit headsetcontrolPackage;
+        inherit caelestia-shell caelestia-dots;
+      };
+      sharedModules = [caelestia-shell.homeManagerModules.default];
+      users =
+        lib.mapAttrs (_: shell: {
+          _module.args.graphicalShell = shell;
+        })
+        config.graphical.resolvedUserShells;
+    };
+
+    systemd.services.graphical-user-sessions = {
+      description = "Set per-user graphical login sessions";
+      wantedBy = ["multi-user.target"];
+      before = ["display-manager.service"];
+      after = ["accounts-daemon.service"];
+      requires = ["accounts-daemon.service"];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${lib.getExe graphicalSessions} set-defaults ${sessionDefaults}";
+      };
+    };
 
     networking.networkmanager = {
       enable = true;
@@ -71,9 +102,10 @@ in {
         };
       };
       displayManager.gdm.enable = true;
-      desktopManager.gnome.enable = true;
-      displayManager.defaultSession = "gnome";
-      gnome.gnome-remote-desktop.enable = true;
+      # GDM's global default resets every user's AccountsService preference.
+      # The graphical-user-sessions service supplies per-user defaults instead.
+      displayManager.defaultSession = lib.mkDefault null;
+      gnome.gnome-keyring.enable = true;
       printing.enable = true;
     };
 
@@ -107,13 +139,6 @@ in {
 
     environment = {
       systemPackages = [
-        pkgs.gnome-icon-theme
-        pkgs.gnome-power-manager
-        pkgs.gnome-tweaks
-        pkgs.gnomeExtensions.appindicator
-        pkgs.gnomeExtensions.dash-to-dock
-        pkgs.gnomeExtensions.headsetcontrol
-        pkgs.gnomeExtensions.unlock-dialog-background
         headsetcontrolPackage
         pkgs.libva-utils
         pkgs.qpwgraph
@@ -121,7 +146,6 @@ in {
         pkgs.vlc
         pkgs.wireshark
         pkgs.xrandr
-        pkgs.yaru-theme
       ];
 
       sessionVariables = {
@@ -135,6 +159,7 @@ in {
       "/var/lib/bluetooth"
       "/var/lib/flatpak"
       "/var/lib/gdm"
+      "/var/lib/AccountsService"
       "/var/lib/NetworkManager"
     ];
   };

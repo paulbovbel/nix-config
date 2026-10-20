@@ -13,7 +13,7 @@
   config = lib.mkIf (config.systemProfiles != []) {
     tailnet.enable = true;
 
-    age.secrets.tailscale-mcp-env = lib.mkIf (config.userProfiles.pbovbel != []) {
+    age.secrets.tailscale-mcp-env = lib.mkIf (config.userProfiles.pbovbel.profiles != []) {
       file = ../../secrets/common/tailscale-mcp-env.age;
       owner = "pbovbel";
       mode = "0400";

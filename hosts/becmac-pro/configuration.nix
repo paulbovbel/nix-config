@@ -7,8 +7,8 @@
   colors = config.lib.stylix.colors;
 in {
   userProfiles = {
-    pbovbel = ["graphical"];
-    rbovbel = ["graphical"];
+    pbovbel.profiles = ["graphical"];
+    rbovbel.profiles = ["graphical"];
   };
   imports = [
     ../site.nix

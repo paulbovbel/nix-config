@@ -2,7 +2,7 @@
 
 ## Device roles
 
-Hosts default to one role derived from users with nonempty `userProfiles.<user>`:
+Hosts default to one role derived from users with nonempty `userProfiles.<user>.profiles`:
 
 - Any selected user with `accounts.<user>.isKid = true`: `tag:kids-device`.
 - Otherwise: `tag:adult-device`.

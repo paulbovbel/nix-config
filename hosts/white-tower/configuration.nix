@@ -1,8 +1,18 @@
-{pkgs, ...}: {
+{
+  lib,
+  pkgs,
+  ...
+}: {
   userProfiles = {
-    pbovbel = ["gaming"];
-    rbovbel = ["graphical"];
+    pbovbel = {
+      profiles = ["gaming"];
+      shell = "hyprland";
+    };
+    rbovbel.profiles = ["graphical"];
   };
+  home-manager.users.pbovbel.wayland.windowManager.hyprland.extraConfig = lib.mkAfter ''
+    hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1.25 })
+  '';
   imports = [
     ../site.nix
     ./hardware-configuration.nix

@@ -58,6 +58,7 @@
       modules = [
         ../default.nix
         ../../../modules/accounts/options.nix
+        ../../../profiles/options.nix
         ({lib, ...}: {
           options = {
             age = lib.mkOption {
@@ -76,10 +77,6 @@
               type = lib.types.attrsOf lib.types.anything;
               default = {};
             };
-            userProfiles = lib.mkOption {
-              type = lib.types.attrsOf (lib.types.listOf lib.types.str);
-              default = {};
-            };
             assertions = lib.mkOption {
               type = lib.types.listOf lib.types.anything;
               default = [];
@@ -93,24 +90,25 @@
   fails = overrides: !(builtins.tryEval (builtins.deepSeq (generate overrides) true)).success;
 in
   assert (roles {
-      pbovbel = ["gaming"];
-      abovbel = ["gaming"];
+      pbovbel.profiles = ["gaming"];
+      abovbel.profiles = ["gaming"];
     }
     null).config.tailnet.tags
   == ["tag:kids-device"];
   assert (roles {
-      pbovbel = ["gaming"];
-      abovbel = [];
+      pbovbel.profiles = ["gaming"];
+      abovbel.profiles = [];
     }
     null).config.tailnet.tags
   == ["tag:adult-device"];
   assert (roles {
-      pbovbel = [];
-      abovbel = [];
+      pbovbel.profiles = [];
+      abovbel.profiles = [];
     }
     null).config.tailnet.tags
   == [];
-  assert (roles {abovbel = ["gaming"];} ["tag:media"]).config.tailnet.tags == ["tag:media"];
+  assert (roles {abovbel.profiles = ["gaming"];} ["tag:media"]).config.tailnet.tags == ["tag:media"];
+  assert (roles {pbovbel.shell = "hyprland";} null).config.tailnet.tags == [];
   assert !(lib.all (item: item.assertion) (roles {} ["tag:adult-device" "tag:kids-device"]).config.assertions);
   assert (generate {
     nixosConfigurations =

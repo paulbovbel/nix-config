@@ -3,6 +3,7 @@ import json
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 type GraphicalSession = tuple[str, int, str]
 GRAPHICAL_SESSION_TYPES = {"mir", "wayland", "x11"}
@@ -193,8 +194,47 @@ def check_graphical_sessions(allow_locked: bool) -> bool:
     return False
 
 
+def set_default_sessions(sessions: dict[str, str]) -> None:
+    for user_name, session in sessions.items():
+        result = _run(
+            "busctl",
+            "--system",
+            "--json=short",
+            "call",
+            "org.freedesktop.Accounts",
+            "/org/freedesktop/Accounts",
+            "org.freedesktop.Accounts",
+            "FindUserByName",
+            "s",
+            user_name,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"failed to resolve account {user_name}: {result.stderr.strip()}"
+            )
+        user_path = json.loads(result.stdout)["data"][0]
+        for method, value in (("SetSession", session), ("SetSessionType", "wayland")):
+            result = _run(
+                "busctl",
+                "--system",
+                "call",
+                "org.freedesktop.Accounts",
+                user_path,
+                "org.freedesktop.Accounts.User",
+                method,
+                "s",
+                value,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"failed to set {method} for {user_name}: {result.stderr.strip()}"
+                )
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Manage active graphical sessions")
+    parser = argparse.ArgumentParser(
+        description="Manage graphical sessions and login defaults"
+    )
     actions = parser.add_subparsers(dest="action", required=True)
     logout_parser = actions.add_parser("logout", help="log out graphical sessions")
     logout_parser.add_argument("--warning-seconds", type=_positive_int, default=60)
@@ -211,6 +251,12 @@ def main() -> int:
         action="store_true",
         help="do not wait for locked graphical sessions",
     )
+    defaults_parser = actions.add_parser(
+        "set-defaults", help="set per-user login sessions through AccountsService"
+    )
+    defaults_parser.add_argument(
+        "config", type=Path, help="JSON user-to-session mapping"
+    )
     args = parser.parse_args()
 
     try:
@@ -218,9 +264,11 @@ def main() -> int:
             logout_graphical_sessions(args.warning_seconds)
         elif args.action == "check":
             return 0 if check_graphical_sessions(args.allow_locked) else 1
+        elif args.action == "set-defaults":
+            set_default_sessions(json.loads(args.config.read_text()))
         else:
             wait_for_no_graphical_sessions(args.poll_seconds, args.allow_locked)
-    except RuntimeError as error:
+    except (RuntimeError, OSError, json.JSONDecodeError) as error:
         print(error, file=sys.stderr)
         return 1
     return 0

@@ -22,4 +22,4 @@ Preserve any needed container-local state before doing so.
 
 ## Combining with gaming
 
-Select `userProfiles.pbovbel = ["work" "gaming"]` to retain gaming tools and shared Steam storage while using work-oriented startup behavior. The [gaming profile](../gaming/README.md) suppresses Steam and personal gaming autostart when it sees `work` in `profiles.selected`.
+Select `userProfiles.pbovbel.profiles = ["work" "gaming"]` to retain gaming tools and shared Steam storage while using work-oriented startup behavior. The [gaming profile](../gaming/README.md) suppresses Steam and personal gaming autostart when it sees `work` in `profiles.selected`.

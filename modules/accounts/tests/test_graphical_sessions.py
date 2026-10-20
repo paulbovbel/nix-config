@@ -12,6 +12,58 @@ def completed(stdout: str = "", returncode: int = 0) -> mock.Mock:
 
 
 class GraphicalSessionsTest(unittest.TestCase):
+    def test_default_sessions_resolve_each_account_independently(self) -> None:
+        account_paths = {
+            "alice": "/org/freedesktop/Accounts/User1000",
+            "bob": "/org/freedesktop/Accounts/User1001",
+        }
+        applied = {}
+
+        def run(*command: str) -> mock.Mock:
+            if "FindUserByName" in command:
+                return completed(json.dumps({"data": [account_paths[command[-1]]]}))
+            applied[(command[4], command[6])] = command[-1]
+            return completed()
+
+        with mock.patch.object(graphical_sessions, "_run", side_effect=run):
+            graphical_sessions.set_default_sessions(
+                {"alice": "hyprland", "bob": "gnome"}
+            )
+
+        self.assertEqual(
+            applied,
+            {
+                (account_paths["alice"], "SetSession"): "hyprland",
+                (account_paths["alice"], "SetSessionType"): "wayland",
+                (account_paths["bob"], "SetSession"): "gnome",
+                (account_paths["bob"], "SetSessionType"): "wayland",
+            },
+        )
+
+    def test_default_sessions_stop_when_account_lookup_fails(self) -> None:
+        with mock.patch.object(
+            graphical_sessions, "_run", return_value=completed(returncode=1)
+        ) as run:
+            with self.assertRaisesRegex(
+                RuntimeError, "failed to resolve account alice"
+            ):
+                graphical_sessions.set_default_sessions({"alice": "gnome"})
+        self.assertEqual(run.call_count, 1)
+
+    def test_default_sessions_report_property_update_failure(self) -> None:
+        with mock.patch.object(
+            graphical_sessions,
+            "_run",
+            side_effect=[
+                completed(json.dumps({"data": ["/org/freedesktop/Accounts/User1000"]})),
+                completed(returncode=1),
+            ],
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError, "failed to set SetSession for alice"
+            ):
+                graphical_sessions.set_default_sessions({"alice": "gnome"})
+
     def test_excludes_tty_sessions(self) -> None:
         sessions = [
             {"session": "1", "uid": 1000, "user": "alice", "class": "user"},
