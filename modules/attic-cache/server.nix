@@ -31,7 +31,7 @@ in {
     rootFs.volumes.attic = {
       mountpoint = cacheDir;
       autoSnapshot = false;
-      quota = "100G";
+      quota = "200G";
     };
 
     services.atticd = {
@@ -44,6 +44,10 @@ in {
         allowed-hosts = [domain];
         api-endpoint = endpoint;
         database.url = "sqlite://${cfg.dataDir}/server.db?mode=rwc";
+        garbage-collection = {
+          interval = "6 hours";
+          default-retention-period = "14 days";
+        };
         chunking = {
           nar-size-threshold = 0;
           min-size = 16384;
