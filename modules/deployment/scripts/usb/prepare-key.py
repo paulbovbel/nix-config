@@ -88,7 +88,7 @@ def main() -> None:
             )
             if confirmation != f"ROTATE {args.host}":
                 raise SystemExit("identity rotation cancelled")
-            run("age-keygen", "-o", str(identity))
+            run("age-keygen", "-pq", "-o", str(identity))
         else:
             identity.write_bytes(
                 subprocess.run(
@@ -110,7 +110,7 @@ def main() -> None:
                 f"identity recipient mismatch: expected {expected_recipient}, got {recipient}"
             )
 
-        run("age-keygen", "-o", str(installer_identity))
+        run("age-keygen", "-pq", "-o", str(installer_identity))
         installer_recipient = subprocess.run(
             ["age-keygen", "-y", str(installer_identity)],
             check=True,
