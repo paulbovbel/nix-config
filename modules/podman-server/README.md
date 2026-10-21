@@ -50,14 +50,6 @@ configuration changes restart the owning systemd services. Registry auto-update
 labels and the daily Podman auto-update timer are no longer enabled by this
 module. Nix-built images, including Caddy, remain pinned through flake inputs.
 
-New Distroboxes use the catalog pins. Existing Distroboxes are not automatically
-recreated when a pin changes; preserve any needed container-local state before
-deliberately recreating them.
-
-Image pins do not freeze software downloaded at runtime, such as game server
-updates, Distrobox packages, or the `uvx`-launched Plex MCP server. Nor does an
-image rollback reverse application database migrations.
-
 To add an image, resolve its registry digest and add a unique alias to the
 catalog, then reference it through the workload's `containerImages` argument. Registry containers declared
 through this module must be digest-pinned; Nix-built archives and Quadlet builds

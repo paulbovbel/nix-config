@@ -15,6 +15,14 @@
 }: let
   configuredUserNames = map (user: user.name) users;
   hiddenUserNames = map (user: user.name) (builtins.filter (user: user.hideFromLogin or false) users);
+  trustEnvironment = {
+    SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
+    NIX_SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
+    REQUESTS_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt";
+    UV_SYSTEM_CERTS = "true";
+    # Replace Node's bundled roots rather than extending them.
+    NODE_OPTIONS = "--use-openssl-ca";
+  };
   catppuccinPaletteSource = let
     source = (lib.importJSON "${catppuccin}/pkgs/sources.json").palette;
   in
@@ -35,6 +43,14 @@ in {
   rootFs.homeUsers = configuredUserNames;
   system.configurationRevision = configurationRevision;
   environment.etc."nix-config/branch".text = configurationBranch;
+  # eMudhra intermediate CA compromise (October 2026), including cross-signs.
+  security.pki.caCertificateBlacklist = [
+    "Comodo AAA Services root"
+    "emSign ECC Root CA - G3"
+  ];
+  # Share the system trust policy with interactive clients and background units.
+  environment.sessionVariables = trustEnvironment;
+  systemd.globalEnvironment = trustEnvironment;
   accounts = lib.genAttrs configuredUserNames (_: {enable = true;});
   services.displayManager.gdm.settings = lib.mkIf (hiddenUserNames != []) {
     greeter.Exclude = lib.concatStringsSep "," hiddenUserNames;
