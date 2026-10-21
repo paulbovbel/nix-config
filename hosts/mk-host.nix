@@ -5,7 +5,7 @@
   configurationRevision,
   containerImages,
 }: let
-  inherit (inputs) nixpkgs nixpkgs-unstable home-manager nix-flatpak disko disko-zfs agenix impermanence locus-vpn-client stylix catppuccin quadlet-nix nixos-apple-silicon tiny-dfr-nyan;
+  inherit (inputs) nixpkgs nixpkgs-unstable home-manager nix-flatpak disko disko-zfs agenix impermanence locus-vpn-client stylix catppuccin quadlet-nix nixos-apple-silicon tiny-dfr-nyan rookie-cli;
   externalModules = [
     agenix.nixosModules.default
     nix-flatpak.nixosModules.nix-flatpak
@@ -31,7 +31,7 @@ in
   in
     nixpkgsForHost.lib.nixosSystem {
       inherit system;
-      specialArgs = {inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan unstablePkgs containerImages;};
+      specialArgs = {inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan rookie-cli unstablePkgs containerImages;};
       modules =
         [
           ./${name}/configuration.nix

@@ -50,6 +50,7 @@
 in {
   inherit checks;
   packages = {
+    rookie = inputs.rookie-cli.packages.${system}.default;
     inherit (pkgs) attic-client;
     inherit (docs) module-docs;
     inherit tailnet-policy;

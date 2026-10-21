@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  rookie-cli,
   ...
 }: {
   config = lib.mkIf (builtins.elem "gaming" config.systemProfiles) {
@@ -53,6 +54,12 @@
       };
     };
 
+    age.secrets.rookie-mirror = {
+      file = ../../secrets/common/rookie-mirror.age;
+      group = "users";
+      mode = "0440";
+    };
+
     environment.systemPackages = with pkgs; [
       mangohud
       goverlay
@@ -61,6 +68,9 @@
       protonup-qt
       lutris
       prismlauncher
+      (rookie-cli.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
+        configPath = config.age.secrets.rookie-mirror.path;
+      })
     ];
   };
 }

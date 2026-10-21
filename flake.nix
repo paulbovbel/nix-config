@@ -14,6 +14,10 @@
       url = "github:paulbovbel/tiny-dfr-nyan";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rookie-cli = {
+      url = "git+ssh://git@github.com/paulbovbel/rookie-cli.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     locus-vpn-client = {
       url = "git+ssh://git@github.com/locusrobotics/locus-vpn-client.git";
       inputs.nixpkgs.follows = "nixpkgs";
