@@ -64,7 +64,7 @@ in {
           };
           plex = {
             type = "remote";
-            url = "http://media:3001/sse";
+            url = "http://media:3001/mcp";
           };
           tailscale = {
             type = "local";

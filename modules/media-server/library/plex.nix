@@ -108,7 +108,7 @@ in {
             environments = {
               MCP_ALLOWED_HOSTS = lib.concatStringsSep "," plexMcpHosts;
               MCP_ALLOWED_ORIGINS = lib.concatMapStringsSep "," (host: "http://${host}") plexMcpHosts;
-              MCP_TRANSPORT = "sse";
+              MCP_TRANSPORT = "streamable-http";
               PLEX_URL = "http://plex:32400";
             };
           };
