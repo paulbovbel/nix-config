@@ -1,0 +1,70 @@
+name: Update dependencies
+
+on:
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: update-dependencies
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  update:
+    # Only run trusted update tooling from main on the self-hosted runner.
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, nix-media]
+    timeout-minutes: 60
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare dependency branch
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          UPDATE_EVENT: ${{ github.event_name }}
+        run: nix shell --inputs-from . nixpkgs#gh --command bash modules/github-runner/scripts/prepare-updates.sh
+      - name: Refresh dependency pins
+        if: steps.prepare.outputs.active == 'true' && github.event_name != 'push'
+        run: nix develop --command just update all
+      - name: Validate updates
+        if: steps.prepare.outputs.active == 'true'
+        run: |
+          nix develop --command just check
+          nix develop --command just test hosts
+      - name: Publish dependency PR
+        if: steps.prepare.outputs.active == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        with:
+          token: ${{ secrets.DEPENDENCY_UPDATE_TOKEN }}
+          base: main
+          branch: automation/dependencies
+          delete-branch: true
+          add-paths: |
+            flake.lock
+            images.Dockerfile
+            .github/workflows
+          commit-message: 'chore: update dependencies'
+          title: 'chore: update dependencies'
+          body: |
+            Automated by `just update all`: refresh GitHub Actions pins,
+            container image digests, and Nix flake inputs.
+
+            Routine checks and host evaluation passed before publication.
+            Full validation runs on this PR. Pushes to main sync this branch
+            without refreshing dependency pins.

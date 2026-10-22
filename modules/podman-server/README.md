@@ -42,13 +42,18 @@ own image set:
 }
 ```
 
-Dependabot includes Docker digest updates in the weekly `dependencies`
-multi-ecosystem PR alongside flake inputs and GitHub Actions, preserving
+The internal dependency workflow includes Docker digest updates in a weekly
+PR alongside flake inputs and GitHub Actions, preserving
 the existing tag channels. Changing a release channel or numbered version is a
 manual catalog edit. Merge reviewed updates and deploy normally; container
 configuration changes restart the owning systemd services. Registry auto-update
 labels and the daily Podman auto-update timer are no longer enabled by this
 module. Nix-built images, including Caddy, remain pinned through flake inputs.
+
+Run `just update images` to refresh catalog digests locally without Dependabot.
+It preserves tags and aliases and only writes the catalog after every registry
+lookup succeeds. Review the diff, run `just check` and `just test hosts`, then
+deploy normally. Use `just update nix` separately to refresh flake inputs.
 
 To add an image, resolve its registry digest and add a unique alias to the
 catalog, then reference it through the workload's `containerImages` argument. Registry containers declared

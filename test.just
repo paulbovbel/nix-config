@@ -14,6 +14,7 @@ hosts: (nix "host-evaluations")
 
 # Run Python unit tests.
 python:
+    python3 -m unittest discover -s modules/github-runner/tests -p 'test_*.py'
     python3 -m unittest discover -s modules/deployment/tests -p 'test_*.py'
     PYTHONPATH=modules/documentation/scripts python3 -m unittest discover -s modules/documentation/tests -p 'test_*.py'
     PYTHONPATH=modules/accounts/scripts python3 -m unittest discover -s modules/accounts/tests -p 'test_*.py'

@@ -7,9 +7,9 @@ Personal NixOS configuration for desktops, laptops, and a media server.
 ```bash
 nix develop
 just check                          # Formatting, linting, and Python tests
-just deploy hosts                   # List registered hosts
-just deploy switch media            # Build and activate locally or over SSH
-just deploy boot media              # Activate on next boot
+just update all                     # Refresh all dependency pins
+just deploy switch <host>            # Build and activate locally or over SSH
+just deploy boot <host>            # Activate on next boot
 just docs serve                     # Preview documentation at localhost:8000
 ```
 

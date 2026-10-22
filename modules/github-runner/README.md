@@ -43,7 +43,35 @@ usually indicate a label mismatch.
 
 ## CI workflow
 
+Run `just update github-actions` to refresh SHA-pinned actions locally. Major
+version comments (such as `# v7`) track that tag; full versions (such as
+`# v5.0.0`) advance to the newest stable release within the same major. Annotated
+tags are resolved to commits. All lookups must succeed before workflows are
+written. Review the diff and run `just check` before committing.
+
+`just update all` runs the Actions, image, and Nix updaters sequentially.
+The weekly (Monday 06:23 UTC) and manually triggered `Update dependencies` workflow runs
+this command from `main`, checks the result, evaluates hosts, and publishes one
+PR from `automation/dependencies`. Pushes to `main` merge the new main into an
+existing dependency PR and revalidate it, without refreshing pins or opening a
+new PR. Merge conflicts fail the workflow for manual resolution. That branch
+is automation-owned; do not put unrelated changes there. Existing runner
+SSH credentials allow private flake inputs to update too.
+
+The SHA-pinned `peter-evans/create-pull-request` action handles commits, branch
+publication, and creating or updating the PR. It closes the PR and removes the
+automation branch when its changes are no longer needed.
+
+Configure the Actions secret `DEPENDENCY_UPDATE_TOKEN` with a dedicated token
+that can push repository contents, update workflow files, and create PRs (for a
+classic PAT: `repo` and `workflow`; for a fine-grained PAT: Contents,
+Workflows, and Pull requests write permissions). A PAT rather than the built-in
+`GITHUB_TOKEN` ensures pushes and PRs trigger normal validation. Enable repository
+policy permitting this token's access. The token is exposed only to the PR
+action; branch preparation uses the read-only built-in token. No automatic
+PR merge or deployment is performed.
+
 - Self-hosted validation accepts pushes to `main` and PR branches within this repository. Branch writers are trusted with access to the runner's SSH key and shared Nix daemon. Fork PRs skip self-hosted validation; review external changes before transferring them to a repository branch. Skipped jobs are not proof of validation and may satisfy required-check rules.
-- Successful `main` runs publish host closures and documentation. Cache credentials use the `ATTIC_TOKEN` Actions secret. Dependabot combines flake inputs, GitHub Actions, and shared container image catalog updates into one weekly `dependencies` multi-ecosystem PR. Docker updates refresh digests without changing tag channels.
+- Successful `main` runs publish host closures and documentation. Cache credentials use the `ATTIC_TOKEN` Actions secret. The internal dependency workflow combines flake inputs, GitHub Actions, and shared container image catalog updates into one weekly PR. Image updates refresh digests without changing tag channels.
 - Logs and job durations are available in GitHub Actions. Workflow definitions live in `.github/workflows/` and are checked by `just check`.
 - Successful `main` runs also deploy Grafana dashboards using the `GRAFANA_TOKEN` Actions secret; see the [monitoring runbook](../monitor/README.md).

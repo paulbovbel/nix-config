@@ -5,6 +5,8 @@ set positional-arguments
 mod lint 'lint.just'
 # Run unit tests, host evaluation, and flake checks.
 mod test 'test.just'
+# Refresh container image pins and Nix flake inputs.
+mod update 'update.just'
 
 # Build and activate hosts.
 mod deploy 'modules/deployment/deploy.just'

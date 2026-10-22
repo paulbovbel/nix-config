@@ -1,5 +1,5 @@
-# Repository-wide image catalog for Nix and Dependabot, not an application build.
-# Keep tag channels stable; Dependabot updates their immutable digests.
+# Repository-wide image catalog for Nix, not an application build.
+# Keep tag channels stable; just update images refreshes their immutable digests.
 FROM ghcr.io/pleut/abiotic-factor-linux-docker:latest@sha256:bfcfc96c7f02336390afee8662b38ed430bb56f601df72fa8f27a48d4d2ea3f1 AS abiotic
 FROM ghcr.io/advplyr/audiobookshelf:latest@sha256:581d68b2a6fc7ebf58d81c878a9f387cbbc0d88ac9d37b298b9cee10168af85b AS audiobookshelf
 FROM ghcr.io/goauthentik/server:2026.8.3@sha256:ab9b4e8cc4ab3f8d1198d2db6aeea66bafea1963b3f2843589e0d163f97d9849 AS authentik
