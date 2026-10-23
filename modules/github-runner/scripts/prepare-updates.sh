@@ -5,12 +5,6 @@ set -euo pipefail
 : "${GH_REPO:?Set GH_REPO to the target repository}"
 branch=automation/dependencies
 url=$(gh pr list --head "$branch" --base main --state open --json url --jq '.[0].url // empty')
-if [[ ${UPDATE_EVENT:?} == push && -z $url ]]; then
-  echo 'No dependency PR to sync.'
-  echo 'active=false' >>"$GITHUB_OUTPUT"
-  exit 0
-fi
-
 git config user.name 'github-actions[bot]'
 git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 if [[ -n $url ]]; then
@@ -22,6 +16,6 @@ if [[ -n $url ]]; then
   git merge --no-edit origin/main
   # Give create-pull-request an uncommitted diff on its consistent base.
   git checkout main
-  git diff --binary origin/main dependency-update-work | git apply --binary
+  git diff --binary origin/main dependency-update-work | git apply --binary --allow-empty
 fi
 echo 'active=true' >>"$GITHUB_OUTPUT"

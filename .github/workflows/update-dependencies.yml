@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: '23 6 * * 1'
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -38,10 +36,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          UPDATE_EVENT: ${{ github.event_name }}
         run: nix shell --inputs-from . nixpkgs#gh --command bash modules/github-runner/scripts/prepare-updates.sh
       - name: Refresh dependency pins
-        if: steps.prepare.outputs.active == 'true' && github.event_name != 'push'
+        if: steps.prepare.outputs.active == 'true'
         run: nix develop --command just update all
       - name: Validate updates
         if: steps.prepare.outputs.active == 'true'
@@ -67,5 +64,4 @@ jobs:
             container image digests, and Nix flake inputs.
 
             Routine checks and host evaluation passed before publication.
-            Full validation runs on this PR. Pushes to main sync this branch
-            without refreshing dependency pins.
+            Full validation runs on this PR.
