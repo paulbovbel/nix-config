@@ -318,6 +318,26 @@
         "type": "github"
       }
     },
+    "jellyfin-plugin-sso": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792777086,
+        "narHash": "sha256-HBZeyG1tkModUJixiHcp+N8dFMZ37VFiYneMMAF8BaY=",
+        "owner": "paulbovbel",
+        "repo": "jellyfin-plugin-sso",
+        "rev": "1b1e1fbd16ac1a41214aa795d34ae6c404008360",
+        "type": "github"
+      },
+      "original": {
+        "owner": "paulbovbel",
+        "repo": "jellyfin-plugin-sso",
+        "type": "github"
+      }
+    },
     "locus-vpn-client": {
       "inputs": {
         "nixpkgs": [
@@ -509,6 +529,7 @@
         "disko-zfs": "disko-zfs",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
+        "jellyfin-plugin-sso": "jellyfin-plugin-sso",
         "locus-vpn-client": "locus-vpn-client",
         "nix-flatpak": "nix-flatpak",
         "nix-vscode-extensions": "nix-vscode-extensions",

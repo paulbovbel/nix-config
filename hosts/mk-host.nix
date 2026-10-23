@@ -33,7 +33,7 @@ in
       inherit system;
       specialArgs = {
         inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan rookie-cli unstablePkgs containerImages;
-        inherit (inputs) asahi-vendor-firmware;
+        inherit (inputs) jellyfin-plugin-sso asahi-vendor-firmware;
       };
       modules =
         [

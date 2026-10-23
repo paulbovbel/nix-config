@@ -72,6 +72,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     quadlet-nix.url = "github:SEIAROTg/quadlet-nix";
+    jellyfin-plugin-sso = {
+      url = "github:paulbovbel/jellyfin-plugin-sso";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
