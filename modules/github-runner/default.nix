@@ -90,7 +90,7 @@ in {
             replace = true;
             tokenFile = "/run/secrets/github-runner-token";
             tokenType = "access";
-            extraPackages = [pkgs.openssh];
+            extraPackages = [pkgs.git-lfs pkgs.openssh];
             workDir = "/var/lib/github-runner/work";
             extraEnvironment.GIT_SSH_COMMAND = "${pkgs.openssh}/bin/ssh -i /run/agenix/github-runner-ssh-key -o IdentitiesOnly=yes";
             user = "github-runner";

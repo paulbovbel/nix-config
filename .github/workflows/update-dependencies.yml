@@ -31,7 +31,8 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
+          lfs: true
       - name: Prepare dependency branch
         id: prepare
         env:

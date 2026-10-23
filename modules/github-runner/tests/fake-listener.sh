@@ -7,6 +7,7 @@ configure)
   touch "$RUNNER_ROOT/.credentials" "$RUNNER_ROOT/.credentials_rsaparams" "$RUNNER_ROOT/.runner"
   ;;
 run)
+  command -v git-lfs >/dev/null
   touch /var/lib/github-runner/work/listening
   while [[ ! -f /var/lib/github-runner/work/finish ]]; do sleep 1; done
   exit "$(</var/lib/github-runner/work/finish)"

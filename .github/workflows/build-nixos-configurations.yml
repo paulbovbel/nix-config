@@ -30,7 +30,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          persist-credentials: false
+          persist-credentials: true
+          lfs: true
       - name: Read CI inventory
         id: inventory
         run: |
@@ -49,7 +50,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          persist-credentials: false
+          persist-credentials: true
+          lfs: true
       - name: Build flake checks
         run: nix develop --command just test all
       - name: Build documentation artifact
@@ -65,7 +67,8 @@ jobs:
     name: Host (${{ matrix.host }})
     needs: [check, test]
     runs-on: [self-hosted, nix-media]
-    timeout-minutes: 120
+    # Apple Silicon hosts build through binfmt emulation on the x86_64 runner.
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -75,7 +78,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          persist-credentials: false
+          persist-credentials: true
+          lfs: true
       - name: Build host
         env:
           HOST: ${{ matrix.host }}
@@ -95,7 +99,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          persist-credentials: false
+          persist-credentials: true
+          lfs: true
       - name: Apply validated policy
         env:
           TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
@@ -122,7 +127,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          persist-credentials: false
+          persist-credentials: true
+          lfs: true
       - name: Apply validated dashboards
         env:
           GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
@@ -144,7 +150,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          persist-credentials: false
+          persist-credentials: true
+          lfs: true
       - name: Publish validated hosts
         id: cache
         continue-on-error: true
