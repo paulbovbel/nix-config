@@ -67,7 +67,8 @@ jobs:
     name: Host (${{ matrix.host }})
     needs: [check, test]
     runs-on: [self-hosted, nix-media]
-    timeout-minutes: 120
+    # Apple Silicon hosts build through binfmt emulation on the x86_64 runner.
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       max-parallel: 1
