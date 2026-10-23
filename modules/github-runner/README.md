@@ -43,6 +43,17 @@ usually indicate a label mismatch.
 
 ## CI workflow
 
+The hosted ARM runner joins Tailscale as an ephemeral `tag:ci` node before
+accessing Attic. Apply the tailnet policy containing `tag:ci` first and authorize
+that tag on the OAuth client used by the `TAILSCALE_OAUTH_CLIENT_ID` and
+`TAILSCALE_OAUTH_CLIENT_SECRET` Actions secrets (auth-key write scope). The
+existing tagged-node HTTPS grant permits cache access without SSH access.
+
+The check job probes Attic metadata for every native Asahi kernel output. When
+all outputs are cached, recipe export, artifact upload, and the entire ARM job
+are skipped; tests and host builds still run. A missing output or cache-query
+failure takes the normal build-and-publish path instead.
+
 Run `just update github-actions` to refresh SHA-pinned actions locally. Major
 version comments (such as `# v7`) track that tag; full versions (such as
 `# v5.0.0`) advance to the newest stable release within the same major. Annotated

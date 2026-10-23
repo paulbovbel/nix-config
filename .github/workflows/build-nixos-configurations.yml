@@ -26,6 +26,7 @@ jobs:
     timeout-minutes: 15
     outputs:
       build-hosts: ${{ steps.inventory.outputs.build-hosts }}
+      kernel-cached: ${{ steps.kernel.outputs.cached }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -41,8 +42,10 @@ jobs:
       - name: Check repository
         run: nix develop --command just check
       - name: Prepare native ARM kernel build
+        id: kernel
         run: nix develop --command bash modules/github-runner/scripts/prepare-arm-kernel.sh "$RUNNER_TEMP/arm-kernel"
       - name: Upload kernel build recipe
+        if: steps.kernel.outputs.cached != 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: arm-kernel-recipe
@@ -53,9 +56,16 @@ jobs:
   arm-kernel:
     name: Native ARM kernel
     needs: check
+    if: needs.check.outputs.kernel-cached != 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 360
     steps:
+      - name: Join tailnet
+        uses: tailscale/github-action@99a8333667fff04fdd6cffb46dfd409f8329a7bf # v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install Nix
@@ -77,6 +87,7 @@ jobs:
   test:
     name: Evaluate and test
     needs: [check, arm-kernel]
+    if: ${{ !cancelled() && needs.check.result == 'success' && (needs.arm-kernel.result == 'success' || needs.arm-kernel.result == 'skipped') }}
     runs-on: [self-hosted, nix-media]
     timeout-minutes: 360
     steps:
