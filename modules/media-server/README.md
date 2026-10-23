@@ -16,7 +16,7 @@ The container mounts `storage.datasets.media.children.audiobooks` at `/audiobook
 
 ### Application SSO
 
-Audiobookshelf and Grimmory use native OIDC against Authentik; Caddy passes their browser and API traffic directly to the applications. Grimmory remote-header authentication is disabled. The Authentik module README describes identity provisioning and SSO integration. Configure application-side OIDC settings before relying on Google login.
+Jellefyin, Audiobookshelf and Grimmory use native OIDC against Authentik; Caddy passes their browser and API traffic directly to the applications. Grimmory remote-header authentication is disabled. The Authentik module README describes identity provisioning and SSO integration. Configure application-side OIDC settings before relying on Google login.
 
 ## Download Automation
 

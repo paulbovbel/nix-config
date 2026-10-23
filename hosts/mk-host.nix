@@ -31,7 +31,10 @@ in
   in
     nixpkgsForHost.lib.nixosSystem {
       inherit system;
-      specialArgs = {inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan rookie-cli unstablePkgs containerImages;};
+      specialArgs = {
+        inherit agenix locus-vpn-client nixos-apple-silicon tiny-dfr-nyan rookie-cli unstablePkgs containerImages;
+        inherit (inputs) jellyfin-plugin-sso;
+      };
       modules =
         [
           ./${name}/configuration.nix
