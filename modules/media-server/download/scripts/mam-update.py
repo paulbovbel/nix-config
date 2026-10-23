@@ -2,21 +2,25 @@
 """Register container egress IPs with MAM and synchronize indexer credentials."""
 
 import argparse
-from dataclasses import dataclass
-from email.utils import parsedate_to_datetime
 import hashlib
 import ipaddress
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import time
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
+from pathlib import Path
 
-from tenacity import Retrying, retry_if_exception, retry_if_exception_type
-from tenacity import stop_after_attempt, wait_fixed
-
+from tenacity import (
+    Retrying,
+    retry_if_exception,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_fixed,
+)
 
 MAM_API = "https://t.myanonamouse.net/json/dynamicSeedbox.php"
 IP_CHECK_URL = "https://checkip.amazonaws.com"

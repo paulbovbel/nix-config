@@ -9,7 +9,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-
 requests = types.ModuleType("requests")
 requests.RequestException = type("RequestException", (Exception,), {})
 requests.get = mock.Mock()

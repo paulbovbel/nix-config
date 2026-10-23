@@ -1,0 +1,8 @@
+globs:
+  - '**/*.md'
+ignores:
+  - '**/.git/**'
+  - '**/result*/**'
+config:
+  # Prose, commands, and option tables often need long lines.
+  MD013: false

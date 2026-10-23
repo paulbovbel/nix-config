@@ -2,11 +2,10 @@
 
 import time
 
-from django.db import OperationalError, ProgrammingError
-
 from authentik.blueprints.models import BlueprintInstance
 from authentik.blueprints.v1.importer import Importer
 from authentik.tasks.models import TaskLog
+from django.db import OperationalError, ProgrammingError
 
 deadline = time.monotonic() + 480
 while time.monotonic() < deadline:

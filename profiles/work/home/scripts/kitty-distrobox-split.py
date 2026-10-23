@@ -8,7 +8,6 @@ from pathlib import Path
 
 import psutil
 
-
 LOG_FILE = (
     Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
     / "kitty"

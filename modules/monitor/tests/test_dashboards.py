@@ -1,11 +1,10 @@
 """Evaluate real dashboard queries against synthetic metrics using Prometheus."""
 
 import json
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 GRAFANA = Path(__file__).resolve().parents[1] / "grafana"
 

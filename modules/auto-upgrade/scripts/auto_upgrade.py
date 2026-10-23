@@ -8,9 +8,9 @@ import subprocess
 import sys
 import tempfile
 import uuid
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterator
 from urllib.parse import quote
 
 UPGRADE_UNIT = "nixos-upgrade.service"

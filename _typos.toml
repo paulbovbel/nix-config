@@ -1,0 +1,11 @@
+[files]
+extend-exclude = ["*.age", "flake.lock"]
+
+[default]
+extend-ignore-re = ['age1[0-9a-z]+']
+
+[default.extend-words]
+# Protocol spelling is split into words by the checker.
+Pn = "Pn"
+# Existing LUKS device name, not prose.
+crypted = "crypted"

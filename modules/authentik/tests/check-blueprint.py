@@ -3,8 +3,6 @@
 import os
 from pathlib import Path
 
-from django.test import RequestFactory
-
 from authentik.blueprints.v1.importer import Importer
 from authentik.brands.models import Brand
 from authentik.brands.utils import get_brand_for_request
@@ -12,6 +10,7 @@ from authentik.core.models import Application, Group, User
 from authentik.policies.engine import PolicyEngine
 from authentik.providers.oauth2.models import OAuth2Provider, ScopeMapping
 from authentik.providers.proxy.models import ProxyProvider
+from django.test import RequestFactory
 
 blueprint = Path("/blueprints/custom/nix-config.yaml").read_text()
 admin = User.objects.get(username="admin@example.test")

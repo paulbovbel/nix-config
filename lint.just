@@ -2,7 +2,7 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 # Run all static checks in parallel.
 [parallel]
-all: just nix python shell workflows
+all: just nix python shell workflows yaml markdown spelling secrets
 
 # Check Just formatting, including module files.
 just:
@@ -28,3 +28,20 @@ shell:
 # Validate GitHub Actions workflows.
 workflows:
     actionlint
+    zizmor --offline .github/workflows
+
+# Validate YAML syntax and style.
+yaml:
+    yamllint .
+
+# Check documentation style.
+markdown:
+    markdownlint-cli2
+
+# Check spelling in source and documentation.
+spelling:
+    typos
+
+# Scan the working tree, including uncommitted changes, without printing secrets.
+secrets:
+    gitleaks dir --redact --no-banner .

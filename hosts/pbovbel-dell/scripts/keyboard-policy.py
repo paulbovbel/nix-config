@@ -8,7 +8,6 @@ import sys
 import pyudev
 from systemd.daemon import notify
 
-
 logger = logging.getLogger("keyboard-policy")
 
 

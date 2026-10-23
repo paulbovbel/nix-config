@@ -73,6 +73,8 @@ in {
       fd
       gcx
       just
+      gitleaks
+      markdownlint-cli2
       nixos-anywhere
       nixos-rebuild
       openssh
@@ -82,6 +84,9 @@ in {
       shellcheck
       shfmt
       statix
+      typos
+      yamllint
+      zizmor
       zstd
     ];
   };

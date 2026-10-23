@@ -12,7 +12,6 @@ from xml.etree import ElementTree
 import aiohttp
 from PIL import Image
 
-
 YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 BGUTIL_PROVIDER = "http://127.0.0.1:4416"
 DURATION_RE = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$")

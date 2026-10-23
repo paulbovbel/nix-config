@@ -28,7 +28,7 @@ offline installers and migration.
 | --- | --- |
 | `just fmt` | Format repository sources |
 | `just check` | Run routine checks and Python tests |
-| `just lint all` | Run static checks; select `just`, `nix`, `python`, `shell`, or `workflows` individually |
+| `just lint all` | Run static checks: `just`, `nix`, `python`, `shell`, `workflows`, `yaml`, `markdown`, `spelling`, and `secrets` |
 | `just test python` | Run Python unit tests |
 | `just test hosts` | Evaluate all hosts without building closures |
 | `just test nix <name>` | Build one flake check |
