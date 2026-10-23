@@ -98,6 +98,13 @@ jobs:
           lfs: true
       - name: Build flake checks
         run: nix develop --command just test all
+      - name: Publish validated checks
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+        run: |
+          nix run .#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
+          nix build --keep-going -L .#ci-checks --out-link "$RUNNER_TEMP/result-ci-checks"
+          nix run .#attic-client -- push bovbel:nixos "$RUNNER_TEMP/result-ci-checks"
       - name: Build documentation artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: nix build .#module-docs --out-link "$RUNNER_TEMP/result-docs"
@@ -128,7 +135,13 @@ jobs:
       - name: Build host
         env:
           HOST: ${{ matrix.host }}
-        run: nix build --no-link -L ".#nixosConfigurations.$HOST.config.system.build.toplevel"
+        run: nix build -L ".#nixosConfigurations.$HOST.config.system.build.toplevel" --out-link "$RUNNER_TEMP/result-host"
+      - name: Publish validated host
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+        run: |
+          nix run .#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
+          nix run .#attic-client -- push bovbel:nixos "$RUNNER_TEMP/result-host"
 
   deploy-tailnet-policy:
     name: Deploy tailnet policy
@@ -184,31 +197,6 @@ jobs:
             exit 0
           fi
           nix develop --command just --yes monitor apply
-
-  publish-cache:
-    name: Publish cache
-    if: ${{ !cancelled() && needs.build.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [check, test, build]
-    runs-on: [self-hosted, nix-media]
-    timeout-minutes: 240
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: true
-          lfs: true
-      - name: Publish validated hosts
-        id: cache
-        continue-on-error: true
-        env:
-          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
-        run: |
-          nix run .#attic-client -- login bovbel https://nix-cache.bovbel.com "$ATTIC_TOKEN"
-          nix build --keep-going -L .#ci-hosts --out-link "$RUNNER_TEMP/result-ci-hosts"
-          nix run .#attic-client -- push bovbel:nixos "$RUNNER_TEMP/result-ci-hosts"
-      - name: Report cache failure
-        if: always() && steps.cache.outcome == 'failure'
-        run: printf '::warning::Cache publication failed; see the publication job logs.\n'
 
   publish-docs:
     name: Deploy GitHub Pages
