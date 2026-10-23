@@ -43,6 +43,17 @@ usually indicate a label mismatch.
 
 ## CI workflow
 
+The hosted ARM runner joins Tailscale as an ephemeral `tag:ci` node before
+accessing Attic. Apply the tailnet policy containing `tag:ci` first and authorize
+that tag on the OAuth client used by the `TAILSCALE_OAUTH_CLIENT_ID` and
+`TAILSCALE_OAUTH_CLIENT_SECRET` Actions secrets (auth-key write scope). The
+existing tagged-node HTTPS grant permits cache access without SSH access.
+
+The check job probes Attic metadata for every native Asahi kernel output. When
+all outputs are cached, recipe export, artifact upload, and the entire ARM job
+are skipped; tests and host builds still run. A missing output or cache-query
+failure takes the normal build-and-publish path instead.
+
 Run `just update github-actions` to refresh SHA-pinned actions locally. Major
 version comments (such as `# v7`) track that tag; full versions (such as
 `# v5.0.0`) advance to the newest stable release within the same major. Annotated
@@ -73,5 +84,6 @@ PR merge or deployment is performed.
 
 - Self-hosted validation accepts pushes to `main` and PR branches within this repository. Branch writers are trusted with access to the runner's SSH key and shared Nix daemon. Fork PRs skip self-hosted validation; review external changes before transferring them to a repository branch. Skipped jobs are not proof of validation and may satisfy required-check rules.
 - Successful `main` runs publish host closures and documentation. Cache credentials use the `ATTIC_TOKEN` Actions secret. The internal dependency workflow combines flake inputs, GitHub Actions, and shared container image catalog updates into one weekly PR. Image updates refresh digests without changing tag channels.
+- Before tests and host builds, an `ubuntu-24.04-arm` GitHub-hosted runner builds the native Asahi kernel for `becmac-pro` and pushes all its outputs to Attic. This runs for main and trusted same-repository PRs, using the existing `ATTIC_TOKEN` secret. The self-hosted check job exports the exact kernel and Attic client derivations with their source dependencies as a one-day artifact, so the ARM runner does not need private flake credentials. Cache/upload failures block downstream builds. The Mac uses the same native kernel derivation: deployment downloads it when cached and can build it locally otherwise.
 - Logs and job durations are available in GitHub Actions. Workflow definitions live in `.github/workflows/` and are checked by `just check`.
 - Successful `main` runs also deploy Grafana dashboards using the `GRAFANA_TOKEN` Actions secret; see the [monitoring runbook](../monitor/README.md).

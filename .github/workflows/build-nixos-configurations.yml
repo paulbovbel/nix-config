@@ -26,6 +26,7 @@ jobs:
     timeout-minutes: 15
     outputs:
       build-hosts: ${{ steps.inventory.outputs.build-hosts }}
+      kernel-cached: ${{ steps.kernel.outputs.cached }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -40,10 +41,53 @@ jobs:
           printf 'build-hosts=%s\n' "$hosts" >> "$GITHUB_OUTPUT"
       - name: Check repository
         run: nix develop --command just check
+      - name: Prepare native ARM kernel build
+        id: kernel
+        run: nix develop --command bash modules/github-runner/scripts/prepare-arm-kernel.sh "$RUNNER_TEMP/arm-kernel"
+      - name: Upload kernel build recipe
+        if: steps.kernel.outputs.cached != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: arm-kernel-recipe
+          path: ${{ runner.temp }}/arm-kernel
+          retention-days: 1
+          compression-level: 0
+
+  arm-kernel:
+    name: Native ARM kernel
+    needs: check
+    if: needs.check.outputs.kernel-cached != 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+    steps:
+      - name: Join tailnet
+        uses: tailscale/github-action@99a8333667fff04fdd6cffb46dfd409f8329a7bf # v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:ci
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Nix
+        uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
+        with:
+          extra_nix_config: |
+            substituters = https://cache.nixos.org https://nix-community.cachix.org https://nix-cache.bovbel.com/nixos
+            extra-trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nixos:H0/odUxYOFF1DaN52oWwcKlHUkXIZmrqb8QywcCYvd4=
+      - name: Download kernel build recipe
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: arm-kernel-recipe
+          path: ${{ runner.temp }}/arm-kernel
+      - name: Build and cache native kernel
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+        run: bash modules/github-runner/scripts/build-arm-kernel.sh "$RUNNER_TEMP/arm-kernel"
 
   test:
     name: Evaluate and test
-    needs: check
+    needs: [check, arm-kernel]
+    if: ${{ !cancelled() && needs.check.result == 'success' && (needs.arm-kernel.result == 'success' || needs.arm-kernel.result == 'skipped') }}
     runs-on: [self-hosted, nix-media]
     timeout-minutes: 360
     steps:
@@ -66,8 +110,9 @@ jobs:
   build:
     name: Host (${{ matrix.host }})
     needs: [check, test]
+    if: ${{ !cancelled() && needs.test.result == 'success' }}
     runs-on: [self-hosted, nix-media]
-    # Apple Silicon hosts build through binfmt emulation on the x86_64 runner.
+    # The ARM kernel is already cached; other uncached ARM packages use binfmt.
     timeout-minutes: 360
     strategy:
       fail-fast: false
@@ -87,7 +132,7 @@ jobs:
 
   deploy-tailnet-policy:
     name: Deploy tailnet policy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.build.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [check, test, build]
     runs-on: [self-hosted, nix-media]
     timeout-minutes: 10
@@ -115,7 +160,7 @@ jobs:
 
   deploy-grafana:
     name: Deploy Grafana dashboards
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.build.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [check, test, build]
     runs-on: [self-hosted, nix-media]
     timeout-minutes: 10
@@ -142,7 +187,7 @@ jobs:
 
   publish-cache:
     name: Publish cache
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.build.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [check, test, build]
     runs-on: [self-hosted, nix-media]
     timeout-minutes: 240
@@ -167,7 +212,7 @@ jobs:
 
   publish-docs:
     name: Deploy GitHub Pages
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.build.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [check, test, build]
     permissions:
       pages: write

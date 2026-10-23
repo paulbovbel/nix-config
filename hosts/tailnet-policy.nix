@@ -20,6 +20,7 @@
       "tag:backup" = ["group:admins" "tag:backup"];
       "tag:unifi" = ["group:admins" "tag:unifi"];
       "tag:jetkvm" = ["group:admins" "tag:jetkvm"];
+      "tag:ci" = ["group:admins" "tag:ci"];
     };
     autoApprovers.exitNode = ["tag:exit-node"];
     nodeAttrs = [
@@ -61,6 +62,11 @@
       }
     ];
     tests = [
+      {
+        src = "tag:ci";
+        accept = ["tag:media:443"];
+        deny = ["tag:media:22" "tag:backup:22" "tag:adult-device:22"];
+      }
       {
         src = "tag:kids-device";
         proto = "tcp";

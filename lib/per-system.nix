@@ -82,6 +82,7 @@ in {
       shellcheck
       shfmt
       statix
+      zstd
     ];
   };
 }
