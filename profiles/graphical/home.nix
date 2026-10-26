@@ -44,8 +44,8 @@ in {
 
   config = {
     bovbel.background = {
-      lockscreenSource = ../../assets/wallpapers/pbovbel-tropicanair.jpg;
-      lockscreenFileName = "pbovbel-tropicanair.jpg";
+      lockscreenSource = ../../assets/wallpapers/tropicanair.jpg;
+      lockscreenFileName = "tropicanair.jpg";
     };
 
     dconf.enable = true;

@@ -11,7 +11,10 @@ repositories; fine-grained PAT: repository Administration read/write). A tempora
 runner registration token expires and cannot support repeated registration.
 Its configured labels must match the workflow labels that select it.
 
-Private flake inputs use the existing agenix-managed SSH key, mounted read-only at `/run/agenix/github-runner-ssh-key` and selected by the runner's `GIT_SSH_COMMAND`.
+Private flake inputs use the existing agenix-managed SSH key, mounted read-only at
+`/run/agenix/github-runner-ssh-key`. The runner selects it through
+`GIT_SSH_COMMAND` for Git and `NIX_SSHOPTS` for Nix's native LFS fetcher, which
+invokes SSH directly rather than using Git's command override.
 
 ## Job lifecycle and state
 

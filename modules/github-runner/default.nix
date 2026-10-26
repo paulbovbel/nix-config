@@ -92,7 +92,11 @@ in {
             tokenType = "access";
             extraPackages = [pkgs.git-lfs pkgs.openssh];
             workDir = "/var/lib/github-runner/work";
-            extraEnvironment.GIT_SSH_COMMAND = "${pkgs.openssh}/bin/ssh -i /run/agenix/github-runner-ssh-key -o IdentitiesOnly=yes";
+            extraEnvironment = {
+              GIT_SSH_COMMAND = "${pkgs.openssh}/bin/ssh -i /run/agenix/github-runner-ssh-key -o IdentitiesOnly=yes";
+              # Nix's native LFS fetcher invokes ssh directly, not through Git.
+              NIX_SSHOPTS = "-i /run/agenix/github-runner-ssh-key -o IdentitiesOnly=yes";
+            };
             user = "github-runner";
             group = "github-runner";
             serviceOverrides = {

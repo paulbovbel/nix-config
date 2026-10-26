@@ -13,7 +13,7 @@ _: {
 
   bovbel.background = {
     enable = true;
-    source = ../../../assets/wallpapers/abovbel-hogwarts-harry.jpg;
-    fileName = "abovbel-hogwarts-harry.jpg";
+    source = ../../../assets/wallpapers/hogwarts.jpg;
+    fileName = "hogwarts.jpg";
   };
 }

@@ -23,7 +23,7 @@
 }
 
 :host(ak-interface-user) [part="background-wrapper"] {
-  background: var(--hal-background);
+  background: var(--hal-background) url("@authentik-background-url@") center / cover no-repeat;
 }
 
 :host(ak-interface-user) [part="background-default-slant"] {
@@ -144,11 +144,12 @@
 }
 
 :host(ak-flow-executor[data-layout="stacked"]) {
-  background: var(--hal-background);
+  background-color: transparent;
+  --ak-c-login--BackgroundColorOverlay: transparent;
 }
 
 :host(ak-flow-executor) .pf-c-login[data-layout="stacked"] {
-  --ak-c-login--BackgroundColorOverlay: var(--hal-background);
+  --ak-c-login--BackgroundColorOverlay: transparent;
   --ak-c-login__main--BackgroundColor: var(--hal-background);
   --ak-c-login__main--Color: var(--hal-text);
   --ak-c-login__main-ColumnWidth: minmax(0, min(35rem, calc(100vw - 2rem)));

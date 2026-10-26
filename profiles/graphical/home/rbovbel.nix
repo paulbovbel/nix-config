@@ -9,7 +9,7 @@ in {
 
   bovbel.background = {
     enable = true;
-    source = ../../../assets/wallpapers/pbovbel-tropicanair.jpg;
+    source = ../../../assets/wallpapers/tropicanair.jpg;
     fileName = "rbovbel-tropicanair.jpg";
   };
 

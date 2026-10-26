@@ -14,8 +14,8 @@ in {
 
   bovbel.background = {
     enable = true;
-    source = ../../../assets/wallpapers/pbovbel-frehj36ltk101.png;
-    fileName = "pbovbel-frehj36ltk101.png";
+    source = ../../../assets/wallpapers/calvin-hobbes-stars.png;
+    fileName = "calvin-hobbes-stars.png";
   };
 
   dconf.settings = {

@@ -63,7 +63,7 @@ in {
       domain = "auth.example.test";
       path = "/auth/";
       logo = ../../../assets/avatars/HAL9000.svg;
-      background = ../../../assets/wallpapers/pbovbel-tropicanair.jpg;
+      background = ../../../assets/wallpapers/tropicanair.jpg;
       customCss = ":root { --pf-global--primary-color--100: #147d86; }";
       users = [
         {

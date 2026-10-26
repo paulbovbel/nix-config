@@ -50,6 +50,7 @@ in {
 
     caddy.sites.media.endpoints.jellyfin = {
       dashboard = {
+        enable = false;
         name = "Jellyfin";
       };
       type = "proxy";

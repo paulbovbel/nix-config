@@ -1,0 +1,48 @@
+diff --git a/js/ui/screenShield.js b/js/ui/screenShield.js
+--- a/js/ui/screenShield.js
++++ b/js/ui/screenShield.js
+@@ -77,6 +77,17 @@ export class ScreenShield extends Signals.EventEmitter {
+         this.actor.add_child(this._lockScreenGroup);
+         this.actor.add_child(this._lockDialogGroup);
+ 
++        // The greeter wallpaper must cover each monitor, not the virtual desktop.
++        if (Main.sessionMode.isGreeter) {
++            this._greeterBackgrounds = [];
++            Main.layoutManager.connectObject('monitors-changed',
++                () => this._updateGreeterBackgrounds(), this._lockDialogGroup);
++            this._lockDialogGroup.connect('destroy', () => {
++                this._greeterBackgrounds = [];
++            });
++            this._updateGreeterBackgrounds();
++        }
++
+         this._presence = new GnomeSession.Presence((proxy, error) => {
+             if (error) {
+                 logError(error, 'Error while reading gnome-session presence');
+@@ -152,6 +163,26 @@ export class ScreenShield extends Signals.EventEmitter {
+         this._syncInhibitor();
+     }
+ 
++    _updateGreeterBackgrounds() {
++        for (const background of this._greeterBackgrounds)
++            background.destroy();
++
++        this._greeterBackgrounds = Main.layoutManager.monitors.map(monitor => {
++            const background = new St.Widget({
++                style_class: 'gdm-monitor-background',
++                reactive: false,
++                clip_to_allocation: true,
++                x: monitor.x,
++                y: monitor.y,
++                width: monitor.width,
++                height: monitor.height,
++            });
++            // Keep wallpaper below the login dialog and out of keyboard focus.
++            this._lockDialogGroup.insert_child_at_index(background, 0);
++            return background;
++        });
++    }
++
+     async _getLoginSession() {
+         this._loginSession = await this._loginManager.getCurrentSessionProxy();
+         this._loginSession.connectSignal('Lock',
