@@ -1,4 +1,9 @@
 final: prev: {
+  # Solaar notification tests require a DBus machine-id unavailable in headless builds.
+  solaar = prev.solaar.overrideAttrs (_: {
+    doCheck = false;
+  });
+
   # Locus L2TP VPNs require IKEv1, disabled by default in strongSwan 6.
   strongswan = prev.strongswan.overrideAttrs (old: {
     configureFlags = (old.configureFlags or []) ++ ["--enable-ikev1"];
