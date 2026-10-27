@@ -1,4 +1,10 @@
 final: prev: {
+  # Python's pytest hook runs after installation, independently of doCheck.
+  solaar = prev.solaar.overrideAttrs (_: {
+    doCheck = false;
+    dontUsePytestCheck = true;
+  });
+
   # Locus L2TP VPNs require IKEv1, disabled by default in strongSwan 6.
   strongswan = prev.strongswan.overrideAttrs (old: {
     configureFlags = (old.configureFlags or []) ++ ["--enable-ikev1"];
