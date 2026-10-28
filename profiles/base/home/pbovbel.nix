@@ -29,6 +29,28 @@
     Match host white-tower exec "ssh unifi 'BROADCAST=192.168.1.255 PORT=9 ./wol.sh 18:c0:4d:a9:3c:ae'"
     Match host rainbow-wave exec "ssh unifi 'BROADCAST=192.168.1.255 PORT=9 ./wol.sh fc:9d:05:03:85:a9'"
   '';
+
+  # Shared MCP server definitions, rendered below into both the opencode and
+  # claude-code config schemas.
+  mcp = {
+    nixos.command = "${pkgs.mcp-nixos}/bin/mcp-nixos";
+    plex.url = "http://media:3001/mcp";
+    tailscale = {
+      command = "${pkgs.writeShellScript "tailscale-mcp" ''
+        set -e
+        set -a
+        source ${lib.escapeShellArg osConfig.age.secrets.tailscale-mcp-env.path}
+        set +a
+        export PATH=${lib.makeBinPath [pkgs.nodejs]}:$PATH
+        exec ${pkgs.nodejs}/bin/npx --yes @hexsleeves/tailscale-mcp-server@1.3.4
+      ''}";
+      environment = {
+        TAILSCALE_TAILNET = "-";
+        TAILSCALE_ALLOWED_TOOL_RISK = "write";
+        TAILSCALE_CLI_PATH = "${pkgs.tailscale}/bin/tailscale";
+      };
+    };
+  };
 in {
   imports = [
     ../home.nix
@@ -51,6 +73,26 @@ in {
   home.packages = [pkgs.gh pkgs.nix-tree];
 
   programs = {
+    claude-code = {
+      enable = true;
+      package = unstablePkgs.claude-code;
+      mcpServers = {
+        nixos = {
+          type = "stdio";
+          inherit (mcp.nixos) command;
+        };
+        plex = {
+          type = "http";
+          inherit (mcp.plex) url;
+        };
+        tailscale = {
+          type = "stdio";
+          inherit (mcp.tailscale) command;
+          env = mcp.tailscale.environment;
+        };
+      };
+    };
+
     opencode = {
       enable = true;
       package = unstablePkgs.opencode;
@@ -60,29 +102,16 @@ in {
         mcp = {
           nixos = {
             type = "local";
-            command = ["${pkgs.mcp-nixos}/bin/mcp-nixos"];
+            command = [mcp.nixos.command];
           };
           plex = {
             type = "remote";
-            url = "http://media:3001/mcp";
+            inherit (mcp.plex) url;
           };
           tailscale = {
             type = "local";
-            command = [
-              "${pkgs.writeShellScript "tailscale-mcp" ''
-                set -e
-                set -a
-                source ${lib.escapeShellArg osConfig.age.secrets.tailscale-mcp-env.path}
-                set +a
-                export PATH=${lib.makeBinPath [pkgs.nodejs]}:$PATH
-                exec ${pkgs.nodejs}/bin/npx --yes @hexsleeves/tailscale-mcp-server@1.3.4
-              ''}"
-            ];
-            environment = {
-              TAILSCALE_TAILNET = "-";
-              TAILSCALE_ALLOWED_TOOL_RISK = "write";
-              TAILSCALE_CLI_PATH = "${pkgs.tailscale}/bin/tailscale";
-            };
+            command = [mcp.tailscale.command];
+            inherit (mcp.tailscale) environment;
           };
         };
       };
