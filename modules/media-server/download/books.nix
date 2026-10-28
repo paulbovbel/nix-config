@@ -29,9 +29,9 @@
     "--container-user"
     containerUser
     "--qbittorrent-config-dir"
-    config.storage.datasets.app.children.qbittorrent.path
+    datasets.app.children.qbittorrent.path
     "--jackett-config-dir"
-    config.storage.datasets.app.children.jackett.path
+    datasets.app.children.jackett.path
     "--shelfmark-config-dir"
     datasets.app.children.shelfmark.path
     "--prowlarr-config-dir"

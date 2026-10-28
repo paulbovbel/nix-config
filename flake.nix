@@ -18,6 +18,10 @@
       url = "git+ssh://git@github.com/paulbovbel/rookie-cli.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    pia-wg-config = {
+      url = "github:paulbovbel/pia-wg-config/fix-secrets";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     locus-vpn-client = {
       url = "git+ssh://git@github.com/locusrobotics/locus-vpn-client.git";
       inputs.nixpkgs.follows = "nixpkgs";

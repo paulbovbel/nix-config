@@ -16,6 +16,19 @@ Containers use `podmanServer.containers.<name>`. `dependsOn` names other declare
 containers; `derivedEnvironmentFiles` names entries in `podmanServer.derivedEnvFiles`.
 Both dependency graphs must be acyclic, and all references must exist.
 
+Network attachment is derived, not configured: a container joins the `apps`
+network unless `networkNamespaceOf` names another declared container whose
+network namespace it joins instead. Setting `quadlet.containerConfig.networks`
+directly is rejected, because a raw list concatenates with the derived
+attachment rather than replacing it.
+
+A namespace owner carries each sharer's name as a network alias, so other
+containers keep resolving a sharer by its own name even though it holds no
+attachment of its own. The owner also upholds each sharer and propagates its
+own stop and restart to them, so one `systemctl stop <owner>` covers the whole
+group. Sharers publish host ports through the owner, and `networkNamespaceOf`
+counts as a dependency edge for cycle detection.
+
 Containers share the `apps` network and use Podman's generated hosts entries
 without inheriting the host's `/etc/hosts`. This prevents host-local loopback
 mappings from shadowing network DNS. `host.containers.internal` remains available

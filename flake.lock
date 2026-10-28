@@ -485,6 +485,27 @@
         "type": "github"
       }
     },
+    "pia-wg-config": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs-unstable"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793128701,
+        "narHash": "sha256-qFExArcsB7+hX771Q5MxyAdL8xY+YWseJSHEE+MKa/E=",
+        "owner": "paulbovbel",
+        "repo": "pia-wg-config",
+        "rev": "6d437baad9080e913a808bafa1b4576a6c5bf1da",
+        "type": "github"
+      },
+      "original": {
+        "owner": "paulbovbel",
+        "ref": "fix-secrets",
+        "repo": "pia-wg-config",
+        "type": "github"
+      }
+    },
     "quadlet-nix": {
       "locked": {
         "lastModified": 1790641475,
@@ -536,6 +557,7 @@
         "nixos-apple-silicon": "nixos-apple-silicon",
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "pia-wg-config": "pia-wg-config",
         "quadlet-nix": "quadlet-nix",
         "rookie-cli": "rookie-cli",
         "stylix": "stylix",

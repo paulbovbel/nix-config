@@ -50,6 +50,7 @@
 in {
   inherit checks;
   packages = {
+    pia-wg-config = inputs.pia-wg-config.packages.${system}.default;
     rookie = inputs.rookie-cli.packages.${system}.default;
     inherit (pkgs) attic-client;
     inherit (docs) module-docs;

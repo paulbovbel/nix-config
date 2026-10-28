@@ -7,6 +7,7 @@ FROM ghcr.io/autobrr/autobrr:latest@sha256:60efc357e1852f1cd337b8c26d65c5299fead
 FROM lscr.io/linuxserver/bazarr:latest@sha256:946dc8c5bb5331418eac60050cf40a63cb8f66ac039841dda493870e3559799c AS bazarr
 FROM docker.io/brainicism/bgutil-ytdlp-pot-provider:latest@sha256:d7d34108b76e52c7d3b575fe9e797e4bf41c1b2a08f80c5292eff6f851ce8472 AS bgutil-ytdlp-pot-provider
 FROM ghcr.io/flaresolverr/flaresolverr:latest@sha256:c80ae007ce2ccdcd217a12426e4f039ef763ff90738c808d38810c3e59323767 AS flaresolverr
+FROM docker.io/qmcgaw/gluetun:latest@sha256:c2ee4191762fca6b6a3c3359a731198a95d9c9af4db32d466e223bf3a84e779b AS gluetun
 FROM ghcr.io/paulbovbel/grimmory:preview-742f5de@sha256:0a11fdc473bd13d3de3862dcbb01102bd163b71224ed432d68b9e1f339a8211e AS grimmory
 FROM lscr.io/linuxserver/jackett:latest@sha256:402bfdc5f132dd89a9019d15a756079a7822843b465ee9e4e7c996f1ecb9bc49 AS jackett
 FROM lscr.io/linuxserver/jellyfin:latest@sha256:4212ca390fbc6bd5002048d2d2ce2b8a5b1ad278ec4cbabe6519869117404308 AS jellyfin
@@ -18,7 +19,7 @@ FROM docker.io/plexinc/pms-docker:plexpass@sha256:f00d6009c4becccfba7c1ef6670f44
 FROM ghcr.io/vladimir-tutin/plex-mcp-server:latest@sha256:9d66f45ce5ff08eb144afac8de0b0727476fad6e048f94493a66a0fe9d82295a AS plex-mcp
 FROM docker.io/library/postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab AS postgres
 FROM lscr.io/linuxserver/prowlarr:latest@sha256:b3b00047ed20f6ce2b16780145cb6a0acb51c9e28ea6aa6f5dcd33c7034f1797 AS prowlarr
-FROM ghcr.io/binhex/arch-qbittorrentvpn:latest@sha256:a3e9d1b95d92b525bcf065fcf5222d8a03993756f55feb5628988a2cdbd87226 AS qbittorrent
+FROM lscr.io/linuxserver/qbittorrent:5.2.4@sha256:1ea873647c43d566f251a7122aee330b184509c57ee3257ed19f62dac0f8f24b AS qbittorrent
 FROM lscr.io/linuxserver/radarr:latest@sha256:084b3b2ab1d0ef930660727259546a241f2bdf67c9ed085d54bf1486a6887c9b AS radarr
 FROM lscr.io/linuxserver/readarr:0.4.18-develop@sha256:baf471a7101b58f361ef960de91cd15f23bae82d0126df6a9edbeaf5c5aa4392 AS readarr
 FROM ghcr.io/calibrain/shelfmark:latest@sha256:acfa46b8be80f1e2f084a7703ff027ab274397feb24006114e92c05c140b62c3 AS shelfmark

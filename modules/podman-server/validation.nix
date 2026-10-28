@@ -5,7 +5,11 @@
 }: let
   cfg = config.podmanServer;
   checkGraph = import ./graph.nix {inherit lib;};
-  containerGraph = checkGraph (lib.mapAttrs (_: container: container.dependsOn) cfg.containers);
+  # Namespace sharing is an ordering edge too, so it shares cycle detection.
+  containerGraph = checkGraph (lib.mapAttrs (_: container:
+    container.dependsOn
+    ++ lib.optional (container.networkNamespaceOf != null) container.networkNamespaceOf)
+  cfg.containers);
   envGraph = checkGraph (lib.mapAttrs (_: env: env.derivedEnvironmentFiles) cfg.derivedEnvFiles);
   graphAssertions = label: graph: [
     {
@@ -34,6 +38,24 @@ in {
                 || lib.hasPrefix "oci-archive:" image
                 || builtins.match ".+@sha256:[0-9a-f]{64}" image != null));
           message = "podmanServer.containers.${name} must use a digest-pinned registry image or a Nix-built image.";
+        }
+        {
+          # Networks are derived, so a raw list would concatenate with the
+          # derived attachment rather than replace it.
+          assertion = container.quadlet.containerConfig.networks == [];
+          message = "podmanServer.containers.${name} must select its network with networkNamespaceOf instead of quadlet.containerConfig.networks";
+        }
+        {
+          # Podman rejects published ports on a joined namespace, and the owner
+          # already carries each sharer's name as an alias.
+          assertion =
+            container.networkNamespaceOf
+            == null
+            || (container.ports
+              == []
+              && container.quadlet.containerConfig.publishPorts == []
+              && container.quadlet.containerConfig.networkAliases == []);
+          message = "podmanServer.containers.${name} must publish ports through its networkNamespaceOf owner, which already answers to this container's name";
         }
         {
           assertion = builtins.all (env: builtins.hasAttr env cfg.derivedEnvFiles) container.derivedEnvironmentFiles;

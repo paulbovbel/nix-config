@@ -26,12 +26,18 @@
     then lib.filterAttrs (_: nested: nested != null) (lib.mapAttrs (_: removeNulls) value)
     else value;
 
+  # Containers sharing this one's network namespace. The owner keeps them
+  # running and answers to their names, so a single stop or restart of the
+  # owner covers the whole group and callers still resolve each sharer.
+  namespaceSharers = owner: lib.attrNames (lib.filterAttrs (_: container: container.networkNamespaceOf == owner) cfg.containers);
+
   mkQuadletContainer = name: container: let
     dependencyUnits = map (dependency: "${dependency}.service") container.dependsOn;
     derivedEnvUnitNames = derivedEnvUnits container.derivedEnvironmentFiles;
     derivedEnvFilePaths = derivedEnvFiles container.derivedEnvironmentFiles;
+    namespaceUnits = lib.optional (container.networkNamespaceOf != null) "${container.networkNamespaceOf}.service";
     requiredUnits = dependencyUnits ++ derivedEnvUnitNames;
-    afterUnits = dependencyUnits ++ derivedEnvUnitNames;
+    afterUnits = dependencyUnits ++ derivedEnvUnitNames ++ namespaceUnits;
     quadletConfig = removeNulls (lib.filterAttrs (key: _: !(lib.hasPrefix "_" key) && key != "ref") container.quadlet);
   in
     lib.mkMerge [
@@ -44,12 +50,22 @@
           Wants = lib.mkBefore ["network-online.target"];
           After = lib.mkBefore (["network-online.target"] ++ storageUnits ++ afterUnits);
           Requires = lib.mkBefore (storageUnits ++ requiredUnits);
+          # BindsTo propagates the owner's stop; PartOf propagates its restart.
+          BindsTo = lib.mkBefore namespaceUnits;
+          PartOf = lib.mkBefore namespaceUnits;
+          Upholds = lib.mkBefore (map (sharer: "${sharer}.service") (namespaceSharers name));
         };
 
         containerConfig = {
           inherit name;
           autoUpdate = lib.mkDefault null;
-          networks = lib.mkBefore [config.virtualisation.quadlet.networks.apps.ref];
+          networks =
+            if container.networkNamespaceOf != null
+            then ["container:${container.networkNamespaceOf}"]
+            else [config.virtualisation.quadlet.networks.apps.ref];
+          # A sharer holds no attachment of its own, so the owner answers to its
+          # name on the apps network.
+          networkAliases = lib.mkAfter (namespaceSharers name);
           environmentFiles = lib.mkAfter (container.secretEnvironmentFiles ++ derivedEnvFilePaths);
           publishPorts = lib.mkAfter (map renderPort container.ports);
           podmanArgs = lib.mkBefore ["--no-healthcheck"];
@@ -133,7 +149,7 @@
     renderedVariables = lib.concatStringsSep "\n" (lib.mapAttrsToList (key: value: "${key}=${value}") envFile.variables);
   in {
     description = "Render environment file for Podman server ${name}";
-    requires = derivedEnvUnitNames;
+    requires = derivedEnvUnitNames ++ envFile.requires;
     inherit (envFile) wants;
     after = derivedEnvUnitNames ++ envFile.after;
     path = [pkgs.coreutils] ++ envFile.packages;

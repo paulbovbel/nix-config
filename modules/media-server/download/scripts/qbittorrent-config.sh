@@ -23,3 +23,12 @@ chown "$uid:$gid" "$config_file"
 crudini --set "$config_file" Preferences 'WebUI\AuthSubnetWhitelistEnabled' true
 crudini --set "$config_file" Preferences 'WebUI\AuthSubnetWhitelist' "$podman_apps_network"
 crudini --set "$config_file" Preferences 'WebUI\ReverseProxySupportEnabled' true
+crudini --set "$config_file" Preferences 'WebUI\LocalHostAuth' false
+# Start fail-closed until the port reconciler observes an active PIA forward.
+crudini --set "$config_file" BitTorrent 'Session\Interface' lo
+crudini --set "$config_file" BitTorrent 'Session\InterfaceName' lo
+crudini --set "$config_file" BitTorrent 'Session\InterfaceAddress' ''
+crudini --set "$config_file" Preferences 'Connection\UPnP' false
+# Pre-5.x key names, kept until a running instance confirms they are ignored.
+crudini --set "$config_file" Preferences 'Connection\Interface' lo
+crudini --set "$config_file" Preferences 'Connection\InterfaceName' lo

@@ -64,6 +64,12 @@
         description = "Other Podman server container names this one requires and starts after.";
       };
 
+      networkNamespaceOf = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Another Podman server container whose network namespace this one joins instead of the apps network. The owner upholds this container, and stopping or restarting the owner propagates here.";
+      };
+
       secretEnvironmentFiles = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [];
@@ -131,6 +137,12 @@
         type = lib.types.listOf lib.types.str;
         default = [];
         description = "Systemd units wanted by the renderer.";
+      };
+
+      requires = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [];
+        description = "Systemd units required by the renderer. Rendering fails rather than reusing stale sources when one of these units fails.";
       };
 
       after = lib.mkOption {

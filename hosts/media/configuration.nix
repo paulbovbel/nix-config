@@ -45,6 +45,9 @@
     }
     // appBackupPaths;
 in {
+  # TEMPORARY: debugging the Gluetun cutover over SSH, where sudo cannot prompt.
+  # Revert this line once that is finished.
+  maintenance.passwordlessSudo = true;
   userProfiles.pbovbel = ["base"];
   tailnet.tags = ["tag:media" "tag:exit-node"];
   services.tailscale.extraUpFlags = ["--advertise-exit-node"];

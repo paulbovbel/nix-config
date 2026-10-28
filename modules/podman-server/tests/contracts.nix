@@ -76,6 +76,57 @@
     };
   };
   tests = {
+    defaultAppsNetwork = valid.virtualisation.quadlet.containers.app.containerConfig.networks == ["apps.network"];
+    rejectsRawNetworks = rejects "must select its network with networkNamespaceOf" (configuration {
+      podmanServer.containers.app.quadlet.containerConfig.networks = ["container:database"];
+    });
+    namespaceSharingWiring = let
+      shared = configuration {
+        podmanServer.containers = {
+          app.networkNamespaceOf = "database";
+          database = container;
+        };
+      };
+      sharer = shared.virtualisation.quadlet.containers.app;
+      owner = shared.virtualisation.quadlet.containers.database;
+    in
+      sharer.containerConfig.networks
+      == ["container:database"]
+      && sharer.unitConfig.BindsTo == ["database.service"]
+      && sharer.unitConfig.PartOf == ["database.service"]
+      && builtins.elem "database.service" sharer.unitConfig.After
+      && owner.unitConfig.Upholds == ["app.service"]
+      && sharer.unitConfig.Upholds == []
+      && owner.containerConfig.networkAliases == ["app"]
+      && sharer.containerConfig.networkAliases == []
+      && failedMessages shared == [];
+    namespaceSharingRejectsPublishedPorts = rejects "must publish ports through its networkNamespaceOf owner" (configuration {
+      podmanServer.containers = {
+        app = {
+          networkNamespaceOf = "database";
+          ports = [{hostPort = 8080;}];
+        };
+        database = container;
+      };
+    });
+    namespaceSharingRejectsNetworkAliases = rejects "which already answers to this container's name" (configuration {
+      podmanServer.containers = {
+        app = {
+          networkNamespaceOf = "database";
+          quadlet.containerConfig.networkAliases = ["alias"];
+        };
+        database = container;
+      };
+    });
+    namespaceSharingRejectsUnknownOwner = rejects "unknown dependencies: app -> missing" (configuration {
+      podmanServer.containers.app.networkNamespaceOf = "missing";
+    });
+    namespaceSharingRejectsCycle = rejects "dependency cycle" (configuration {
+      podmanServer.containers = {
+        app.networkNamespaceOf = "database";
+        database = container // {networkNamespaceOf = "app";};
+      };
+    });
     disabledHasNoWorkloadState =
       disabled.storage.datasets
       == {}

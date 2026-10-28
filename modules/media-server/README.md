@@ -22,7 +22,36 @@ Jellefyin, Audiobookshelf and Grimmory use native OIDC against Authentik; Caddy 
 
 `mediaServer.downloads.enable` runs the torrent, video, and book download stack. Download managers write to shared download datasets, while automation services move completed content into the appropriate libraries.
 
-qBittorrent temporarily overlays `/usr/local/bin/tools.sh` with the pinned version from [Binhex PR #57](https://github.com/binhex/arch-int-vpn/pull/57) at commit `3f6f0f83a11db712a3781035f9644af789b3f568`. This adds PIA's v2 token API, request timeouts, and working endpoint fallback/retries. The read-only mount survives container recreation; remove the overlay once the upstream image includes the fix.
+### Torrent VPN
+
+Gluetun owns the PIA WireGuard tunnel and firewall. The LinuxServer qBittorrent container and the `qbittorrent-port-sync` daemon join its network namespace through `podmanServer.containers.<name>.networkNamespaceOf`, so neither holds VPN privileges or an independent `apps` attachment. That option gives Gluetun its sharers' names as network aliases, so Caddy, Radarr and Sonarr still reach `qbittorrent:8080` unchanged; `FIREWALL_INPUT_PORTS` has to list that WebUI port, since an in-namespace port is not published and cannot be derived.
+
+`pia-wireguard-config.service` runs the pinned [pia-wg-config fork](https://github.com/paulbovbel/pia-wg-config/tree/fix-secrets) to register a locally generated WireGuard key in `ca_toronto`, and exports the matching TLS server name for Gluetun forwarding. It reads agenix-managed `PIA_USERNAME` and `PIA_PASSWORD` from the service environment rather than command arguments, and writes only into root-owned `/run/pia-wireguard` with mode `0600` — the key and the forwarding lease never enter the Nix store. A `podmanServer.derivedEnvFiles` renderer maps those credentials and the exported server name into Gluetun's env-file; it `requires` successful provisioning, so a failed registration cannot be papered over with stale files. Gluetun's own state persists in `storage.datasets.app.children.gluetun`, which is root-only because PIA's forwarding lease includes an authentication token.
+
+`qbittorrent-port-sync` is a Nix-built container that runs unprivileged with a read-only filesystem, no persistent storage, and no listening sockets. Every two seconds it reads Gluetun's control API at `127.0.0.1:8000/v1/portforward` and reconciles qBittorrent's loopback API, skipping redundant writes. Polling alone covers forward changes, qBittorrent restarts, and its own restarts, so there is no hook, handoff file, or systemd timer. Without a forward qBittorrent binds to loopback; with one it binds to `wg0`, which MAM also uses to register egress. qBittorrent's `ExecStartPre` hook rewrites the binding back to loopback on every start, so a tunnel without a forward fails closed, and Gluetun's firewall remains the kill switch during reconnects. The control API exposes only that one read-only route unauthenticated; all three containers share the namespace and therefore that trust boundary.
+
+#### Recovery
+
+Gluetun's own reconnection logic handles ordinary VPN outages without registering a new key. Gluetun upholds qBittorrent and the port-sync daemon, so stopping `gluetun.service` stops all three for maintenance.
+
+One failure mode does not self-heal: if port forwarding fails on its first attempt (`starting port forwarding service: port forwarding for the first time`), Gluetun logs the error and never retries, so no forward appears even once the tunnel recovers. The unit stays `active` and systemd cannot see it, so check `journalctl -u gluetun | grep 'port forwarding'` whenever the port-sync daemon reports `loopback, no forward` for long, and restart `gluetun.service` to retry.
+
+Two port-forwarding failures are worth recognising by their log line, because `pia-wg-config` picks a server without checking that it offers forwarding, and PIA rotates servers out from under it.
+
+`API IP address not found` means the selected server runs no forwarding service. Re-register to move to another server; Gluetun follows through restart propagation:
+
+```bash
+sudo systemctl restart pia-wireguard-config.service
+```
+
+`bindPort: 401 ... "bad signature"` means Gluetun is replaying the lease in `piaportforward.json` against a server that did not issue it. Discard it and restart, which forces a fresh signature:
+
+```bash
+sudo rm -f /storage/app/gluetun/piaportforward.json
+sudo systemctl restart gluetun.service
+```
+
+A successful run logs `port forwarded is <port>` and `expires in 62 days`, and the port-sync daemon follows with `Bound qBittorrent to wg0 port <port>`. Note that `SERVER_NAMES` need not appear in Gluetun's own server list: `pia-wg-config` reads PIA's v4 list and Gluetun embeds v6, so the names routinely differ, and forwarding still works. If provisioning failed before any container started, `sudo systemctl restart gluetun.service` runs it again. Inspect `journalctl -u pia-wireguard-config -u gluetun -u qbittorrent -u qbittorrent-port-sync` for diagnostics; the generator's stdout is discarded because it prints the WireGuard config, so do not reintroduce it or copy the generated files into logs.
 
 ### Popular Videos
 

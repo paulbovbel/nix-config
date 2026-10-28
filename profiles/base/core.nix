@@ -47,9 +47,14 @@ in {
 
     users.mutableUsers = false;
 
-    security.sudo.extraConfig = ''
-      Defaults lecture=never
-    '';
+    security.sudo = {
+      wheelNeedsPassword = !config.maintenance.passwordlessSudo;
+      extraConfig = ''
+        Defaults lecture=never
+      '';
+    };
+
+    warnings = lib.optional config.maintenance.passwordlessSudo "maintenance.passwordlessSudo is enabled: wheel members run sudo without a password. Revert it when the maintenance window ends.";
 
     environment.systemPackages =
       [
