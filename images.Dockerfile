@@ -18,7 +18,7 @@ FROM docker.io/plexinc/pms-docker:plexpass@sha256:f00d6009c4becccfba7c1ef6670f44
 FROM ghcr.io/vladimir-tutin/plex-mcp-server:latest@sha256:9d66f45ce5ff08eb144afac8de0b0727476fad6e048f94493a66a0fe9d82295a AS plex-mcp
 FROM docker.io/library/postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab AS postgres
 FROM lscr.io/linuxserver/prowlarr:latest@sha256:b3b00047ed20f6ce2b16780145cb6a0acb51c9e28ea6aa6f5dcd33c7034f1797 AS prowlarr
-FROM ghcr.io/binhex/arch-qbittorrentvpn:latest@sha256:a3e9d1b95d92b525bcf065fcf5222d8a03993756f55feb5628988a2cdbd87226 AS qbittorrent
+FROM ghcr.io/binhex/arch-qbittorrentvpn:5.2.4-1-02@sha256:68155d839811904c61587741950f804baffc98fc06bce1bd1efe83342da1e760 AS qbittorrent
 FROM lscr.io/linuxserver/radarr:latest@sha256:084b3b2ab1d0ef930660727259546a241f2bdf67c9ed085d54bf1486a6887c9b AS radarr
 FROM lscr.io/linuxserver/readarr:0.4.18-develop@sha256:baf471a7101b58f361ef960de91cd15f23bae82d0126df6a9edbeaf5c5aa4392 AS readarr
 FROM ghcr.io/calibrain/shelfmark:latest@sha256:acfa46b8be80f1e2f084a7703ff027ab274397feb24006114e92c05c140b62c3 AS shelfmark
